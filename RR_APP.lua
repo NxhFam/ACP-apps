@@ -412,7 +412,7 @@ local function distance(youPos, policePos)
     return hi
 end
 
-function script.fullscreenUI(dt)
+function script.drawUI()
 	local you = ac.getCar(0)
 	if ac.isWindowOpen("main") and SETTINGS.radarActive then
 		ui.transparentWindow('radar', vec2(0, 0), vec2(windowWidth, 400), function ()
