@@ -414,7 +414,7 @@ end
 
 function script.drawUI()
 	local you = ac.getCar(0)
-	if ac.isWindowOpen("main") and SETTINGS.radarActive then
+	if SETTINGS.radarActive then
 		ui.transparentWindow('radar', vec2(0, 0), vec2(windowWidth, 400), function ()
 			for i = ac.getSim().carsCount - 1, 0, -1 do
 				local car = ac.getCar(i)
