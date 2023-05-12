@@ -8,10 +8,7 @@ function script.drawUI()
 		local textSize = ui.measureDWriteText("GO CHANGE YOUR FUCKIN NAME\nIT MIGHT BE MISSING SOMETHING???" , 50)
 		ui.dwriteDrawText("GO CHANGE YOUR FUCKIN NAME" , 50, vec2((windowWidth-textSize.x)/2, 0), color)
 	end)
-end
-
-function script.update(dt)
-	ui.beginPopupContextItem("id: string")
+	ui.beginPopupContextItem('mon cul')
 		if ui.button('Please Work') then
 			color = rgbm.colors.red
 		end
