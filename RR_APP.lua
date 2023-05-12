@@ -1,6 +1,7 @@
 local sim = ac.getSim()
 local windowWidth = sim.windowWidth
 local icon = "radar"
+local time = 0
 
 
 function script.drawUI()
@@ -11,6 +12,7 @@ function script.drawUI()
 end
 
 function script.update(dt)
+	time = time + dt
 	ui.registerOnlineExtra(icon, "settings", function ()
 		ui.itemPopup(ui.MouseButton.Right, function ()
 			if ui.selectable('Item 1') then 
@@ -25,4 +27,8 @@ function script.update(dt)
 			end
 		end)
 	end)
+	if time > 10 then
+		ac.sendChatMessage("FUCKK ME")
+		time = 0
+	end
 end
