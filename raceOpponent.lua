@@ -110,6 +110,10 @@ function script.drawUI()
 			ui.dwriteDrawText(ac.getDriverName(inFront.index) .. " is in the lead", 30, vec2(windowWidth/2 - textLenght.x/2, 10), rgbm.colors.red)
 			ui.progressBar(distanceBetweenPlayers/50000, vec2(windowWidth/2,windowHeight/2), 'Distance')
 		end)
+	else
+		ui.beginTransparentWindow('RaceOverlay', vec2(windowWidth/4,0), vec2(windowWidth-(windowWidth/4),windowHeight), function ()
+			ui.progressBar(2500/50000, vec2(windowWidth/2,windowHeight/2), 'Distance')
+		end)
 	end
 	ui.popDWriteFont()
 end
