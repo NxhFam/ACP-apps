@@ -1,10 +1,12 @@
-require('ac_online_script')
-
--- automatically generated entries go here:
-__definitions()
-
 local windowWidth = sim.windowWidth
 local windowHeight = sim.windowHeight/4
+
+local headlight = {
+	lastState = false,
+	stateChangedCount = 0,
+	flashingLights = false,
+}
+local lightTime = 0
 
 local isInRace = false
 local raceOpponent = nil
@@ -47,12 +49,6 @@ local function whosInFront()
 end
 
 local function resquestRace()
-	if car.flashingLightsActive then
-		local carInfront = ac.getCarIndexInFront(0)
-		if carInfront > 0 then
-			raceEvent{messageRace = 1, yourIndex = carInfront}
-		end
-	end
 	if car.hazardLights and acceptedOpponent then
 		raceEvent{messageRace = 2, yourIndex = raceOpponent.sessionID}
 	end
@@ -89,8 +85,30 @@ local function inRace()
 end
 
 function script.update(dt)
+	if lightTime < 2 then
+		lightTime = lightTime + dt
+		if headlight.lastState ~= car.headlightsActive then
+			headlight.stateChangedCount = headlight.stateChangedCount + 1
+			headlight.lastState = car.headlightsActive
+		end
+		if headlight.stateChangedCount > 3 then
+			headlight.flashingLights = true
+			local carInfront = ac.getCarIndexInFront(0)
+			if carInfront > 0 then
+				raceEvent{messageRace = 1, yourIndex = carInfront}
+			end
+			headlight.stateChangedCount = 0
+			lightTime = 0
+		end
+	else
+		headlight.flashingLights = false
+		headlight.stateChangedCount = 0
+		lightTime = 0
+	end
 	if not isInRace then
-		resquestRace()
+		if headlight.flashingLights then
+			resquestRace()
+		end
 	else
 		inRace()
 		if not raceOpponent.isConnected then
@@ -104,22 +122,13 @@ end
 
 function script.drawUI()
 	ui.pushDWriteFont("Orbitron;Weight=600")
-	local textLenght = ui.measureDWriteText(ac.getDriverName(inFront.index) .. " is in the lead", 30)
+	local textLenght = ui.measureDWriteText(ac.getDriverName(0) .. " is in the lead", 30)
 	if isInRace then
-		ui.beginTransparentWindow('RaceOverlay', vec2(windowWidth/4,0), vec2(windowWidth-(windowWidth/4),windowHeight), function ()
-			ui.dwriteDrawText(ac.getDriverName(inFront.index) .. " is in the lead", 30, vec2(windowWidth/2 - textLenght.x/2, 10), rgbm.colors.red)
-			ui.progressBar(distanceBetweenPlayers/50000, vec2(windowWidth/2,windowHeight/2), 'Distance')
-		end)
-	else
-		ui.beginTransparentWindow('RaceOverlay', vec2(windowWidth/4,0), vec2(windowWidth-(windowWidth/4),windowHeight), function ()
-			ui.progressBar(2500/50000, vec2(windowWidth/2,windowHeight/2), 'Distance')
-		end)
+			ui.dwriteDrawText(ac.getDriverName(inFront.index) .. " is in the lead", 30, vec2(windowWidth/2 - textLenght.x/2, 0), rgbm.colors.red)
+			ui.dummy(vec2(0,windowHeight/10))
+			ui.dummy(vec2(windowWidth/4,windowHeight/10))
+			ui.sameLine()
+			ui.progressBar(distanceBetweenPlayers/2500000, vec2(windowWidth/2,windowHeight/10), 'Distance')
 	end
 	ui.popDWriteFont()
 end
-
---	local textSize = ui.measureDWriteText(online.message, SETTINGS.fontSizeMSG)
--- 	local uiOffsetX = math.floor((windowWidth - textSize.x)/2)
---	local uiOffsetY = 10
---	ui.drawRectFilled(vec2(uiOffsetX - 5, uiOffsetY-5), vec2(uiOffsetX + textSize.x + 5, uiOffsetY + textSize.y + 5), SETTINGS.colorsMsgBG)
--- 	ui.dwriteDrawText(online.message, SETTINGS.fontSizeMSG, vec2(uiOffsetX, uiOffsetY), SETTINGS.colorsMsg)
