@@ -169,7 +169,6 @@ function script.update(dt)
 			raceOpponent = ac.getCar(ac.getCarIndexInFront(0))
 			if raceOpponent then
 				resquestOpponent = true
-				acceptedOpponent = true
 				resquestRace()
 			end
 			headlight.stateChangedCount = 0
