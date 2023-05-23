@@ -197,7 +197,7 @@ function script.update(dt)
 	end
 end
 
-function script.fullscreenUI()
+function script.drawUI()
 	ui.pushDWriteFont("Orbitron;Weight=600")
 	if isInRace then
 		if isInRace then
