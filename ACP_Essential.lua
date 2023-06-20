@@ -3,17 +3,38 @@ local sim = ac.getSim()
 local car = ac.getCar(0)
 local windowWidth = sim.windowWidth
 local windowHeight = sim.windowHeight
+
+SETTINGS = ac.storage {
+	showStats = true,
+    racesWon = 0,
+    racesLost = 0,
+    busted = 0,
+    statsSize = 20,
+    statsOffsetX = 0,
+	statsOffsetY = 0,
+    statsFont = 20,
+    current = 1,
+    colorHud = rgbm(1,0,0,1),
+	colorString = '1,0,0,1',
+	send = false,
+	timeMsg = 10,
+	msgOffsetY = 10,
+	msgOffsetX = windowWidth/2,
+	fontSizeMSG = 30,
+}
+
 SETTINGS.statsFont = SETTINGS.statsSize * windowHeight/1440
 ui.setAsynchronousImagesLoading(true)
-
+local imageSize = vec2(windowHeight/80 * SETTINGS.statsSize, windowHeight/80 * SETTINGS.statsSize)
 ---------------------TO DO---------------------
-local hudBase = "assets/Hud/hudBase.png"
-local hudLeft = "assets/Hud/hudLeft.png"
-local hudRight = "assets/Hud/hudRight.png"
-local hudCenter = "assets/Hud/hudCenter.png"
-local hudCountdown = "assets/Hud/iconCountdown.png"
-local hudMenu = "assets/Hud/iconMenu.png"
-local hudTheft = "assets/Hud/iconTheft.png"
+local assetsFolder = ac.getFolder(ac.FolderID.ACApps) .. "/lua/ACP_Essential/Assets/HUD/"
+local hudBase = assetsFolder .. "hudBase.png"
+local hudLeft = assetsFolder .. "hudLeft.png"
+local hudRight = assetsFolder .. "hudRight.png"
+local hudCenter = assetsFolder .. "hudCenter.png"
+local hudCountdown = assetsFolder .. "iconCountdown.png"
+local hudMenu = assetsFolder .. "iconMenu.png"
+local hudTheft = assetsFolder .. "iconTheft.png"
 ---------------------TO DO---------------------
 
 local sectors = {
@@ -75,33 +96,16 @@ local function initLines()
             line.region = regionAroundLine(line)
             table.insert(lines, line)
         end
+		sectors[i].lines = lines
 	end
     sector = sectors[1]
+	
 end
 
 -- Settings
 local showPreviewMsg = false
 local showPreviewDistanceBar = false
 COLORSMSGBG = rgbm(0.5,0.5,0.5,0.5)
-
-SETTINGS = ac.storage {
-	showStats = true,
-    racesWon = 0,
-    racesLost = 0,
-    busted = 0,
-    statsSize = 20,
-    statsOffsetX = 0,
-	statsOffsetY = 0,
-    statsFont = 20,
-    current = 1,
-    colorHud = rgbm(0,1,1,1),
-	colorString = '0,1,1,1',
-	send = false,
-	timeMsg = 10,
-	msgOffsetY = 10,
-	msgOffsetX = windowWidth/2,
-	fontSizeMSG = 30,
-}
 
 local function stringToColor(sColor)
 	local r, g, b, a = sColor:match('(.+),(.+),(.+),(.+)')
@@ -165,6 +169,7 @@ end
 
 
 local function uiHUD()
+	imageSize = vec2(windowHeight/80 * SETTINGS.statsSize, windowHeight/80 * SETTINGS.statsSize)
 	if ui.checkbox('Show HUD', SETTINGS.showStats) then SETTINGS.showStats = not SETTINGS.showStats end
 	SETTINGS.statsOffsetX = ui.slider('##' .. 'HUD Offset X', SETTINGS.statsOffsetX, 0, windowWidth, 'HUD Offset X' .. ': %.0f')
 	SETTINGS.statsOffsetY = ui.slider('##' .. 'HUD Offset Y', SETTINGS.statsOffsetY, 0, windowHeight, 'HUD Offset Y' .. ': %.0f')
@@ -186,8 +191,8 @@ end
 -- Sectors
 local sectorInfo = {
 	time = 0,
-	timerText = 'H1|TIME: 00:00.00|0',
-	finalTime = 'H1|TIME: 00:00.00|0',
+	timerText = '00:00.00',
+	finalTime = '00:00.00',
 	checkpoints = 1,
 	sectorIndex = 1,
 	distance = 0,
@@ -206,10 +211,11 @@ local duo = {
 local function resetSectors()
 	sector = sectors[sectorInfo.sectorIndex]
 	sectorInfo.time = 0
-	sectorInfo.timerText = sector.name .. '|TIME: 00:00.00|0'
-	sectorInfo.finalTime = sector.name .. '|TIME: 00:00.00|0'
+	sectorInfo.timerText = '00:00.00'
+	sectorInfo.finalTime = '00:00.00'
 	sectorInfo.checkpoints = 1
 	sectorInfo.distance = 0
+	sectorInfo.finished = false
 end
 
 local function dot(vector1, vector2)
@@ -334,11 +340,7 @@ local function textTimeFormat()
 	else
 		timeFormated = timeFormated .. string.format("%.2f", sectorInfo.time % 60)
 	end
-	if #sector.lines + 1 == sectorInfo.checkpoints then
-		sectorInfo.timerText = sector.name .. '|TIME: ' .. timeFormated .. '|1'
-	else
-		sectorInfo.timerText = sectors[sectorInfo.sectorIndex].name .. '|TIME: ' .. timeFormated .. '|0'
-	end
+	sectorInfo.timerText = timeFormated
 end
 
 local function hasCrossedLine(line)
@@ -359,24 +361,23 @@ local function sectorUpdate()
 	if hasCrossedLine(sector.lines[sectorInfo.checkpoints]) then
 		if sectorInfo.checkpoints == 1 then
 			resetSectors()
-			sectorInfo.distance = car.sectorInfo.distanceDrivenSessionKm
+			sectorInfo.distance = car.distanceDrivenSessionKm
 		end
-		sectorInfo.checkpoints = sectorInfo.checkpoints + 1
-	end
-	if sectorInfo.checkpoints > 1 then textTimeFormat() end
-	if sectorInfo.checkpoints - 1 == #sector.lines then
-		if sector.length < car.sectorInfo.distanceDrivenSessionKm - sectorInfo.distance then
-			if sectorInfo.sectorIndex == 3 then
-				if duo.teammate ~= nil and not sectorInfo.finished then
-					acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
+		if sectorInfo.checkpoints == #sector.lines then
+			if sector.length < car.distanceDrivenSessionKm - sectorInfo.distance then
+				if sectorInfo.sectorIndex == 3 then
+					if duo.teammate ~= nil and not sectorInfo.finished then
+						acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
+					end
+					if duo.teammateHasFinished then sectorInfo.finished = true end
+				else
+					sectorInfo.finished = true
 				end
-				if duo.teammateHasFinished then sectorInfo.finished = true end
-			else
-				sectorInfo.finished = true
+				if sectorInfo.finished then sectorInfo.finalTime = sectorInfo.timerText end
 			end
-			if sectorInfo.finished then sectorInfo.finalTime = sectorInfo.timerText end
-		end
+		else sectorInfo.checkpoints = sectorInfo.checkpoints + 1 end
 	end
+	if sectorInfo.checkpoints > 1 and sectorInfo.checkpoints < #sector.lines then textTimeFormat() end
 end
 
 -- Online Interactions
@@ -745,8 +746,6 @@ local function onlineEventMessage()
 end
 
 -- HUD
-local imageSize = vec2(windowHeight/80 * SETTINGS.statsSize, windowHeight/80 * SETTINGS.statsSize)
-local timeFormated = sectorInfo.timeFormated
 local statOn = {
 	[1] = "Distance Driven",
 	[2] = "Races",
@@ -790,6 +789,7 @@ local function countdown()
 	end
 end
 
+
 local function drawText()
 	ui.pushDWriteFont("Orbitron;Weight=BOLD")
     local textOffset = vec2(imageSize.x / 2, imageSize.y / 4.5)
@@ -807,14 +807,13 @@ local function drawText()
         textSize = ui.measureDWriteText(SETTINGS.busted, SETTINGS.statsFont)
         ui.dwriteDrawText(SETTINGS.busted, SETTINGS.statsFont, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1,1,1,1))
     elseif SETTINGS.current > 3 then
-        local timeSplit = string.split(timeFormated, "|")
-        textSize = ui.measureDWriteText(timeSplit[1], SETTINGS.statsFont)
-        ui.dwriteDrawText(timeSplit[1], SETTINGS.statsFont, textOffset - vec2(textSize.x/2, 0), SETTINGS.colorHud)
+        textSize = ui.measureDWriteText(sector.name, SETTINGS.statsFont)
+        ui.dwriteDrawText(sector.name, SETTINGS.statsFont, textOffset - vec2(textSize.x/2, 0), SETTINGS.colorHud)
         textSize = ui.measureDWriteText("Time: 0:00:00", SETTINGS.statsFont)
-        if timeSplit[3] == "0" then
-            ui.dwriteDrawText(timeSplit[2], SETTINGS.statsFont, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1,1,1,1))
+        if sectorInfo.finished then
+            ui.dwriteDrawText("Time: " .. sectorInfo.timerText, SETTINGS.statsFont, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(0, 1, 0, 1))
         else
-            ui.dwriteDrawText(timeSplit[2], SETTINGS.statsFont, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(0, 1, 0, 1))
+            ui.dwriteDrawText("Time: " .. sectorInfo.timerText, SETTINGS.statsFont, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1,1,1,1))
         end
     end
 	ui.popDWriteFont()
@@ -857,7 +856,7 @@ local function drawImage()
 				stealingTime = 30
 				ac.sendChatMessage("* Stealing a " .. string.gsub(ac.getCarName(0), "%W", " ") .. os.date(" %x *"))
 				stealMsgTime = 7
-				if sectorInfo.sectorIndex ~= 3 and string.split(timeFormated, "|")[2] == "TIME: 00:00.00" then
+				if sectorInfo.sectorIndex ~= 3 and sectorInfo.timerText == "00:00.00" then
 					sectorInfo.sectorIndex = 2
                     sector = sectors[sectorInfo.sectorIndex]
                     resetSectors()
@@ -924,11 +923,11 @@ end
 local initialized = false
 -- Main script
 function script.drawUI()
-	if serverIp == ac.getServerIP() then
+	--if serverIp == ac.getServerIP() then
 		hudUI()
 		onlineEventMessage()
 		raceUI()
-	end
+	--end
 end
 
 function script.update(dt)
@@ -938,8 +937,9 @@ function script.update(dt)
     else
         sectorUpdate()
         raceUpdate(dt)
+
     end
 end
 
-ui.registerOnlineExtra(ui.Icons.Settings, 'Sectors', nil, sectorUI, nil, ui.OnlineExtraFlags.Tool)
-ui.registerOnlineExtra(ui.Icons.Settings, 'Settings', nil, uiHUD, nil, ui.OnlineExtraFlags.Tool)
+ui.registerOnlineExtra(ui.Icons.Settings, 'Sectors', nil, sectorUI, nil, ui.OnlineExtraFlags.None)
+ui.registerOnlineExtra(ui.Icons.Settings, 'Settings', nil, uiHUD, nil, ui.OnlineExtraFlags.None)
