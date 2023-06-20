@@ -73,7 +73,32 @@ local sectors = {
 
 local sector = nil
 
--- Init
+----------------------------------------------------------------------------------------------- Math -----------------------------------------------------------------------------------------------
+
+local function distance(youPos, midPos)
+	local l = youPos.x - midPos.x
+	local k = youPos.y - midPos.y
+	local n = l * l + k * k
+	local lo, hi = 0, n
+    while lo <= hi do
+        local mid = math.floor((lo + hi)/2)
+        if mid*mid <= n then
+            lo = mid + 1
+        else
+            hi = mid - 1
+        end
+    end
+    return hi
+end
+
+local function distanceSquared(p1, p2)
+	return (p1.x - p2.x)^2 + (p1.y - p2.y)^2
+end
+
+local function cross(vector1, vector2)
+	return vec2(vector1.x + vector2.x, vector1.y + vector2.y)
+end
+
 local function normalize(vector)
     local magnitude = math.sqrt(vector.x^2 + vector.y^2)
     if magnitude == 0 then
@@ -96,6 +121,14 @@ local function regionAroundLine(line)
 	return region
 end
 
+local function midPoint(p1, p2)
+	local point = vec3((p1.x + p2.x)/2, (p1.y + p2.y)/2, (p1.z + p2.z)/2)
+	local radius = distance(p1, p2)/2
+	return point, radius
+end
+
+-- Init
+
 local function initLines()
 	for i = 1, #sectors do
 		local lines = {}
@@ -105,15 +138,17 @@ local function initLines()
             line.p2 = vec2(sectors[i].linesData[j].z, sectors[i].linesData[j].w)
             line.dir = normalize(line.p2 - line.p1)
             line.region = regionAroundLine(line)
+			line.midPoint, line.radius = midPoint(sectors[i].pointsData[j][1], sectors[i].pointsData[j][2])
             table.insert(lines, line)
         end
 		sectors[i].lines = lines
 	end
     sector = sectors[1]
-	
 end
 
--- Settings
+----------------------------------------------------------------------------------------------- Settings -----------------------------------------------------------------------------------------------
+
+
 local showPreviewMsg = false
 local showPreviewDistanceBar = false
 COLORSMSGBG = rgbm(0.5,0.5,0.5,0.5)
@@ -297,8 +332,6 @@ local acpEvent = ac.OnlineEvent({
 	end
 end)
 
-
-
 local function doubleTrouble()
 	local players = {}
 	for i = ac.getSim().carsCount - 1, 0, -1 do
@@ -480,30 +513,6 @@ end
 local timeStartRace = 0
 
 -- Functions --
-
-local function distance(youPos, midPos)
-	local l = youPos.x - midPos.x
-	local k = youPos.y - midPos.y
-	local n = l * l + k * k
-	local lo, hi = 0, n
-    while lo <= hi do
-        local mid = math.floor((lo + hi)/2)
-        if mid*mid <= n then
-            lo = mid + 1
-        else
-            hi = mid - 1
-        end
-    end
-    return hi
-end
-
-local function distanceSquared(p1, p2)
-	return (p1.x - p2.x)^2 + (p1.y - p2.y)^2
-end
-
-local function cross(vector1, vector2)
-	return vec2(vector1.x + vector2.x, vector1.y + vector2.y)
-end
 
 local function hasWin(winner)
 	raceFinish.winner = winner
@@ -1018,7 +1027,9 @@ end
 local function sectorDraw()
 	local lineToRender = sector.pointsData[sectorInfo.checkpoints]
 	render.debugSphere(vec3(172.27, 3.23, -538.84), 0.3)
-	render.debugLine(lineToRender[1], lineToRender[2])
+	if render.isVisible(sector.line[sectorInfo.checkpoints].midPoint, sector.line[sectorInfo.checkpoints].radius) then
+		render.debugLine(lineToRender[1], lineToRender[2])
+	end
 end
 
 -------------------------------------------------------------------------------------------- Main script --------------------------------------------------------------------------------------------
