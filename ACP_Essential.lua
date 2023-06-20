@@ -41,21 +41,31 @@ local hudTheft = assetsFolder .. "iconTheft.png"
 local sectors = {
     {
         name = 'H1',
+		pointsData = {{vec3(-742.9, 0, 3558.7), vec3(-729.8, 0, 3542.8)},
+					{vec3(3008.2, 0, 1040.3), vec3(2998.8, 0, 1017.3)}},
         linesData = {vec4(-742.9, 3558.7, -729.8, 3542.8), vec4(3008.2, 1040.3, 2998.8, 1017.3)},
         length = 26.3,
     },
     {
         name = 'BOBs SCRAPYARD',
+		pointsData = {{vec3(-742.9, 0, 3558.7), vec3(-729.8, 0, 3542.8)},
+					{vec3(-3537.4, 0, -199.8), vec3(-3544.4, 0, -212.2)}},
         linesData = {vec4(-742.9, 3558.7, -729.8, 3542.8), vec4(-3537.4, -199.8, -3544.4, -212.2)},
         length = 6.35,
     },
     {
         name = 'DOUBLE TROUBLE',
+		pointsData = {{vec3(-742.9, 0, 3558.7), vec3(-729.8, 0, 3542.8)},
+					{vec3(-3537.4, 0, -199.8), vec3(-3544.4, 0, -212.2)}},
         linesData = {vec4(-742.9, 3558.7, -729.8, 3542.8), vec4(-3537.4, -199.8, -3544.4, -212.2)},
         length = 6.35,
     },
     {
         name = 'Velocity Vendetta',
+		pointsData = {{vec3(579.4, 0, -748.6), vec3(590.7, 0, -763.8)},
+					{vec3(-179, 0, 1424.0), vec3(-178, 0, 1338.2)},
+					{vec3(1185, 0, 2509.5), vec3(1178, 0, 2518.8)},
+					{vec3(460.9, 0, 2426.8), vec3(451.1, 0, 2433.5)}},
         linesData = {vec4(579.4, -748.6, 590.7, -763.8), vec4(-179, 1424.0, -178, 1338.2), vec4(1185, 2509.5, 1178, 2518.8), vec4(460.9, 2426.8, 451.1, 2433.5)},
         length = 9.1,
     }
@@ -994,6 +1004,23 @@ local function infoServer()
     end
 end
 
+------------------------------------------------------------------------------------------ Render Sectors -------------------------------------------------------------------------------------------
+-- Available Render funtions
+-- render.debugText(pos: vec3, text: string, color: rgbm = rgbm(1, 1, 1, 1), scale: number = 1, align: render.FontAlign = AC::FontAlign::center)
+-- render.debugSphere(center: vec3, radius: number, color: rgbm = rgbm(3, 0, 0, 1))
+-- render.debugCross(center: vec3, size: number, color: rgbm = rgbm(3, 0, 0, 1))
+-- render.debugBox(center: vec3, size: vec3, color: rgbm = rgbm(3, 0, 0, 1))
+-- render.debugPoint(center: vec3, size: number, color: rgbm = rgbm(3, 0, 0, 1))
+-- render.debugPlane(center: vec3, dir: vec3, color: rgbm = rgbm(3, 0, 0, 1), size: number = 1)
+-- render.debugLine(from: vec3, to: vec3, color: rgbm = rgbm(3, 0, 0, 1))
+-- render.debugArrow(from: vec3, to: vec3, size: number = -1, color: rgbm = rgbm(3, 0, 0, 1))
+
+local function sectorDraw()
+	local lineToRender = sector.pointsData[sectorInfo.checkpoints]
+	render.debugSphere(vec3(172.27, 3.23, -538.84), 0.3)
+	render.debugLine(lineToRender[1], lineToRender[2])
+end
+
 -------------------------------------------------------------------------------------------- Main script --------------------------------------------------------------------------------------------
 
 local initialized = false
@@ -1003,16 +1030,6 @@ function script.drawUI()
 		hudUI()
 		onlineEventMessage()
 		raceUI()
-		if menuOpen then
-			ui.beginChild('Menu')
-			ui.tabBar('MainWindow', ui.TabBarFlags.Reorderable, function ()
-				ui.tabItem('Sectors', function () sectorUI() end)
-				ui.tabItem('Illegal Race', function () infoRace() end)
-				ui.tabItem('Infos', function () infoServer() end)
-				ui.tabItem('Settings', function () settings() end)
-			end)
-			ui.endChild()
-		end
 	--end
 end
 
@@ -1023,18 +1040,23 @@ function script.update(dt)
     else
         sectorUpdate()
         raceUpdate(dt)
+		if menuOpen then
+			ui.beginChild('Menu', vec2(), false, ui.WindowFlags.AlwaysAutoResize)
+			ui.tabBar('MainTabBar', ui.TabBarFlags.Reorderable, function ()
+				ui.tabItem('Sectors', function () sectorUI() end)
+				ui.tabItem('Illegal Race', function () infoRace() end)
+				ui.tabItem('Infos', function () infoServer() end)
+				ui.tabItem('Settings', function () settings() end)
+			end)
+			ui.endChild()
+		end
     end
 end
 
 function script.draw3D()
-	if not initialized then
-		initialized = true
-		initLines()
-	else
+	if initialized and SETTINGS.current == 4 then
 		sectorDraw()
-		raceDraw()
 	end
 end
-
+--assettocorsa\extension\internal\lua-sdk\ac_apps\lib.lua
 ui.registerOnlineExtra(ui.Icons.Settings, 'Settings', nil, settings, nil, ui.OnlineExtraFlags.Tool, ui.WindowFlags.AlwaysAutoResize)
---ui.registerOnlineExtra(iconID: string, title: string, availableCallback: integer, uiCallback: integer, closeCallback: integer, flags: ui.OnlineExtraFlags, toolFlags: ui.WindowFlags = ImGuiWindowFlags_None, toolSize: vec2 = vec2(320, 400)): lua_linked_id
