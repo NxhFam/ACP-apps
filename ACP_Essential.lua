@@ -3,6 +3,7 @@ local sim = ac.getSim()
 local car = ac.getCar(0)
 local windowWidth = sim.windowWidth
 local windowHeight = sim.windowHeight
+local menuOpen = false
 
 SETTINGS = ac.storage {
 	showStats = true,
@@ -27,7 +28,7 @@ SETTINGS.statsFont = SETTINGS.statsSize * windowHeight/1440
 ui.setAsynchronousImagesLoading(true)
 local imageSize = vec2(windowHeight/80 * SETTINGS.statsSize, windowHeight/80 * SETTINGS.statsSize)
 ---------------------TO DO---------------------
-local assetsFolder = ac.getFolder(ac.FolderID.ACApps) .. "/lua/ACP_Essential/Assets/HUD/"
+local assetsFolder = ac.getFolder(ac.FolderID.ContentTracks) .. "/ACP/HUD/"
 local hudBase = assetsFolder .. "hudBase.png"
 local hudLeft = assetsFolder .. "hudLeft.png"
 local hudRight = assetsFolder .. "hudRight.png"
@@ -168,7 +169,7 @@ local function uiTab()
 end
 
 
-local function uiHUD()
+local function settings()
 	imageSize = vec2(windowHeight/80 * SETTINGS.statsSize, windowHeight/80 * SETTINGS.statsSize)
 	if ui.checkbox('Show HUD', SETTINGS.showStats) then SETTINGS.showStats = not SETTINGS.showStats end
 	SETTINGS.statsOffsetX = ui.slider('##' .. 'HUD Offset X', SETTINGS.statsOffsetX, 0, windowWidth, 'HUD Offset X' .. ': %.0f')
@@ -188,7 +189,8 @@ local function uiHUD()
     uiTab()
 end
 
--- Sectors
+----------------------------------------------------------------------------------------------- Sectors -----------------------------------------------------------------------------------------------
+-- Variables --
 local sectorInfo = {
 	time = 0,
 	timerText = '00:00.00',
@@ -222,7 +224,47 @@ local function dot(vector1, vector2)
 	return vector1.x * vector2.x + vector1.y * vector2.y
 end
 
----------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------- UI ----------------------------------------------------------------------------------------------------
+-- Functions --
+
+local function discordLinks()
+	ui.newLine(10)
+	ui.dwriteTextWrapped("For more info about the challenge click on the Discord link :", 15, rgbm.colors.white)
+	if sectorInfo.sectorIndex == 1 then
+		if ui.textHyperlink("H1 Races Discord") then
+			os.openURL("https://discord.com/channels/358562025032646659/1073622643145703434")
+		end
+		ui.sameLine()
+		if ui.textHyperlink("H1 Vertex Discord") then
+			os.openURL("https://discord.com/channels/358562025032646659/1088832930698231959")
+		end
+	elseif sectorInfo.sectorIndex == 2 then
+		if ui.textHyperlink("BOB's Scrapyard Discord") then
+			os.openURL("https://discord.com/channels/358562025032646659/1096776154217709629")
+		end
+	elseif sectorInfo.sectorIndex == 3 then
+		if ui.textHyperlink("Double Trouble Discord") then
+			os.openURL("https://discord.com/channels/358562025032646659/1097229381308530728")
+		end
+	elseif sectorInfo.sectorIndex  == #sectors then
+		if ui.textHyperlink("Velocity Vendetta Discord") then
+			os.openURL("https://discord.com/channels/358562025032646659/1118046532168589392")
+		end
+		if ui.textHyperlink("Route Showcase") then
+			os.openURL("https://youtu.be/TI11PdTJgH8")
+		end
+		ui.sameLine()
+		ui.text("Youtube Video")
+		ui.newLine()
+		ui.dwriteTextWrapped("Challenge Description Week 1 :", 20, rgbm.colors.white)
+		ui.dwriteTextWrapped("\n\nThis week's challenge is open to all C Class Cars (tuning allowed)."..
+		"\n\nStart Line: 🚦 The start line is located at the end of the series of 2 S bends on H3."..
+		"\nCheckpoint 1: ✅ The first checkpoint is situated at the start line of the Drag strip."..
+		"\nCheckpoint 2: ✅ You'll find the second checkpoint at the junction of the road forming a Y shape, connecting H1 and C1, in front of the spawn parking."..
+		"\nFinish Line: 🏁 The finish line is located on the left area after the ramp of the MC Danalds when facing it."..
+		"\n\nIMPORTANT: In order to complete the challenge you have to drive through the finish line in reverse.", 15, rgbm.colors.white)
+	end
+end
 
 local acpEvent = ac.OnlineEvent({
     message = ac.StructItem.string(110),
@@ -244,6 +286,8 @@ local acpEvent = ac.OnlineEvent({
 		resetSectors()
 	end
 end)
+
+
 
 local function doubleTrouble()
 	local players = {}
@@ -299,6 +343,7 @@ local function sectorSelect()
 			end
 		end
 	end)
+	discordLinks()
 end
 
 local function sectorUI()
@@ -381,7 +426,8 @@ local function sectorUpdate()
 end
 
 -- Online Interactions
--- Races Opponents
+--------------------------------------------------------------------------------------- Races Opponents -----------------------------------------------------------------------------------------------
+-- Variables --
 local horn = {
 	lastState = false,
 	stateChangedCount = 0,
@@ -422,6 +468,8 @@ local function resetRequest()
 end
 
 local timeStartRace = 0
+
+-- Functions --
 
 local function distance(youPos, midPos)
 	local l = youPos.x - midPos.x
@@ -662,7 +710,8 @@ local function raceUI()
 	ui.popDWriteFont()
 end
 
--- Police Chase
+--------------------------------------------------------------------------------------- Police Chase --------------------------------------------------------------------------------------------------
+
 local online = {
 	message = "",
 	messageTimer = 0,
@@ -745,7 +794,8 @@ local function onlineEventMessage()
 	end
 end
 
--- HUD
+-------------------------------------------------------------------------------------------- HUD -------------------------------------------------------------------------------------------------------
+
 local statOn = {
 	[1] = "Distance Driven",
 	[2] = "Races",
@@ -867,8 +917,7 @@ local function drawImage()
 	elseif ui.rectHovered(menuPos2, menuPos1) then
 		iconsColorOn[2] = SETTINGS.colorHud
 		if uiStats.isMouseLeftKeyClicked then
-			if ac.isWindowOpen('Settings') then ac.setWindowOpen('Settings', false)
-			else ac.setWindowOpen('Settings', true) end
+			if menuOpen then menuOpen = false else menuOpen = true end
 		end
 	elseif ui.rectHovered(countdownPos2, countdownPos1) then
 		iconsColorOn[3] = SETTINGS.colorHud
@@ -920,13 +969,50 @@ local function hudUI()
 	end
 end
 
+local function infoRace()
+    ui.dwriteTextWrapped("\nIllegal street racing in a one-on-one format is surprisingly simple. Here's how it works:" ..
+    "\n\n- The race initiator honks their horn twice to indicate the desire to race." ..
+    "\n- The potential opponent responds with two horn honks to accept the invitation." ..
+    "\n- The race takes place between the two participants, the app will inform both with a status bar showing the distance from the opponent" ..
+    "\n\n- Optionally, If both participants agree, they can decide on a bet amount before the race." ..
+    "\n- After the race, the loser is responsible for settling their financial obligations." ..
+    "\n- The unsuccessful participant can use the '/pay' command in the dedicated STREET-RACING Discord channel to settle the bet." ..
+    "\n\nPlease be aware that illegal street racing is against the law and extremely dangerous.")
+    if ui.textHyperlink("Discord STREET-RACING") then
+        os.openURL("https://discord.com/channels/358562025032646659/1082294944162660454")
+    end
+end
+
+local function infoServer()
+    ui.dwriteTextWrapped('\nWelcome to ACP, a persistent Assetto Corsa server that allows you to forge your virtual street racer life with every passing day. Unlike servers that periodically reset, ACP ensures that your progress remains untouched, empowering you to continuously accumulate and enhance your achievements without any interruptions. Prepare for a truly immersive and enduring gaming experience as your street racing journey unfolds, maintaining its integrity throughout.' ..
+    '\n\nWhat sets ACP apart is the integration of a unique "POINTS SYSTEM" in conjunction with your driving experience. Earned Points serve as a valuable currency, mirroring the real-life racing world. Utilize these Points to purchase cars and customize them to your liking, enabling you to tailor your virtual garage to perfection.' ..
+    "\n\nBut that's not all! For the daring and fearless racers, ACP presents the opportunity to wager your hard-earned Points during exhilarating illegal races. Take risks, push your limits, and embrace the thrill of high-stakes competitions." ..
+    "\n\nJoin us on ACP and embark on a racing adventure where every race, every achievement, and every bet contribute to your ever-evolving street racing legacy!")
+    ui.newLine()
+    if ui.textHyperlink("ACP Discord") then
+        os.openURL("https://discord.gg/acpursuit")
+    end
+end
+
+-------------------------------------------------------------------------------------------- Main script --------------------------------------------------------------------------------------------
+
 local initialized = false
--- Main script
+
 function script.drawUI()
 	--if serverIp == ac.getServerIP() then
 		hudUI()
 		onlineEventMessage()
 		raceUI()
+		if menuOpen then
+			ui.beginChild('Menu')
+			ui.tabBar('MainWindow', ui.TabBarFlags.Reorderable, function ()
+				ui.tabItem('Sectors', function () sectorUI() end)
+				ui.tabItem('Illegal Race', function () infoRace() end)
+				ui.tabItem('Infos', function () infoServer() end)
+				ui.tabItem('Settings', function () settings() end)
+			end)
+			ui.endChild()
+		end
 	--end
 end
 
@@ -937,9 +1023,18 @@ function script.update(dt)
     else
         sectorUpdate()
         raceUpdate(dt)
-
     end
 end
 
-ui.registerOnlineExtra(ui.Icons.Settings, 'Sectors', nil, sectorUI, nil, ui.OnlineExtraFlags.None)
-ui.registerOnlineExtra(ui.Icons.Settings, 'Settings', nil, uiHUD, nil, ui.OnlineExtraFlags.None)
+function script.draw3D()
+	if not initialized then
+		initialized = true
+		initLines()
+	else
+		sectorDraw()
+		raceDraw()
+	end
+end
+
+ui.registerOnlineExtra(ui.Icons.Settings, 'Settings', nil, settings, nil, ui.OnlineExtraFlags.Tool, ui.WindowFlags.AlwaysAutoResize)
+--ui.registerOnlineExtra(iconID: string, title: string, availableCallback: integer, uiCallback: integer, closeCallback: integer, flags: ui.OnlineExtraFlags, toolFlags: ui.WindowFlags = ImGuiWindowFlags_None, toolSize: vec2 = vec2(320, 400)): lua_linked_id
