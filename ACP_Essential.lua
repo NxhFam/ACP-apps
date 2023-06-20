@@ -129,6 +129,22 @@ end
 
 -- Init
 
+-- Contains a leaderboard of the best times for each player
+local googleSheet = "https://docs.google.com/spreadsheets/d/1nGG0NnPrw06r5-HGptbs4bqFoJfn2wsuJcNpiBAozu4/edit?usp=sharing"
+
+-- googleSheet
+-- Pos	Times	Driver	Car
+-- 1st	03:44.87	Emile	911 turbo
+-- 2nd	03:45.87	Wild_Boy	Supra
+-- 3rd	03:51.19	Ktapom	GT86
+-- 4th	03:51.52	Demonlockl9000	GT86
+-- 5th	03:51.64	APX	NSX
+-- 6th	03:55.17	Jim Daman	GT86
+-- 7th	03:55.42	Sim RIsky	Supra
+-- 8th	03:58.64	DINGO	GT86
+-- 9th	04:03.03	ThatOneGuy402	GT86
+-- 10th	04:07.49	blistqc	S15
+
 local function initLines()
 	for i = 1, #sectors do
 		local lines = {}
@@ -144,6 +160,24 @@ local function initLines()
 		sectors[i].lines = lines
 	end
     sector = sectors[1]
+	-- Print all times from the google sheet
+	web.get(googleSheet, function (err, response)
+		if err then
+			print(err)
+			return
+		end
+		local html = response.body
+		local times = {}
+		for line in html:gmatch("([^\n]*)\n?") do
+			local time = line:match("([%d:]+)")
+			if time then
+				table.insert(times, time)
+			end
+		end
+		for i = 1, #times do
+			ac.log(times[i])
+		end
+	end)
 end
 
 ----------------------------------------------------------------------------------------------- Settings -----------------------------------------------------------------------------------------------
@@ -1026,7 +1060,7 @@ end
 
 local function sectorDraw()
 	local lineToRender = sector.pointsData[sectorInfo.checkpoints]
-	render.debugSphere(vec3(172.27, 3.23, -538.84), 0.3)
+	render.debugSphere(vec3(172.27, 3.23, -538.84), 10)
 	if render.isVisible(sector.line[sectorInfo.checkpoints].midPoint, sector.line[sectorInfo.checkpoints].radius) then
 		render.debugLine(lineToRender[1], lineToRender[2])
 	end
