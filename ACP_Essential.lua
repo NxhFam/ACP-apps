@@ -27,7 +27,7 @@ SETTINGS = ac.storage {
 SETTINGS.statsFont = SETTINGS.statsSize * windowHeight/1440
 ui.setAsynchronousImagesLoading(true)
 local imageSize = vec2(windowHeight/80 * SETTINGS.statsSize, windowHeight/80 * SETTINGS.statsSize)
----------------------TO DO---------------------
+
 local assetsFolder = ac.getFolder(ac.FolderID.ContentTracks) .. "/acp_metaverse/HUD/"
 local hudBase = assetsFolder .. "hudBase.png"
 local hudLeft = assetsFolder .. "hudLeft.png"
@@ -36,9 +36,7 @@ local hudCenter = assetsFolder .. "hudCenter.png"
 local hudCountdown = assetsFolder .. "iconCountdown.png"
 local hudMenu = assetsFolder .. "iconMenu.png"
 local hudTheft = assetsFolder .. "iconTheft.png"
----------------------TO DO---------------------
 
-local planeNormal = vec3(0, 0, 1)
 
 local sectors = {
     {
@@ -134,18 +132,23 @@ end
 -- Contains a leaderboard of the best times for each player
 local googleSheet = "https://docs.google.com/spreadsheets/d/1nGG0NnPrw06r5-HGptbs4bqFoJfn2wsuJcNpiBAozu4/edit?usp=sharing"
 
--- googleSheet
--- Pos	Times	Driver	Car
--- 1st	03:44.87	Emile	911 turbo
--- 2nd	03:45.87	Wild_Boy	Supra
--- 3rd	03:51.19	Ktapom	GT86
--- 4th	03:51.52	Demonlockl9000	GT86
--- 5th	03:51.64	APX	NSX
--- 6th	03:55.17	Jim Daman	GT86
--- 7th	03:55.42	Sim RIsky	Supra
--- 8th	03:58.64	DINGO	GT86
--- 9th	04:03.03	ThatOneGuy402	GT86
--- 10th	04:07.49	blistqc	S15
+--- Check if a file or directory exists in this path
+local function exists(file)
+local ok, err, code = os.rename(file, file)
+if not ok then
+	if code == 13 then
+		-- Permission denied, but it exists
+		return true
+	end
+end
+return ok, err
+end
+
+--- Check if a directory exists in this path
+local function isdir(path)
+	-- "/" works on both Unix and Windows
+	return exists(path .. "/")
+end
 
 local function initLines()
 	for i = 1, #sectors do
@@ -161,8 +164,6 @@ local function initLines()
         end
 		sectors[i].lines = lines
 	end
-	planeNormal = normalize(vec2(sectors[1].lines[1].p2.y - sectors[1].lines[1].p1.y, sectors[1].lines[1].p1.x - sectors[1].lines[1].p2.x))
-	planeNormal = vec3(planeNormal.x, 0, planeNormal.y)
     sector = sectors[1]
 	-- Print all times from the google sheet
 	-- web.get(googleSheet, function (err, response)
