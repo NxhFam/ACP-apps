@@ -1,4 +1,3 @@
-local serverIp = "95.211.222.135"
 local sim = ac.getSim()
 local car = ac.getCar(0)
 local windowWidth = sim.windowWidth
@@ -22,13 +21,14 @@ SETTINGS = ac.storage {
 	msgOffsetY = 10,
 	msgOffsetX = windowWidth/2,
 	fontSizeMSG = 30,
+	menuPos = vec2(0, 0),
 }
 
 SETTINGS.statsFont = SETTINGS.statsSize * windowHeight/1440
 ui.setAsynchronousImagesLoading(true)
 local imageSize = vec2(windowHeight/80 * SETTINGS.statsSize, windowHeight/80 * SETTINGS.statsSize)
 ---------------------TO DO---------------------
-local assetsFolder = ac.getFolder(ac.FolderID.ContentTracks) .. "/ACP/HUD/"
+local assetsFolder = ac.getFolder(ac.FolderID.ContentTracks) .. "/acp_metaverse/HUD/"
 local hudBase = assetsFolder .. "hudBase.png"
 local hudLeft = assetsFolder .. "hudLeft.png"
 local hudRight = assetsFolder .. "hudRight.png"
@@ -38,34 +38,36 @@ local hudMenu = assetsFolder .. "iconMenu.png"
 local hudTheft = assetsFolder .. "iconTheft.png"
 ---------------------TO DO---------------------
 
+local planeNormal = vec3(0, 0, 1)
+
 local sectors = {
     {
         name = 'H1',
-		pointsData = {{vec3(-742.9, 0, 3558.7), vec3(-729.8, 0, 3542.8)},
-					{vec3(3008.2, 0, 1040.3), vec3(2998.8, 0, 1017.3)}},
+		pointsData = {{vec3(-742.9, 138.9, 3558.7), vec3(-729.8, 138.9, 3542.8)},
+					{vec3(3008.2, 73, 1040.3), vec3(2998.8, 73, 1017.3)}},
         linesData = {vec4(-742.9, 3558.7, -729.8, 3542.8), vec4(3008.2, 1040.3, 2998.8, 1017.3)},
         length = 26.3,
     },
     {
         name = 'BOBs SCRAPYARD',
-		pointsData = {{vec3(-742.9, 0, 3558.7), vec3(-729.8, 0, 3542.8)},
-					{vec3(-3537.4, 0, -199.8), vec3(-3544.4, 0, -212.2)}},
+		pointsData = {{vec3(-742.9, 139, 3558.7), vec3(-729.8, 139, 3542.8)},
+					{vec3(-3537.4, 23.8, -199.8), vec3(-3544.4, 23.8, -212.2)}},
         linesData = {vec4(-742.9, 3558.7, -729.8, 3542.8), vec4(-3537.4, -199.8, -3544.4, -212.2)},
         length = 6.35,
     },
     {
         name = 'DOUBLE TROUBLE',
-		pointsData = {{vec3(-742.9, 0, 3558.7), vec3(-729.8, 0, 3542.8)},
-					{vec3(-3537.4, 0, -199.8), vec3(-3544.4, 0, -212.2)}},
+		pointsData = {{vec3(-742.9, 139, 3558.7), vec3(-729.8, 139, 3542.8)},
+					{vec3(-3537.4, 23.8, -199.8), vec3(-3544.4, 23.8, -212.2)}},
         linesData = {vec4(-742.9, 3558.7, -729.8, 3542.8), vec4(-3537.4, -199.8, -3544.4, -212.2)},
         length = 6.35,
     },
     {
         name = 'Velocity Vendetta',
-		pointsData = {{vec3(579.4, 0, -748.6), vec3(590.7, 0, -763.8)},
-					{vec3(-179, 0, 1424.0), vec3(-178, 0, 1338.2)},
-					{vec3(1185, 0, 2509.5), vec3(1178, 0, 2518.8)},
-					{vec3(460.9, 0, 2426.8), vec3(451.1, 0, 2433.5)}},
+		pointsData = {{vec3(579.4, 16.5, -748.6), vec3(590.7, 17, -763.8)},
+					{vec3(-179, 24.3, 1424.0), vec3(-178, 24.3, 1338.2)},
+					{vec3(1185, 88.3, 2509.5), vec3(1178, 88.3, 2518.8)},
+					{vec3(460.9, 105.9, 2426.8), vec3(451.1, 105.9, 2433.5)}},
         linesData = {vec4(579.4, -748.6, 590.7, -763.8), vec4(-179, 1424.0, -178, 1338.2), vec4(1185, 2509.5, 1178, 2518.8), vec4(460.9, 2426.8, 451.1, 2433.5)},
         length = 9.1,
     }
@@ -123,7 +125,7 @@ end
 
 local function midPoint(p1, p2)
 	local point = vec3((p1.x + p2.x)/2, (p1.y + p2.y)/2, (p1.z + p2.z)/2)
-	local radius = distance(p1, p2)/2
+	local radius = distance(vec2(p1.x, p1.z), vec2(point.x, point.z))
 	return point, radius
 end
 
@@ -159,25 +161,27 @@ local function initLines()
         end
 		sectors[i].lines = lines
 	end
+	planeNormal = normalize(vec2(sectors[1].lines[1].p2.y - sectors[1].lines[1].p1.y, sectors[1].lines[1].p1.x - sectors[1].lines[1].p2.x))
+	planeNormal = vec3(planeNormal.x, 0, planeNormal.y)
     sector = sectors[1]
 	-- Print all times from the google sheet
-	web.get(googleSheet, function (err, response)
-		if err then
-			print(err)
-			return
-		end
-		local html = response.body
-		local times = {}
-		for line in html:gmatch("([^\n]*)\n?") do
-			local time = line:match("([%d:]+)")
-			if time then
-				table.insert(times, time)
-			end
-		end
-		for i = 1, #times do
-			ac.log(times[i])
-		end
-	end)
+	-- web.get(googleSheet, function (err, response)
+	-- 	if err then
+	-- 		print(err)
+	-- 		return
+	-- 	end
+	-- 	local html = response.body
+	-- 	local times = {}
+	-- 	for line in html:gmatch("([^\n]*)\n?") do
+	-- 		local time = line:match("([%d:]+)")
+	-- 		if time then
+	-- 			table.insert(times, time)
+	-- 		end
+	-- 	end
+	-- 	for i = 1, #times do
+	-- 		ac.log(times[i])
+	-- 	end
+	-- end)
 end
 
 ----------------------------------------------------------------------------------------------- Settings -----------------------------------------------------------------------------------------------
@@ -232,17 +236,19 @@ local function uiTab()
 	SETTINGS.msgOffsetY = ui.slider('##' .. 'Msg On Screen Offset Y', SETTINGS.msgOffsetY, 0, windowHeight, 'Msg On Screen Offset Y' .. ': %.0f')
 	SETTINGS.msgOffsetX = ui.slider('##' .. 'Msg On Screen Offset X', SETTINGS.msgOffsetX, 0, windowWidth, 'Msg On Screen Offset X' .. ': %.0f')
     ui.newLine()
-    if ui.button('Preview Message') then
+	ui.text('Preview : ')
+    if ui.button('Message') then
         showPreviewMsg = not showPreviewMsg
         if showPreviewMsg then showPreviewDistanceBar = false end
     end
     ui.sameLine()
-    if ui.button('Preview Distance Bar') then
+    if ui.button('Distance Bar') then
         showPreviewDistanceBar = not showPreviewDistanceBar
         if showPreviewDistanceBar then showPreviewMsg = false end
     end
     if showPreviewMsg then previewMSG() end
     if showPreviewDistanceBar then distanceBarPreview() end
+	ui.sameLine()
 	if ui.button('Offset X to center') then SETTINGS.msgOffsetX = windowWidth/2 end
 	ui.newLine()
 end
@@ -262,10 +268,11 @@ local function settings()
 
 	SETTINGS.colorString = colorHud.r .. ',' .. colorHud.g .. ',' .. colorHud.b .. ',' .. colorHud.mult
 	ui.newLine()
-	if ui.button('reset colors') then SETTINGS.colorString = '0,1,1,1' end
+	if ui.button('reset colors') then SETTINGS.colorString = '1,0,0,1' end
 	SETTINGS.colorHud = stringToColor(SETTINGS.colorString)
     ui.newLine()
     uiTab()
+	return 2
 end
 
 ----------------------------------------------------------------------------------------------- Sectors -----------------------------------------------------------------------------------------------
@@ -278,6 +285,7 @@ local sectorInfo = {
 	sectorIndex = 1,
 	distance = 0,
 	finished = false,
+	drawLine = false,
 }
 
 local duo = {
@@ -305,15 +313,16 @@ end
 
 ----------------------------------------------------------------------------------------------- UI ----------------------------------------------------------------------------------------------------
 -- Functions --
+local showDescription = false
 
 local function discordLinks()
-	ui.newLine(10)
+	ui.newLine(100)
 	ui.dwriteTextWrapped("For more info about the challenge click on the Discord link :", 15, rgbm.colors.white)
 	if sectorInfo.sectorIndex == 1 then
 		if ui.textHyperlink("H1 Races Discord") then
 			os.openURL("https://discord.com/channels/358562025032646659/1073622643145703434")
 		end
-		ui.sameLine()
+		ui.sameLine(150)
 		if ui.textHyperlink("H1 Vertex Discord") then
 			os.openURL("https://discord.com/channels/358562025032646659/1088832930698231959")
 		end
@@ -329,20 +338,14 @@ local function discordLinks()
 		if ui.textHyperlink("Velocity Vendetta Discord") then
 			os.openURL("https://discord.com/channels/358562025032646659/1118046532168589392")
 		end
+		ui.sameLine(200)
 		if ui.textHyperlink("Route Showcase") then
 			os.openURL("https://youtu.be/TI11PdTJgH8")
 		end
 		ui.sameLine()
 		ui.text("Youtube Video")
-		ui.newLine()
-		ui.dwriteTextWrapped("Challenge Description Week 1 :", 20, rgbm.colors.white)
-		ui.dwriteTextWrapped("\n\nThis week's challenge is open to all C Class Cars (tuning allowed)."..
-		"\n\nStart Line: 🚦 The start line is located at the end of the series of 2 S bends on H3."..
-		"\nCheckpoint 1: ✅ The first checkpoint is situated at the start line of the Drag strip."..
-		"\nCheckpoint 2: ✅ You'll find the second checkpoint at the junction of the road forming a Y shape, connecting H1 and C1, in front of the spawn parking."..
-		"\nFinish Line: 🏁 The finish line is located on the left area after the ramp of the MC Danalds when facing it."..
-		"\n\nIMPORTANT: In order to complete the challenge you have to drive through the finish line in reverse.", 15, rgbm.colors.white)
 	end
+	ui.newLine(10)
 end
 
 local acpEvent = ac.OnlineEvent({
@@ -411,6 +414,7 @@ local function doubleTrouble()
 end
 
 local function sectorSelect()
+	ui.setNextItemWidth(150)
 	ui.combo("Sector", sector.name, function ()
 		for i = 1, #sectors do
 			if ui.selectable(sectors[i].name, sector == sectors[i]) then
@@ -420,6 +424,19 @@ local function sectorSelect()
 			end
 		end
 	end)
+	if sectorInfo.sectorIndex  == #sectors then
+		ui.sameLine(220)
+		if ui.checkbox('Show Description', showDescription) then showDescription = not showDescription end
+		if showDescription then
+			ui.dwriteTextWrapped("\nChallenge Description Week 1 :", 20, rgbm.colors.white)
+			ui.dwriteTextWrapped("\nThis week's challenge is open to all C Class Cars (tuning allowed)."..
+			"\n\nStart Line: 🚦 The start line is located at the end of the series of 2 S bends on H3."..
+			"\n\nCheckpoint 1: ✅ The first checkpoint is situated at the start line of the Drag strip."..
+			"\n\nCheckpoint 2: ✅ You'll find the second checkpoint at the junction of the road forming a Y shape, connecting H1 and C1, in front of the spawn parking."..
+			"\n\nFinish Line: 🏁 The finish line is located on the left area after the ramp of the MC Danalds when facing it."..
+			"\n\n\nIMPORTANT: In order to complete the challenge you have to drive through the finish line in reverse.", 15, rgbm.colors.white)
+		end
+	end
 	discordLinks()
 end
 
@@ -446,6 +463,7 @@ local function sectorUI()
 			duo.request = false
 		end
 	end
+	return 1
 end
 
 local function textTimeFormat()
@@ -479,6 +497,7 @@ local function sectorUpdate()
 		sectorInfo.sectorIndex = 1
 		resetSectors()
 	end
+	if distanceSquared(vec2(car.position.x, car.position.z), vec2(sector.lines[sectorInfo.checkpoints].midPoint.x, sector.lines[sectorInfo.checkpoints].midPoint.z)) < 30000 then sectorInfo.drawLine = true else sectorInfo.drawLine = false end
 	if car.isInPit then resetSectors() end
 	if hasCrossedLine(sector.lines[sectorInfo.checkpoints]) then
 		if sectorInfo.checkpoints == 1 then
@@ -499,7 +518,7 @@ local function sectorUpdate()
 			end
 		else sectorInfo.checkpoints = sectorInfo.checkpoints + 1 end
 	end
-	if sectorInfo.checkpoints > 1 and sectorInfo.checkpoints < #sector.lines then textTimeFormat() end
+	if sectorInfo.checkpoints > 1 and not sectorInfo.finished then textTimeFormat() end
 end
 
 -- Online Interactions
@@ -822,7 +841,7 @@ local function showPoliceLights()
 	end
 end
 
-local function onlineEventMessage()
+local function onlineEventMessageUI()
 	if online.confirmed then
 		acpPolice{message = "Confirmed", messageType = 5, yourIndex = car.sessionID}
 		online.confirmed = false
@@ -1047,61 +1066,67 @@ local function infoServer()
     end
 end
 
------------------------------------------------------------------------------------------- Render Sectors -------------------------------------------------------------------------------------------
--- Available Render funtions
--- render.debugText(pos: vec3, text: string, color: rgbm = rgbm(1, 1, 1, 1), scale: number = 1, align: render.FontAlign = AC::FontAlign::center)
--- render.debugSphere(center: vec3, radius: number, color: rgbm = rgbm(3, 0, 0, 1))
--- render.debugCross(center: vec3, size: number, color: rgbm = rgbm(3, 0, 0, 1))
--- render.debugBox(center: vec3, size: vec3, color: rgbm = rgbm(3, 0, 0, 1))
--- render.debugPoint(center: vec3, size: number, color: rgbm = rgbm(3, 0, 0, 1))
--- render.debugPlane(center: vec3, dir: vec3, color: rgbm = rgbm(3, 0, 0, 1), size: number = 1)
--- render.debugLine(from: vec3, to: vec3, color: rgbm = rgbm(3, 0, 0, 1))
--- render.debugArrow(from: vec3, to: vec3, size: number = -1, color: rgbm = rgbm(3, 0, 0, 1))
-
-local function sectorDraw()
-	local lineToRender = sector.pointsData[sectorInfo.checkpoints]
-	render.debugSphere(vec3(172.27, 3.23, -538.84), 10)
-	if render.isVisible(sector.line[sectorInfo.checkpoints].midPoint, sector.line[sectorInfo.checkpoints].radius) then
-		render.debugLine(lineToRender[1], lineToRender[2])
-	end
+local function info()
+	ui.tabBar('InfoTabBar', ui.TabBarFlags.Reorderable, function ()
+		ui.tabItem('Illegal street racing', function () infoRace() end)
+		ui.tabItem('General Server Info', function () infoServer() end)
+	end)
 end
 
 -------------------------------------------------------------------------------------------- Main script --------------------------------------------------------------------------------------------
 
+
 local initialized = false
+local menuSize = {vec2(windowWidth/4, windowHeight/3), vec2(windowWidth/6, windowHeight*2/3)}
+local currentTab = 1
+local buttonPressed = false
+
+local function menu()
+	ui.tabBar('MainTabBar', ui.TabBarFlags.Reorderable, function ()
+		ui.tabItem('Sectors', function () currentTab = sectorUI() end)
+		ui.tabItem('Settings', function () currentTab = settings() end)
+	end)
+	if ui.modernButton('Close', vec2(100, 50), ui.ButtonFlags.None, ui.Icons.Leave, 20, nil) then menuOpen = false end
+end
+
+local function moveMenu()
+	if ui.windowHovered() and ui.mouseDown() then buttonPressed = true end
+	if ui.mouseReleased() then buttonPressed = false end
+	if buttonPressed then SETTINGS.menuPos = SETTINGS.menuPos + ui.mouseDelta() end
+end
 
 function script.drawUI()
-	--if serverIp == ac.getServerIP() then
+	if initialized then
 		hudUI()
-		onlineEventMessage()
+		onlineEventMessageUI()
 		raceUI()
-	--end
+		if menuOpen then
+			ui.toolWindow('Menu', SETTINGS.menuPos, menuSize[currentTab], false, function ()
+				ui.childWindow('childMenu', menuSize[currentTab], false, function ()
+					menu()
+					moveMenu()
+				end)
+			end)
+		end
+	end
 end
 
 function script.update(dt)
-    if not initialized then
-        initialized = true
-        initLines()
-    else
-        sectorUpdate()
-        raceUpdate(dt)
-		if menuOpen then
-			ui.beginChild('Menu', vec2(), false, ui.WindowFlags.AlwaysAutoResize)
-			ui.tabBar('MainTabBar', ui.TabBarFlags.Reorderable, function ()
-				ui.tabItem('Sectors', function () sectorUI() end)
-				ui.tabItem('Illegal Race', function () infoRace() end)
-				ui.tabItem('Infos', function () infoServer() end)
-				ui.tabItem('Settings', function () settings() end)
-			end)
-			ui.endChild()
-		end
-    end
+	if not initialized then
+		initialized = true
+		initLines()
+	else
+		sectorUpdate()
+		raceUpdate(dt)
+	end
 end
 
 function script.draw3D()
 	if initialized and SETTINGS.current == 4 then
-		sectorDraw()
+		local lineToRender = sector.pointsData[sectorInfo.checkpoints]
+		if sectorInfo.drawLine then render.debugLine(lineToRender[1], lineToRender[2], rgbm(0,100,0,1)) end
 	end
 end
---assettocorsa\extension\internal\lua-sdk\ac_apps\lib.lua
-ui.registerOnlineExtra(ui.Icons.Settings, 'Settings', nil, settings, nil, ui.OnlineExtraFlags.Tool, ui.WindowFlags.AlwaysAutoResize)
+
+--ui.registerOnlineExtra(ui.Icons.Menu, 'Menu', nil, menu, nil, ui.OnlineExtraFlags.Tool, ui.WindowFlags.AlwaysAutoResize)
+ui.registerOnlineExtra(ui.Icons.Info, 'Info', nil, info, nil, ui.OnlineExtraFlags.Tool)
