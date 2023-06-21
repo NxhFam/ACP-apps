@@ -1086,7 +1086,7 @@ local function menu()
 		ui.tabItem('Sectors', function () currentTab = sectorUI() end)
 		ui.tabItem('Settings', function () currentTab = settings() end)
 	end)
-	if ui.modernButton('Close', vec2(100, 50), ui.ButtonFlags.None, ui.Icons.Leave, 20, nil) then menuOpen = false end
+	if ui.button('Close', vec2(100, 50)) then menuOpen = false end
 end
 
 local function moveMenu()
@@ -1101,12 +1101,12 @@ function script.drawUI()
 		onlineEventMessageUI()
 		raceUI()
 		if menuOpen then
-			ui.beginToolWindow('Menu', SETTINGS.menuPos, menuSize[currentTab], false)
+			ui.toolWindow('Menu', SETTINGS.menuPos, menuSize[currentTab], false, function ()
 				ui.childWindow('childMenu', menuSize[currentTab], false, function ()
 					menu()
 					moveMenu()
 				end)
-			ui.endToolWindow()
+			end)
 		end
 	end
 end
@@ -1128,5 +1128,5 @@ function script.draw3D()
 	end
 end
 
---ui.registerOnlineExtra(ui.Icons.Menu, 'Menu', nil, menu, nil, ui.OnlineExtraFlags.Tool, ui.WindowFlags.AlwaysAutoResize)
+--ui.registerOnlineExtra(ui.Icons.Menu, 'Menu', nil, menu, nil, ui.OnlineExtraFlags.Tool)
 ui.registerOnlineExtra(ui.Icons.Info, 'Info', nil, info, nil, ui.OnlineExtraFlags.Tool)
