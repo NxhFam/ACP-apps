@@ -1101,12 +1101,12 @@ function script.drawUI()
 		onlineEventMessageUI()
 		raceUI()
 		if menuOpen then
-			ui.toolWindow('Menu', SETTINGS.menuPos, menuSize[currentTab], false, function ()
+			ui.beginToolWindow('Menu', SETTINGS.menuPos, menuSize[currentTab], false)
 				ui.childWindow('childMenu', menuSize[currentTab], false, function ()
 					menu()
 					moveMenu()
 				end)
-			end)
+			ui.endToolWindow()
 		end
 	end
 end
