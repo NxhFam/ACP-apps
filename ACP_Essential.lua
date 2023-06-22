@@ -4,25 +4,28 @@ local windowWidth = sim.windowWidth
 local windowHeight = sim.windowHeight
 local menuOpen = false
 
-SETTINGS = ac.storage {
-	showStats = true,
-    racesWon = 0,
-    racesLost = 0,
-    busted = 0,
-    statsSize = 20,
-    statsOffsetX = 0,
-	statsOffsetY = 0,
-    statsFont = 20,
-    current = 1,
-    colorHud = rgbm(1,0,0,1),
-	colorString = '1,0,0,1',
-	send = false,
-	timeMsg = 10,
-	msgOffsetY = 10,
-	msgOffsetX = windowWidth/2,
-	fontSizeMSG = 30,
-	menuPos = vec2(0, 0),
-}
+local SETTINGS = {}
+local sharedDataSettings = ac.connect({
+	ac.StructItem.key('ACP_essential_settings'),
+	showStats = ac.StructItem.boolean(),
+	racesWon = ac.StructItem.int16(),
+	racesLost = ac.StructItem.int16(),
+	busted = ac.StructItem.int16(),
+	statsSize = ac.StructItem.int16(),
+	statsOffsetX = ac.StructItem.int16(),
+	statsOffsetY = ac.StructItem.int16(),
+	statsFont = ac.StructItem.int16(),
+	current = ac.StructItem.int16(),
+	colorHud = ac.StructItem.rgbm(),
+	send = ac.StructItem.boolean(),
+	timeMsg = ac.StructItem.int16(),
+	msgOffsetY = ac.StructItem.int16(),
+	msgOffsetX = ac.StructItem.int16(),
+	fontSizeMSG = ac.StructItem.int16(),
+	menuPos = ac.StructItem.vec2(),
+}, true, ac.SharedNamespace.Shared)
+
+SETTINGS = sharedDataSettings
 
 SETTINGS.statsFont = SETTINGS.statsSize * windowHeight/1440
 ui.setAsynchronousImagesLoading(true)
@@ -129,27 +132,6 @@ end
 
 -- Init
 
--- Contains a leaderboard of the best times for each player
-local googleSheet = "https://docs.google.com/spreadsheets/d/1nGG0NnPrw06r5-HGptbs4bqFoJfn2wsuJcNpiBAozu4/edit?usp=sharing"
-
---- Check if a file or directory exists in this path
-local function exists(file)
-local ok, err, code = os.rename(file, file)
-if not ok then
-	if code == 13 then
-		-- Permission denied, but it exists
-		return true
-	end
-end
-return ok, err
-end
-
---- Check if a directory exists in this path
-local function isdir(path)
-	-- "/" works on both Unix and Windows
-	return exists(path .. "/")
-end
-
 local function initLines()
 	for i = 1, #sectors do
 		local lines = {}
@@ -165,24 +147,6 @@ local function initLines()
 		sectors[i].lines = lines
 	end
     sector = sectors[1]
-	-- Print all times from the google sheet
-	-- web.get(googleSheet, function (err, response)
-	-- 	if err then
-	-- 		print(err)
-	-- 		return
-	-- 	end
-	-- 	local html = response.body
-	-- 	local times = {}
-	-- 	for line in html:gmatch("([^\n]*)\n?") do
-	-- 		local time = line:match("([%d:]+)")
-	-- 		if time then
-	-- 			table.insert(times, time)
-	-- 		end
-	-- 	end
-	-- 	for i = 1, #times do
-	-- 		ac.log(times[i])
-	-- 	end
-	-- end)
 end
 
 ----------------------------------------------------------------------------------------------- Settings -----------------------------------------------------------------------------------------------
@@ -191,13 +155,6 @@ end
 local showPreviewMsg = false
 local showPreviewDistanceBar = false
 COLORSMSGBG = rgbm(0.5,0.5,0.5,0.5)
-
-local function stringToColor(sColor)
-	local r, g, b, a = sColor:match('(.+),(.+),(.+),(.+)')
-	return rgbm(tonumber(r), tonumber(g), tonumber(b), tonumber(a))
-end
-
-SETTINGS.colorHud = stringToColor(SETTINGS.colorString)
 
 local function distanceBarPreview()
 	ui.beginTransparentWindow("progressBar", vec2(0, 0), vec2(windowWidth, windowHeight))
@@ -266,11 +223,8 @@ local function settings()
     ui.setNextItemWidth(300)
 	local colorHud = SETTINGS.colorHud
     ui.colorPicker('Theme Color', colorHud, ui.ColorPickerFlags.AlphaBar)
-
-	SETTINGS.colorString = colorHud.r .. ',' .. colorHud.g .. ',' .. colorHud.b .. ',' .. colorHud.mult
 	ui.newLine()
 	if ui.button('reset colors') then SETTINGS.colorString = '1,0,0,1' end
-	SETTINGS.colorHud = stringToColor(SETTINGS.colorString)
     ui.newLine()
     uiTab()
 	return 2
@@ -1113,6 +1067,7 @@ function script.drawUI()
 end
 
 function script.update(dt)
+	SETTINGS = sharedDataSettings
 	if not initialized then
 		initialized = true
 		initLines()
@@ -1129,5 +1084,5 @@ function script.draw3D()
 	end
 end
 
---ui.registerOnlineExtra(ui.Icons.Menu, 'Menu', nil, menu, nil, ui.OnlineExtraFlags.Tool)
+ui.registerOnlineExtra(ui.Icons.Menu, 'Menu', nil, menu, nil, ui.OnlineExtraFlags.Tool)
 ui.registerOnlineExtra(ui.Icons.Info, 'Info', nil, info, nil, ui.OnlineExtraFlags.Tool)
