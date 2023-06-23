@@ -3,6 +3,7 @@ local car = ac.getCar(0)
 local windowWidth = sim.windowWidth
 local windowHeight = sim.windowHeight
 local menuOpen = false
+local settingsLoaded = true
 
 local sharedDataSettings = ac.connect({
 	ac.StructItem.key('ACP_essential_settings'),
@@ -129,6 +130,7 @@ end
 -- Init
 
 local function initSettings()
+	settingsLoaded = false
 	SETTINGS = {
 		showStats = true,
 		racesWon = 0,
@@ -1044,6 +1046,13 @@ local function infoServer()
     end
 end
 
+local function download()
+	ui.dwriteTextWrapped("Download the latest version of ACP Pursuit.", 30, rgbm.colors.white)
+	if ui.textHyperlink("ACP Patreon") then
+        os.openURL("https://www.patreon.com/posts/acp-download-51908849")
+    end
+end
+
 local function info()
 	ui.tabBar('InfoTabBar', ui.TabBarFlags.Reorderable, function ()
 		ui.tabItem('Illegal street racing', function () infoRace() end)
@@ -1060,11 +1069,14 @@ local currentTab = 1
 local buttonPressed = false
 
 local function menu()
-	ui.tabBar('MainTabBar', ui.TabBarFlags.Reorderable, function ()
-		ui.tabItem('Sectors', function () currentTab = sectorUI() end)
-		ui.tabItem('Settings', function () currentTab = settings() end)
-	end)
-	if ui.button('Close', vec2(100, 50)) then menuOpen = false end
+	if not settingsLoaded then download()
+	else
+		ui.tabBar('MainTabBar', ui.TabBarFlags.Reorderable, function ()
+			ui.tabItem('Sectors', function () currentTab = sectorUI() end)
+			ui.tabItem('Settings', function () currentTab = settings() end)
+		end)
+		if ui.button('Close', vec2(100, 50)) then menuOpen = false end
+	end
 end
 
 local function moveMenu()
@@ -1074,7 +1086,7 @@ local function moveMenu()
 end
 
 function script.drawUI()
-	if initialized then
+	if settingsLoaded and initialized then
 		hudUI()
 		onlineEventMessageUI()
 		raceUI()
@@ -1094,14 +1106,16 @@ function script.update(dt)
 		initialized = true
 		initLines()
 	else
-		sectorUpdate()
-		raceUpdate(dt)
-		sharedDataSettings = SETTINGS
+		if settingsLoaded then
+			sectorUpdate()
+			raceUpdate(dt)
+			sharedDataSettings = SETTINGS
+		end
 	end
 end
 
 function script.draw3D()
-	if initialized and SETTINGS.current == 4 then
+	if settingsLoaded and initialized and SETTINGS.current == 4 then
 		local lineToRender = sector.pointsData[sectorInfo.checkpoints]
 		if sectorInfo.drawLine then render.debugLine(lineToRender[1], lineToRender[2], rgbm(0,100,0,1)) end
 	end
