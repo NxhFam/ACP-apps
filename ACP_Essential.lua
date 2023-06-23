@@ -4,7 +4,6 @@ local windowWidth = sim.windowWidth
 local windowHeight = sim.windowHeight
 local menuOpen = false
 
-local SETTINGS = {}
 local sharedDataSettings = ac.connect({
 	ac.StructItem.key('ACP_essential_settings'),
 	showStats = ac.StructItem.boolean(),
@@ -25,13 +24,11 @@ local sharedDataSettings = ac.connect({
 	menuPos = ac.StructItem.vec2(),
 }, true, ac.SharedNamespace.Shared)
 
-SETTINGS = sharedDataSettings
 
-SETTINGS.statsFont = SETTINGS.statsSize * windowHeight/1440
 ui.setAsynchronousImagesLoading(true)
-local imageSize = vec2(windowHeight/80 * SETTINGS.statsSize, windowHeight/80 * SETTINGS.statsSize)
+local imageSize = vec2(0,0)
 
-local assetsFolder = ac.getFolder(ac.FolderID.ContentTracks) .. "/acp_metaverse/HUD/"
+local assetsFolder = ac.getFolder(ac.FolderID.ACApps) .. "/lua/ACP_essential/HUD/"
 local hudBase = assetsFolder .. "hudBase.png"
 local hudLeft = assetsFolder .. "hudLeft.png"
 local hudRight = assetsFolder .. "hudRight.png"
@@ -39,7 +36,6 @@ local hudCenter = assetsFolder .. "hudCenter.png"
 local hudCountdown = assetsFolder .. "iconCountdown.png"
 local hudMenu = assetsFolder .. "iconMenu.png"
 local hudTheft = assetsFolder .. "iconTheft.png"
-
 
 local sectors = {
     {
@@ -132,7 +128,34 @@ end
 
 -- Init
 
+local function initSettings()
+	SETTINGS = {
+		showStats = true,
+		racesWon = 0,
+		racesLost = 0,
+		busted = 0,
+		statsSize = 20,
+		statsOffsetX = 0,
+		statsOffsetY = 0,
+		statsFont = 20,
+		current = 1,
+		colorHud = rgbm(1,0,0,1),
+		send = false,
+		timeMsg = 10,
+		msgOffsetY = 10,
+		msgOffsetX = windowWidth/2,
+		fontSizeMSG = 30,
+		menuPos = vec2(0, 0),
+	}
+end
+
+
 local function initLines()
+	ac.log(sharedDataSettings.showStats)
+	if not sharedDataSettings.showStats then initSettings()
+	else SETTINGS = sharedDataSettings end
+	SETTINGS.statsFont = SETTINGS.statsSize * windowHeight/1440
+	imageSize = vec2(windowHeight/80 * SETTINGS.statsSize, windowHeight/80 * SETTINGS.statsSize)
 	for i = 1, #sectors do
 		local lines = {}
 		for j = 1, #sectors[i].linesData do
@@ -1067,13 +1090,13 @@ function script.drawUI()
 end
 
 function script.update(dt)
-	SETTINGS = sharedDataSettings
 	if not initialized then
 		initialized = true
 		initLines()
 	else
 		sectorUpdate()
 		raceUpdate(dt)
+		sharedDataSettings = SETTINGS
 	end
 end
 
