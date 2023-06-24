@@ -767,11 +767,7 @@ end
 local online = {
 	message = "",
 	messageTimer = 0,
-	sender = nil,
 	type = nil,
-	confirmed = false,
-	chased = false,
-	police = nil,
 }
 
 local acpPolice = ac.OnlineEvent({
@@ -779,7 +775,6 @@ local acpPolice = ac.OnlineEvent({
 	messageType = ac.StructItem.int16(),
 	yourIndex = ac.StructItem.int16(),
 }, function (sender, data)
-	online.sender = sender
 	online.type = data.messageType
 	if data.yourIndex == car.sessionID and data.messageType == 0 then
 		online.message = data.message
@@ -791,10 +786,6 @@ local acpPolice = ac.OnlineEvent({
 		online.message = data.message
 		online.messageTimer = SETTINGS.timeMsg
 		SETTINGS.busted = SETTINGS.busted + 1
-	elseif data.yourIndex == car.sessionID and data.messageType == 5 and data.message == "Confirm" then
-		online.confirmed = true
-		online.chased = true
-		online.police = sender
 	end
 end)
 
@@ -822,16 +813,10 @@ local function showPoliceLights()
 end
 
 local function onlineEventMessageUI()
-	if online.confirmed then
-		acpPolice{message = "Confirmed", messageType = 5, yourIndex = car.sessionID}
-		online.confirmed = false
-	end
 	if online.messageTimer > 0 then
 		online.messageTimer = online.messageTimer - ui.deltaTime()
 		if online.type == 2 then
 			showPoliceLights()
-			online.chased = false
-			online.police = nil
 		else
 			online.message = string.gsub(online.message,"*", "⭐")
 			local textSize = ui.measureDWriteText(online.message, SETTINGS.fontSizeMSG)
