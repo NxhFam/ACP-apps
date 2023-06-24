@@ -248,8 +248,6 @@ local function settings()
     ui.setNextItemWidth(300)
 	local colorHud = SETTINGS.colorHud
     ui.colorPicker('Theme Color', colorHud, ui.ColorPickerFlags.AlphaBar)
-	ui.newLine()
-	if ui.button('reset colors') then SETTINGS.colorString = '1,0,0,1' end
     ui.newLine()
     uiTab()
 	return 2
