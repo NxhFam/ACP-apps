@@ -818,12 +818,17 @@ local function onlineEventMessageUI()
 		if online.type == 2 then
 			showPoliceLights()
 		else
-			online.message = string.gsub(online.message,"*", "⭐")
-			local textSize = ui.measureDWriteText(online.message, SETTINGS.fontSizeMSG)
-			local uiOffsetX = math.floor((windowWidth - textSize.x)/2)
-			local uiOffsetY = SETTINGS.msgOffsetY
-			ui.drawRectFilled(vec2(uiOffsetX - 5, uiOffsetY-5), vec2(uiOffsetX + textSize.x + 5, uiOffsetY + textSize.y + 5), COLORSMSGBG)
-			ui.dwriteDrawText(online.message, SETTINGS.fontSizeMSG, vec2(uiOffsetX, uiOffsetY), SETTINGS.colorHud)
+			local text = string.gsub(online.message,"*", "⭐")
+			local textLenght = ui.measureDWriteText(text, SETTINGS.fontSizeMSG)
+			local rectPos1 = vec2(SETTINGS.msgOffsetX - textLenght.x/2, SETTINGS.msgOffsetY)
+			local rectPos2 = vec2(SETTINGS.msgOffsetX + textLenght.x/2, SETTINGS.msgOffsetY + SETTINGS.fontSizeMSG)
+			local rectOffset = vec2(10, 10)
+			if ui.time() % 1 < 0.5 then
+				ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, COLORSMSGBG, 10)
+			else
+				ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, rgbm(0,0,0,0.5), 10)
+			end
+			ui.dwriteDrawText(text, SETTINGS.fontSizeMSG, rectPos1, rgbm.colors.white)
 		end
 	elseif online.messageTimer < 0 then
 		online.message = ""
