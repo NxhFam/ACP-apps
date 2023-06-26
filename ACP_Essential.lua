@@ -145,12 +145,13 @@ local function initSettings()
 		statsFont = 20,
 		current = 1,
 		colorHud = rgbm(1,0,0,1),
-		send = false,
 		timeMsg = 10,
 		msgOffsetY = 10,
 		msgOffsetX = windowWidth/2,
 		fontSizeMSG = 30,
 		menuPos = vec2(0, 0),
+		unit = "Kmh",
+		unitMult = 1,
 	}
 end
 
