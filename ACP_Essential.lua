@@ -1111,6 +1111,7 @@ function script.draw3D()
 		if sectorInfo.drawLine then render.debugLine(lineToRender[1], lineToRender[2], rgbm(0,100,0,1)) end
 	end
 end
-
-ui.registerOnlineExtra(ui.Icons.Menu, 'Menu', nil, menu, nil, ui.OnlineExtraFlags.Tool)
+if ac.getCarID(0) ~= valideCar[1] and ac.getCarID(0) ~= valideCar[2] then
+	ui.registerOnlineExtra(ui.Icons.Menu, 'Menu', nil, menu, nil, ui.OnlineExtraFlags.Tool)
+end
 ui.registerOnlineExtra(ui.Icons.Info, 'Info', nil, info, nil, ui.OnlineExtraFlags.Tool)
