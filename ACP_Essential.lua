@@ -4,6 +4,7 @@ local windowWidth = sim.windowWidth
 local windowHeight = sim.windowHeight
 local menuOpen = false
 local settingsLoaded = true
+local valideCar = {"chargerpolice_acpursuit", "ks_mclaren_650_gt3"}
 
 local sharedDataSettings = ac.connect({
 	ac.StructItem.key('ACP_essential_settings'),
@@ -1092,6 +1093,7 @@ end
 
 function script.update(dt)
 	if not initialized then
+		if ac.getCarID(0) == valideCar[1] or ac.getCarID(0) == valideCar[2] then return end
 		initialized = true
 		initLines()
 	else
