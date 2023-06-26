@@ -25,6 +25,7 @@ local sharedDataSettings = ac.connect({
 	fontSizeMSG = ac.StructItem.int16(),
 	menuPos = ac.StructItem.vec2(),
 	unit = ac.StructItem.string(4),
+	unitMult = ac.StructItem.float(),
 }, true, ac.SharedNamespace.Shared)
 
 
