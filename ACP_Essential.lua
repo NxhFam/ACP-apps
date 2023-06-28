@@ -1048,13 +1048,8 @@ local function hudUI()
 end
 -------------------------------------------------------------------------------- END HUD --------------------------------------------------------------------------------
 local leaderboards = {}
-local leaderboardVV = {}
-local leaderboardH1 = {}
-leaderboardH1.name = "H1"
-leaderboardVV.name = "Velocity Vendetta"
-local leaderboard = leaderboardH1
-local vvUpdated = false
-local h1Updated = false
+local leaderboardActive = {}
+local leaderboardUpdated = false
 
 
 local function sortLeaderboard(leaderboard)
@@ -1075,7 +1070,8 @@ local function sortLeaderboard(leaderboard)
 	end
 end
 
-local function loadLeaderboard(getUrl, leaderboard)
+local function loadLeaderboard(getUrl)
+	local leaderboard = {}
 	web.get(getUrl, function(err, response)
 		if err then
 			print("Error: " .. err)
@@ -1097,6 +1093,16 @@ local function loadLeaderboard(getUrl, leaderboard)
 		ac.log(#leaderboard .. " entries in leaderboard")
 		sortLeaderboard(leaderboard)
 	end)
+	if #leaderboards < 2 then
+		--ac.log(#leaderboards)
+		if #leaderboards == 0 then 
+			leaderboard.name = "H1" 
+			leaderboardActive = leaderboard
+		else leaderboard.name = "Velocity Vendetta" end
+		table.insert(leaderboards, leaderboard)
+	else
+		if leaderboard.name == "Velocity Vendetta" then leaderboards[2] = leaderboard else leaderboards[1] = leaderboard end
+	end
 end
 
 local function displayInGrid(leaderboard)
@@ -1139,18 +1145,17 @@ local function showLeaderboard()
 	ui.dummy(vec2(windowWidth/20, 0))
 	ui.sameLine()
 	ui.setNextItemWidth(windowWidth/12)
-	ui.combo("Leaderboard", leaderboard.name, function ()
+	ui.combo("Leaderboard", leaderboardActive.name, function ()
 		for i = 1, #leaderboards do
-			if ui.selectable(leaderboards[i].name, leaderboard == leaderboards[i]) then
-				leaderboard = leaderboards[i]
+			if ui.selectable(leaderboards[i].name, leaderboardActive == leaderboards[i]) then
+				leaderboardActive = leaderboards[i]
 			end
 		end
 	end)
 	ui.sameLine(windowWidth/4 - 100)
 	if ui.button('Close', vec2(100, windowHeight/50)) then menuOpen = false end
 	ui.newLine()
-	displayInGrid(leaderboard)
-	--end)
+	displayInGrid(leaderboardActive)
 	return 1
 end
 
@@ -1239,23 +1244,20 @@ function script.update(dt)
 	if not initialized then
 		if ac.getCarID(0) == valideCar[1] or ac.getCarID(0) == valideCar[2] then return end
 		initialized = true
-		loadLeaderboard(getH1, leaderboardH1)
+		loadLeaderboard(getH1)
 		initLines()
-		loadLeaderboard(getVV, leaderboardVV)
+		loadLeaderboard(getVV)
 	else
 		if settingsLoaded then
 			sectorUpdate()
 			raceUpdate(dt)
 			sharedDataSettings = SETTINGS
-			if sim.timeMinutes % 10 == 0 and h1Updated then
-				loadLeaderboard(getH1, leaderboardH1)
-				h1Updated = false
-			elseif sim.timeMinutes % 10 == 1 and vvUpdated then 
-				loadLeaderboard(getVV, leaderboardVV)
-				vvUpdated = false
-			elseif sim.timeMinutes % 10 == 2 and not vvUpdated then
-				vvUpdated = true
-				h1Updated = true
+			if sim.timeMinutes % 10 == 0 and not leaderboardUpdated then
+				loadLeaderboard(getH1)
+				loadLeaderboard(getVV)
+				leaderboardUpdated = true
+			elseif sim.timeMinutes % 10 == 1 and leaderboardUpdated then 
+				leaderboardUpdated = false
 			end
 		end
 	end
