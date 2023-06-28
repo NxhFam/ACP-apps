@@ -4,7 +4,7 @@ local windowWidth = sim.windowWidth
 local windowHeight = sim.windowHeight
 local menuOpen = false
 local settingsLoaded = true
-local valideCar = {"chargerpolice_acpursuit", "ks_mclaren_650_gt3"}
+local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 
 local sharedDataSettings = ac.connect({
 	ac.StructItem.key('ACP_essential_settings'),
@@ -244,6 +244,8 @@ end
 local function settings()
 	imageSize = vec2(windowHeight/80 * SETTINGS.statsSize, windowHeight/80 * SETTINGS.statsSize)
 	if ui.checkbox('Show HUD', SETTINGS.showStats) then SETTINGS.showStats = not SETTINGS.showStats end
+	ui.sameLine(windowWidth/6 - 100)
+	if ui.button('Close', vec2(100, windowHeight/50)) then menuOpen = false end
 	SETTINGS.statsOffsetX = ui.slider('##' .. 'HUD Offset X', SETTINGS.statsOffsetX, 0, windowWidth, 'HUD Offset X' .. ': %.0f')
 	SETTINGS.statsOffsetY = ui.slider('##' .. 'HUD Offset Y', SETTINGS.statsOffsetY, 0, windowHeight, 'HUD Offset Y' .. ': %.0f')
 	SETTINGS.statsSize = ui.slider('##' .. 'HUD Size', SETTINGS.statsSize, 10, 50, 'HUD Size' .. ': %.0f')
@@ -268,6 +270,7 @@ local sectorInfo = {
 	distance = 0,
 	finished = false,
 	drawLine = false,
+	timePosted = false,
 }
 
 local duo = {
@@ -287,10 +290,34 @@ local function resetSectors()
 	sectorInfo.checkpoints = 1
 	sectorInfo.distance = 0
 	sectorInfo.finished = false
+	sectorInfo.timePosted = false
 end
 
 local function dot(vector1, vector2)
 	return vector1.x * vector2.x + vector1.y * vector2.y
+end
+
+----------------------------------------------------------------------------------------------- Post Time ----------------------------------------------------------------------------------------------------
+
+local getVV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=683938135&single=true&output=csv'
+local getH1 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1055663571&single=true&output=csv'
+local postVV = 'https://script.google.com/macros/s/AKfycbzC7bRtYCzOV2FvoQzIOoOitCk5wWBr36nprceH2ztEOXbQAso6GxMY5LJOCSD8CWR4/exec?gid=683938135'
+local postH1 = 'https://script.google.com/macros/s/AKfycbzC7bRtYCzOV2FvoQzIOoOitCk5wWBr36nprceH2ztEOXbQAso6GxMY5LJOCSD8CWR4/exec?gid=1055663571'
+
+local function postGoogleSheet(time, url)
+	local steamID = ac.getUserSteamID()
+	local car = string.gsub(string.gsub(ac.getCarName(0), "%W", " "), "  ", "")
+	local driver = ac.getDriverName(0)
+	if not time then time = -1 end
+	if not url then url = postVV end
+	local data = '{\n "steamID": "' .. steamID .. '",\n  "car": "' .. car .. '",\n  "driver": "' .. driver .. '",\n  "time": ' .. time .. '\n}'
+	web.post(url, data, function (err, response)
+		if err then
+			print('Error: ' .. err)
+		else
+			print('Response: ' .. response.body)
+		end
+	end)
 end
 
 ----------------------------------------------------------------------------------------------- UI ----------------------------------------------------------------------------------------------------
@@ -406,6 +433,8 @@ local function sectorSelect()
 			end
 		end
 	end)
+	ui.sameLine(windowWidth/4 - 100)
+	if ui.button('Close', vec2(100, windowHeight/50)) then menuOpen = false end
 	if sectorInfo.sectorIndex  == #sectors then
 		ui.sameLine(220)
 		if ui.checkbox('Show Description', showDescription) then showDescription = not showDescription end
@@ -494,7 +523,12 @@ local function sectorUpdate()
 					end
 					if duo.teammateHasFinished then sectorInfo.finished = true end
 				else
-					sectorInfo.finished = true
+					sectorInfo.finished = true				
+				end
+				if sectorInfo.finished and not sectorInfo.timePosted then
+					if sectors[sectorInfo.sectorIndex].name == "H1" then postGoogleSheet(sectorInfo.time, postH1)
+					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" then postGoogleSheet(sectorInfo.time, postVV) end
+					sectorInfo.timePosted = true
 				end
 				if sectorInfo.finished then sectorInfo.finalTime = sectorInfo.timerText end
 			end
@@ -1012,6 +1046,113 @@ local function hudUI()
 		ui.endTransparentWindow()
 	end
 end
+-------------------------------------------------------------------------------- END HUD --------------------------------------------------------------------------------
+local leaderboards = {}
+local leaderboardVV = {}
+local leaderboardH1 = {}
+leaderboardH1.name = "H1"
+leaderboardVV.name = "Velocity Vendetta"
+local leaderboard = leaderboardH1
+local vvUpdated = false
+local h1Updated = false
+
+
+local function sortLeaderboard(leaderboard)
+	table.sort(leaderboard, function(a, b) return a.time < b.time end)
+	for i = 1, #leaderboard do
+		local timeFormated = ''
+		if leaderboard[i].time < 600 then
+			timeFormated = '0' .. math.floor(leaderboard[i].time / 60) .. ':'
+		else
+			timeFormated = math.floor(leaderboard[i].time / 60) .. ':'
+		end
+		if leaderboard[i].time % 60 < 10 then
+			timeFormated = timeFormated .. '0' .. string.format("%.3f", leaderboard[i].time % 60)
+		else
+			timeFormated = timeFormated .. string.format("%.3f", leaderboard[i].time % 60)
+		end
+		leaderboard[i].timeFormated = timeFormated
+	end
+end
+
+local function loadLeaderboard(getUrl, leaderboard)
+	web.get(getUrl, function(err, response)
+		if err then
+			print("Error: " .. err)
+			return
+		end
+		local data = response.body -- response.body is a string in csv format (comma separated values) with the following columns: driver, car, time (in second), steamID
+		local lines = string.split(data, "\n")
+		for i = 1, #lines do
+			local line = lines[i]
+			local columns = string.split(line, ",")
+			local driver = columns[1]
+			local car = columns[2]
+			local time = tonumber(columns[3])
+			local steamID = columns[4]
+			if driver and car and time and steamID then
+				table.insert(leaderboard, {driver = driver, car = car, time = time, steamID = steamID})
+			end
+		end
+		ac.log(#leaderboard .. " entries in leaderboard")
+		sortLeaderboard(leaderboard)
+	end)
+end
+
+local function displayInGrid(leaderboard)
+	local box1 = vec2(windowWidth/14, windowHeight/70)
+	local box2 = vec2(windowWidth/32, windowHeight/70)
+	ui.dwriteTextAligned("Pos", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.white)
+	ui.sameLine()
+	ui.dwriteTextAligned("Driver", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
+	ui.sameLine()
+	ui.dwriteTextAligned("Car", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
+	ui.sameLine()
+	ui.dwriteTextAligned("Time", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
+	ui.newLine()
+	for i = 1, #leaderboard do
+		local entry = leaderboard[i]
+		if i == 1 then
+			ui.dwriteTextAligned(i .. "st", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.gold)
+		elseif i == 2 then
+			ui.dwriteTextAligned(i .. "nd", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.silver)
+		elseif i == 3 then
+			ui.dwriteTextAligned(i .. "rd", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.bronze)
+		else
+			ui.dwriteTextAligned(i .. "th", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.white)
+		end
+		ui.sameLine()
+		ui.dwriteTextAligned(entry.driver, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
+		ui.sameLine()
+		ui.dwriteTextAligned(entry.car, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
+		ui.sameLine()
+		ui.dwriteTextAligned(entry.timeFormated, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
+	end
+	local lineHeight = math.max(ui.itemRectMax().y, windowHeight/3)
+	ui.drawLine(vec2(box2.x, windowHeight/20), vec2(box2.x, lineHeight), rgbm.colors.white, 1)
+	ui.drawLine(vec2(box2.x + box1.x, windowHeight/20), vec2(box2.x + box1.x, lineHeight), rgbm.colors.white, 1)
+	ui.drawLine(vec2(box2.x + box1.x*2.1, windowHeight/20), vec2(box2.x + box1.x*2.1, lineHeight), rgbm.colors.white, 1)
+	ui.drawLine(vec2(0, windowHeight/12), vec2(windowWidth/4, windowHeight/12), rgbm.colors.white, 1)
+end
+
+local function showLeaderboard()
+	ui.dummy(vec2(windowWidth/20, 0))
+	ui.sameLine()
+	ui.setNextItemWidth(windowWidth/12)
+	ui.combo("Leaderboard", leaderboard.name, function ()
+		for i = 1, #leaderboards do
+			if ui.selectable(leaderboards[i].name, leaderboard == leaderboards[i]) then
+				leaderboard = leaderboards[i]
+			end
+		end
+	end)
+	ui.sameLine(windowWidth/4 - 100)
+	if ui.button('Close', vec2(100, windowHeight/50)) then menuOpen = false end
+	ui.newLine()
+	displayInGrid(leaderboard)
+	--end)
+	return 1
+end
 
 local function infoRace()
     ui.dwriteTextWrapped("\nIllegal street racing in a one-on-one format is surprisingly simple. Here's how it works:" ..
@@ -1052,8 +1193,7 @@ local function info()
 	end)
 end
 
--------------------------------------------------------------------------------------------- Main script --------------------------------------------------------------------------------------------
-
+-------------------------------------------------------------------------------------------- Menu --------------------------------------------------------------------------------------------
 
 local initialized = false
 local menuSize = {vec2(windowWidth/4, windowHeight/3), vec2(windowWidth/6, windowHeight*2/3)}
@@ -1066,8 +1206,8 @@ local function menu()
 		ui.tabBar('MainTabBar', ui.TabBarFlags.Reorderable, function ()
 			ui.tabItem('Sectors', function () currentTab = sectorUI() end)
 			ui.tabItem('Settings', function () currentTab = settings() end)
-		end)
-		if ui.button('Close', vec2(100, 50)) then menuOpen = false end
+			ui.tabItem('Leaderboard', function () currentTab = showLeaderboard() end)
+		end)	
 	end
 end
 
@@ -1077,14 +1217,16 @@ local function moveMenu()
 	if buttonPressed then SETTINGS.menuPos = SETTINGS.menuPos + ui.mouseDelta() end
 end
 
+-------------------------------------------------------------------------------------------- Main script --------------------------------------------------------------------------------------------
+
 function script.drawUI()
 	if settingsLoaded and initialized then
 		hudUI()
 		onlineEventMessageUI()
 		raceUI()
 		if menuOpen then
-			ui.toolWindow('Menu', SETTINGS.menuPos, menuSize[currentTab], false, function ()
-				ui.childWindow('childMenu', menuSize[currentTab], false, function ()
+			ui.toolWindow('Menu', SETTINGS.menuPos, menuSize[currentTab], true, function ()
+				ui.childWindow('childMenu', menuSize[currentTab], true, function ()
 					menu()
 					moveMenu()
 				end)
@@ -1097,12 +1239,24 @@ function script.update(dt)
 	if not initialized then
 		if ac.getCarID(0) == valideCar[1] or ac.getCarID(0) == valideCar[2] then return end
 		initialized = true
+		loadLeaderboard(getH1, leaderboardH1)
 		initLines()
+		loadLeaderboard(getVV, leaderboardVV)
 	else
 		if settingsLoaded then
 			sectorUpdate()
 			raceUpdate(dt)
 			sharedDataSettings = SETTINGS
+			if sim.timeMinutes % 10 == 0 and h1Updated then
+				loadLeaderboard(getH1, leaderboardH1)
+				h1Updated = false
+			elseif sim.timeMinutes % 10 == 1 and vvUpdated then 
+				loadLeaderboard(getVV, leaderboardVV)
+				vvUpdated = false
+			elseif sim.timeMinutes % 10 == 2 and not vvUpdated then
+				vvUpdated = true
+				h1Updated = true
+			end
 		end
 	end
 end
@@ -1113,6 +1267,7 @@ function script.draw3D()
 		if sectorInfo.drawLine then render.debugLine(lineToRender[1], lineToRender[2], rgbm(0,100,0,1)) end
 	end
 end
+
 if ac.getCarID(0) ~= valideCar[1] and ac.getCarID(0) ~= valideCar[2] then
 	ui.registerOnlineExtra(ui.Icons.Menu, 'Menu', nil, menu, nil, ui.OnlineExtraFlags.Tool)
 end
