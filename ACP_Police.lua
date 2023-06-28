@@ -4,7 +4,7 @@ local windowWidth = sim.windowWidth
 local windowHeight = sim.windowHeight
 local menuOpen = false
 local settingsLoaded = true
-local valideCar = {"chargerpolice_acpursuit", "ks_mclaren_650_gt3"}
+local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 
 local sharedDataSettings = ac.connect({
 	ac.StructItem.key('ACP_essential_settings'),
@@ -120,7 +120,7 @@ local showPreviewMsg = false
 COLORSMSGBG = rgbm(0.5,0.5,0.5,0.5)
 
 local function initSettings()
-	ac.sendChatMessage(sharedDataSettings.showStats)
+	ac.log(sharedDataSettings.showStats)
 	if not sharedDataSettings.showStats then
 		settingsLoaded = false
 		SETTINGS = {
@@ -139,11 +139,11 @@ local function initSettings()
 			msgOffsetX = windowWidth/2,
 			fontSizeMSG = 30,
 			menuPos = vec2(0, 0),
-			unit = "Kmh",
+			unit = "km/h",
 			unitMult = 1,
 		}
 	else SETTINGS = sharedDataSettings end
-	if SETTINGS.unit ~= "Kmh" then SETTINGS.unitMult = 0.621371 end
+	if SETTINGS.unit ~= "km/h" then SETTINGS.unitMult = 0.621371 end
 	SETTINGS.statsFont = SETTINGS.statsSize * windowHeight/1440
 	imageSize = vec2(windowHeight/80 * SETTINGS.statsSize, windowHeight/80 * SETTINGS.statsSize)
 	updatePos()
@@ -181,22 +181,23 @@ end
 local function settings()
 	imageSize = vec2(windowHeight/80 * SETTINGS.statsSize, windowHeight/80 * SETTINGS.statsSize)
 	if ui.checkbox('Show HUD', SETTINGS.showStats) then SETTINGS.showStats = not SETTINGS.showStats end
+	ui.sameLine(120)
+	ui.text('Unit : ')
+	ui.sameLine(160)
+	if ui.selectable('mph', SETTINGS.unit == 'mph',_, ui.measureText('km/h')) then
+		SETTINGS.unit = 'mph'
+		SETTINGS.unitMult = 0.621371
+	end
+	ui.sameLine(200)
+	if ui.selectable('km/h', SETTINGS.unit == 'km/h',_, ui.measureText('km/h')) then
+		SETTINGS.unit = 'km/h'
+		SETTINGS.unitMult = 1
+	end
 	SETTINGS.statsOffsetX = ui.slider('##' .. 'HUD Offset X', SETTINGS.statsOffsetX, 0, windowWidth, 'HUD Offset X' .. ': %.0f')
 	SETTINGS.statsOffsetY = ui.slider('##' .. 'HUD Offset Y', SETTINGS.statsOffsetY, 0, windowHeight, 'HUD Offset Y' .. ': %.0f')
 	SETTINGS.statsSize = ui.slider('##' .. 'HUD Size', SETTINGS.statsSize, 10, 50, 'HUD Size' .. ': %.0f')
 	local fontMultiplier = windowHeight/1440
 	SETTINGS.statsFont = SETTINGS.statsSize * fontMultiplier
-	ui.text('Unit : ')
-	ui.sameLine(150)
-	if ui.selectable('mph', SETTINGS.unit == 'mph',_, ui.measureText('km/h')) then
-		SETTINGS.unit = 'mph'
-		SETTINGS.unitMult = 0.621371
-	end
-	ui.sameLine(190)
-	if ui.selectable('km/h', SETTINGS.unit == 'km/h',_, ui.measureText('km/h')) then
-		SETTINGS.unit = 'km/h'
-		SETTINGS.unitMult = 1
-	end
     ui.setNextItemWidth(300)
 	local colorHud = SETTINGS.colorHud
     ui.colorPicker('Theme Color', colorHud, ui.ColorPickerFlags.AlphaBar)
@@ -223,6 +224,23 @@ local function formatMessage(message)
 end
 
 ---------------------------------------------------------------------------------------------- HUD ----------------------------------------------------------------------------------------------
+
+local chaseLVL = {
+	message = "",
+	messageTimer = 0,
+}
+
+local function resetChase()
+	pursuit.enable = false
+	pursuit.nextMessage = 20
+	pursuit.level = 1
+end
+
+local function lostSuspect()
+	resetChase()
+	pursuit.suspect = nil
+	ac.setExtraSwitch(0, false)
+end
 
 local iconsColorOn = {
 	[1] = rgbm(1,1,1,1),
@@ -263,8 +281,23 @@ local function playerSelected(player)
 		pursuit.nextMessage = 20
 		pursuit.level = 1
 		ac.setExtraSwitch(0, true)
-		ac.sendChatMessage(formatMessage(msgEngage.msg[math.random(#msgEngage.msg)]))
+		--ac.sendChatMessage(formatMessage(msgEngage.msg[math.random(#msgEngage.msg)]))
 	end
+end
+
+local function hudInChase()
+	ui.pushDWriteFont("Orbitron;Weight=Black")
+	local textPursuit = "LVL : " .. pursuit.level - 1
+	ui.dwriteTextWrapped(ac.getDriverName(pursuit.suspect.index) .. '\n'
+						.. string.gsub(string.gsub(ac.getCarName(pursuit.suspect.index), "%W", " "), "  ", "")
+						.. '\n' .. string.format(" %d ", pursuit.suspect.speedKmh * SETTINGS.unitMult) .. SETTINGS.unit
+						.. '\n' .. textPursuit, 20, rgbm.colors.white)
+	ui.dummy(vec2(imageSize.x/5,imageSize.y/20))
+	ui.sameLine()
+	if ui.button('Cancel', vec2(imageSize.x/5, imageSize.y/20)) then
+		lostSuspect()
+	end
+	ui.popDWriteFont()
 end
 
 local function drawText()
@@ -272,7 +305,7 @@ local function drawText()
 	local uiStats = ac.getUI()
 	local textColor = rgbm(1,1,1,1)
 	textPos.box1 = vec2(0, 0)
-	for i = 1, #playersInRange do		
+	for i = 1, #playersInRange do
 		textColor = rgbm(1,1,1,1)
 		--ui.drawRect(textPos.box1, textPos.box1 + textPos.box2, rgbm(0,0,1,1))
 		if ui.rectHovered(textPos.box1, textPos.box1 + textPos.box2) then
@@ -294,8 +327,9 @@ local function radarUI()
 		drawImage()
 	end)
 	ui.toolWindow('radarText', textSize.window1, textSize.window2, true, function ()
-		ui.childWindow('childradar', true, function ()
-			drawText()
+		ui.childWindow('childradar', vec2(imageSize.x*3/5, imageSize.y/4), true , function ()
+			if pursuit.suspect then hudInChase()
+			else drawText() end
 		end)
 	end)
 end
@@ -312,7 +346,7 @@ local function radarUpdate()
 				if player.position.x > car.position.x - radarRange and player.position.z > car.position.z - radarRange and player.position.x < car.position.x + radarRange and player.position.z < car.position.z + radarRange then
 					playersInRange[j] = {}
 					playersInRange[j].player = player
-					playersInRange[j].text = ac.getDriverName(player.index) .. string.format(" %d ", player.speedKmh * 1) .. SETTINGS.unit
+					playersInRange[j].text = ac.getDriverName(player.index) .. string.format(" %d ", player.speedKmh * SETTINGS.unitMult) .. SETTINGS.unit
 					j = j + 1
 					if j == 9 then break end
 				end
@@ -323,23 +357,6 @@ local function radarUpdate()
 end
 
 ---------------------------------------------------------------------------------------------- Chase ----------------------------------------------------------------------------------------------
-
-local chaseLVL = {
-	message = "",
-	messageTimer = 0,
-}
-
-local function resetChase()
-	pursuit.enable = false
-	pursuit.nextMessage = 20
-	pursuit.level = 1
-end
-
-local function lostSuspect()
-	resetChase()
-	pursuit.suspect = nil
-	ac.setExtraSwitch(0, false)
-end
 
 local function inRange()
 	local distance_x = pursuit.suspect.position.x - car.position.x
@@ -352,13 +369,13 @@ local function inRange()
 	else
 		if pursuit.suspect.rpm > 400 and pursuit.suspect.speedKmh > 20 then
 			local msgToSend = formatMessage("Suspect have been lost, Vehicle Description:`CAR` driven by `NAME`")
-			ac.sendChatMessage(msgToSend)
+			--ac.sendChatMessage(msgToSend)
 		end
 		lostSuspect()
 	end
 end
 
-local function sendChaseMsg()
+local function sendChatToSuspect()
 	if pursuit.enable then
 		if os.clock() - pursuit.timeInPursuit > pursuit.nextMessage then
 			local msgToSend = formatMessage(msgChase[pursuit.level].msg[math.random(#msgChase[pursuit.level].msg)])
@@ -367,7 +384,7 @@ local function sendChaseMsg()
 			if pursuit.level < 5 then
 				acpPolice{message = msgToSend, messageType = 1, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
 			else
-				ac.sendChatMessage(msgToSend)
+				--ac.sendChatMessage(msgToSend)
 			end
 			pursuit.nextMessage = pursuit.nextMessage + 20
 			if pursuit.level < 8 then
@@ -398,7 +415,7 @@ local function arrestSuspect()
 	if pursuit.hasArrested and pursuit.suspect then
 		local msgToSend = formatMessage(msgArrest.msg[math.random(#msgArrest.msg)])
 		table.insert(arrestations, msgToSend .. os.date("\nDate of the Arrestation: %c"))
-		ac.sendChatMessage("You are under arrest!\n" .. msgToSend .. "\nPlease Get Back Pit, GG!")
+		--ac.sendChatMessage("You are under arrest!\n" .. msgToSend .. "\nPlease Get Back Pit, GG!")
 		pursuit.id = pursuit.suspect.sessionID
 		pursuit.suspect = nil
 		ac.setExtraSwitch(0, false)
@@ -419,7 +436,7 @@ end
 
 local function chaseUpdate()
 	if pursuit.suspect then
-		sendChaseMsg()
+		sendChatToSuspect()
 		inRange()
 	end
 	arrestSuspect()
@@ -427,7 +444,7 @@ end
 
 ---------------------------------------------------------------------------------------------- Menu ----------------------------------------------------------------------------------------------
 
-local function arrestsendChatMessagesUI()
+local function arrestLogsUI()
 	local allMsg = ""
 	ui.dwriteText("Set ClipBoard by clicking on the button\nnext to the message you want to copy.", 15, rgbm.colors.white)
 	for i = 1, #arrestations do
@@ -435,7 +452,7 @@ local function arrestsendChatMessagesUI()
 			ui.setClipboardText(arrestations[i])
 		end
 		ui.sameLine()
-		ui.dwriteText(arrestations[i], 15, rgbm.colors.white)
+		ui.dwriteTextWrapped(arrestations[i], 15, rgbm.colors.white)
 	end
 	ui.newLine()
 	if ui.button("Set all messages to ClipBoard") then
@@ -463,7 +480,7 @@ local function menu()
 	if not settingsLoaded then download()
 	else
 		ui.tabBar('MainTabBar', ui.TabBarFlags.Reorderable, function ()
-			ui.tabItem('Arrest sendChatMessages', function () currentTab = arrestsendChatMessagesUI() end)
+			ui.tabItem('Arrest Logs', function () currentTab = arrestLogsUI() end)
 			ui.tabItem('Settings', function () currentTab = settings() end)
 		end)
 		if ui.button('Close', vec2(100, 50)) then menuOpen = false end
@@ -500,13 +517,13 @@ function script.update(dt)
         initSettings()
 	else
 		if settingsLoaded then
-			radarUpdate()
+			if not pursuit.suspect then radarUpdate() end
 			chaseUpdate()
 			sharedDataSettings = SETTINGS
 		end
 	end
 end
 
--- if ac.getCarID(0) == valideCar[1] or ac.getCarID(0) == valideCar[2] then
--- 	ui.registerOnlineExtra(ui.Icons.Menu, 'Menu', nil, menu, nil, ui.OnlineExtraFlags.Tool)
--- end
+if ac.getCarID(0) == valideCar[1] or ac.getCarID(0) == valideCar[2] then
+	ui.registerOnlineExtra(ui.Icons.Menu, 'Menu', nil, menu, nil, ui.OnlineExtraFlags.Tool)
+end
