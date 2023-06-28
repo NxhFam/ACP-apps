@@ -511,7 +511,7 @@ function script.drawUI()
 end
 
 function script.update(dt)
-	--if ac.getCarID(0) ~= valideCar[1] and ac.getCarID(0) ~= valideCar[2] then return end
+	if ac.getCarID(0) ~= valideCar[1] and ac.getCarID(0) ~= valideCar[2] then return end
 	if not initialized then
 		initialized = true
         initSettings()
