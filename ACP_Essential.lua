@@ -4,6 +4,7 @@ local windowWidth = sim.windowWidth
 local windowHeight = sim.windowHeight
 local menuOpen = false
 local settingsLoaded = true
+local steamID = ac.getSteamID()
 local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 
 local sharedDataSettings = ac.connect({
@@ -259,6 +260,230 @@ local function settings()
 	return 2
 end
 
+--------------------------------------------------------------------------------------- Group Races -----------------------------------------------------------------------------------------------
+
+local validOrganiserID = {"76561199125972202"}
+local playersGroup = {}
+local groupRace = {
+	accepted = false,
+	declined = false,
+	organiser = nil,
+	location = "",
+	timeStart = 0,
+	timeEnd = 0,
+	message = "",
+	messageMenu = "",
+	started = false,
+	finished = false,
+	distance = 0,
+	timeAnnouncement = 0,
+	checkStart = false,
+}
+
+-- Message Types 0 = Announcement, 1 = Accept, 2 = Retired
+local acpGroupRace = ac.OnlineEvent({
+	location = ac.StructItem.string(110),
+	totalDistance = ac.StructItem.int16(),
+	messageType = ac.StructItem.int16(),
+	yourIndex = ac.StructItem.int16(),
+}, function (sender, data)
+	if data.messageType == 0 then
+		groupRace.timeAnnouncement = 10
+		groupRace.organiser = sender
+		groupRace.message = "Group Race in 10 minutes. To join go in the Sector tab."
+		groupRace.messageMenu = ac.getDriverName(sender.index) .. " is organising a group race around " .. data.location .. ".\nTo join the group race click on the join button below and go line up at the start line with " .. ac.getDriverName(sender.index)
+						.. ".\n The race will start in 10 minutes."
+		groupRace.timeStart = 600
+		groupRace.timeEnd = 600
+		groupRace.location = data.location
+	elseif data.yourIndex == car.sessionID and data.messageType == 1 then
+		table.insert(playersGroup, sender)
+	elseif data.yourIndex == car.sessionID and data.messageType == 2 then
+		for i, v in ipairs(playersGroup) do
+			if v == sender then
+				playersGroup[i].totalDistance = data.totalDistance
+				playersGroup[i].finished = true
+			end
+		end
+	end
+end)
+
+local function resetGroupRace()
+	groupRace.accepted = false
+	groupRace.declined = false
+	groupRace.organiser = nil
+	groupRace.location = ""
+	groupRace.timeStart = 0
+	groupRace.timeEnd = 0
+	groupRace.message = ""
+	groupRace.messageMenu = ""
+	groupRace.started = false
+	groupRace.finished = false
+	groupRace.distance = 0
+	groupRace.timeAnnouncement = 0
+	groupRace.checkStart = false
+	playersGroup = {}
+end
+
+local function groupHasPit()
+	if car.isInPit and groupRace.started then
+		groupRace.finished = true
+		groupRace.started = false
+		groupRace.timeEnd = 0
+		groupRace.timeStart = 0
+		groupRace.distance = car.distanceDrivenSessionKm - groupRace.distance
+		acpGroupRace{location = groupRace.location, totalDistance = groupRace.distance, messageType = 2, yourIndex = groupRace.organiser.sessionID}
+	end
+end
+
+local function onScreenGroupMessages()
+	if groupRace.timeStart < 1 then
+		groupRace.message = "GO GO GO!"
+	elseif groupRace.timeStart < 11 then
+		groupRace.message = math.floor(groupRace.timeStart)
+	else
+		groupRace.message = "The race will start in " .. math.floor(groupRace.timeStart/60) .. " minutes and " .. math.floor(groupRace.timeStart%60) .. " seconds"
+	end
+end
+
+local function organiserStart()
+	local closeToStart = 50
+	local j = 1
+	for i = 1, #playersGroup do
+		local player = ac.getCar(i)
+		if player.position.x > car.position.x - closeToStart and player.position.z > car.position.z - closeToStart and player.position.x < car.position.x + closeToStart and player.position.z < car.position.z + closeToStart then
+			playersGroup[j] = player
+			playersGroup[j].distance = player.distanceDrivenSessionKm
+			j = j + 1
+		end
+	end
+	for i = j, #playersGroup do
+		playersGroup[i] = nil
+	end
+end
+
+local function organiserfinish()
+	for i = 1, #playersGroup do
+		if not playersGroup[i].finished then
+			playersGroup[i].totalDistance = playersGroup[i].distanceDrivenSessionKm - playersGroup[i].distance
+			playersGroup[i].finished = true
+		end
+	end
+	table.sort(playersGroup, function(a, b) return a.totalDistance > b.totalDistance end)
+	local textStandings
+	for i = 1, #playersGroup do
+		textStandings = textStandings .. i .. ". @" .. ac.getDriverName(playersGroup[i].index) .. "\n"
+	end
+	ac.sendChatMessage(textStandings)
+end
+
+local function timeUpdate()
+	if groupRace.timeAnnouncement > 0 then
+		groupRace.timeAnnouncement = groupRace.timeAnnouncement - ui.deltaTime()
+		if groupRace.timeAnnouncement < 0 then groupRace.timeAnnouncement = 0 end
+	end
+	if groupRace.timeStart > 0 then
+		groupRace.timeStart = groupRace.timeStart - ui.deltaTime()
+		if groupRace.timeStart < 0 then groupRace.timeStart = 0 end
+	elseif groupRace.timeStart == 0 and not groupRace.started then
+		groupRace.started = true
+		groupRace.distance = car.distanceDrivenSessionKm
+	elseif groupRace.timeEnd > 0 and groupRace.started then
+		groupRace.timeEnd = groupRace.timeEnd - ui.deltaTime()
+		if groupRace.timeEnd < 0 then groupRace.timeEnd = 0 end
+	elseif groupRace.timeEnd == 0 and not groupRace.finished then
+		groupRace.finished = true
+	end
+	if groupRace.accepted then onScreenGroupMessages() end
+end
+
+local function groupRaceUpdate()
+	if not groupRace.declined then
+		timeUpdate()
+		groupHasPit()
+	end
+	if car == groupRace.organiser then
+		if groupRace.timeStart < 1 and not groupRace.checkStart then
+			organiserStart()
+			groupRace.checkStart = true
+		end
+		if groupRace.finished then
+			organiserfinish()
+		end
+	end
+	if groupRace.finished then
+		resetGroupRace()
+	end
+end
+
+local function groupRaceUIMessage()
+	local text = groupRace.message
+	local textLenght = ui.measureDWriteText(text, SETTINGS.fontSizeMSG)
+	local rectPos1 = vec2(SETTINGS.msgOffsetX - textLenght.x/2, SETTINGS.msgOffsetY)
+	local rectPos2 = vec2(SETTINGS.msgOffsetX + textLenght.x/2, SETTINGS.msgOffsetY + SETTINGS.fontSizeMSG)
+	local rectOffset = vec2(10, 10)
+	if ui.time() % 1 < 0.5 then
+		ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, COLORSMSGBG, 10)
+	else
+		ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, rgbm(0,0,0,0.5), 10)
+	end
+	ui.dwriteDrawText(text, SETTINGS.fontSizeMSG, rectPos1, rgbm.colors.white)
+end
+
+local function groupRaceUIplayers()
+	ui.newLine()
+	ui.dwriteTextWrapped(groupRace.messageMenu, SETTINGS.statsFont, rgbm.colors.white)
+	ui.newLine()
+	if ui.button("join") then
+		resetGroupRace()
+		groupRace.accepted = true
+		acpGroupRace{location = groupRace.location, messageType = 1, yourIndex = car.sessionID}
+	end
+	ui.sameLine()
+	if ui.button("decline") then
+		resetGroupRace()
+		groupRace.declined = true
+	end
+end
+
+local function groupRaceUIOganiser()
+	local validOrganiser = false
+	local textLocation
+	for i = 1, #validOrganiserID do
+		if ac.getUserSteamID() == validOrganiserID[i] then validOrganiser = true end
+	end
+	if sim.isAdmin then validOrganiser = true end
+	if validOrganiser then
+		ui.dwriteText("Location examples : H1, C1, Highway, etc.")
+		textLocation = ui.inputText('Group Race Location:', textLocation)
+		ui.newLine()
+		if ui.button("Announce Group Race") then
+			resetGroupRace()
+			groupRace.organiser = car
+			groupRace.accepted = true
+			table.insert(playersGroup, car)
+			acpGroupRace{location = textLocation, messageType = 0, totalDistance = 0, yourIndex = car.sessionID}
+		end
+	end
+end
+
+local function groupRaceUI()
+	if not groupRace.accepted and not groupRace.declined then
+		groupRaceUIMessage()
+	elseif groupRace.accepted and not groupRace.declined and not groupRace.started then
+		groupRaceUIMessage()
+	end
+end
+
+local function groupRaceMenu()
+	if not groupRace.accepted and not groupRace.declined and not groupRace.started and groupRace.timeStart > 0 and groupRace.organiser ~= car then
+		groupRaceUIplayers()
+	end
+	if not groupRace.started and groupRace.timeStart == 0 then
+		groupRaceUIOganiser()
+	end
+end
+
 ----------------------------------------------------------------------------------------------- Sectors -----------------------------------------------------------------------------------------------
 -- Variables --
 local sectorInfo = {
@@ -297,7 +522,10 @@ local function dot(vector1, vector2)
 	return vector1.x * vector2.x + vector1.y * vector2.y
 end
 
------------------------------------------------------------------------------------------------ Post Time ----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------- HTTP Request ----------------------------------------------------------------------------------------------------
+local leaderboards = {}
+local leaderboardActive = {}
+local leaderboardUpdated = false
 
 local getVV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=683938135&single=true&output=csv'
 local getH1 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1055663571&single=true&output=csv'
@@ -306,11 +534,11 @@ local postH1 = 'https://script.google.com/macros/s/AKfycbzC7bRtYCzOV2FvoQzIOoOit
 
 local function postGoogleSheet(time, url)
 	local steamID = ac.getUserSteamID()
-	local car = string.gsub(string.gsub(ac.getCarName(0), "%W", " "), "  ", "")
+	local carName = string.gsub(string.gsub(ac.getCarName(0), "%W", " "), "  ", "")
 	local driver = ac.getDriverName(0)
 	if not time then time = -1 end
 	if not url then url = postVV end
-	local data = '{\n "steamID": "' .. steamID .. '",\n  "car": "' .. car .. '",\n  "driver": "' .. driver .. '",\n  "time": ' .. time .. '\n}'
+	local data = '{\n "steamID": "' .. steamID .. '",\n  "car": "' .. carName .. '",\n  "driver": "' .. driver .. '",\n  "time": ' .. time .. '\n}'
 	web.post(url, data, function (err, response)
 		if err then
 			print('Error: ' .. err)
@@ -318,6 +546,59 @@ local function postGoogleSheet(time, url)
 			print('Response: ' .. response.body)
 		end
 	end)
+end
+
+local function sortLeaderboard(leaderboard)
+	table.sort(leaderboard, function(a, b) return a.time < b.time end)
+	for i = 1, #leaderboard do
+		local timeFormated = ''
+		if leaderboard[i].time < 600 then
+			timeFormated = '0' .. math.floor(leaderboard[i].time / 60) .. ':'
+		else
+			timeFormated = math.floor(leaderboard[i].time / 60) .. ':'
+		end
+		if leaderboard[i].time % 60 < 10 then
+			timeFormated = timeFormated .. '0' .. string.format("%.3f", leaderboard[i].time % 60)
+		else
+			timeFormated = timeFormated .. string.format("%.3f", leaderboard[i].time % 60)
+		end
+		leaderboard[i].timeFormated = timeFormated
+	end
+end
+
+local function loadLeaderboard(getUrl)
+	local leaderboard = {}
+	web.get(getUrl, function(err, response)
+		if err then
+			print("Error: " .. err)
+			return
+		end
+		local data = response.body -- response.body is a string in csv format (comma separated values) with the following columns: driver, car, time (in second), steamID
+		local lines = string.split(data, "\n")
+		for i = 1, #lines do
+			local line = lines[i]
+			local columns = string.split(line, ",")
+			local driver = columns[1]
+			local carName = columns[2]
+			local time = tonumber(columns[3])
+			local steamID = columns[4]
+			if driver and carName and time and steamID then
+				table.insert(leaderboard, {driver = driver, car = carName, time = time, steamID = steamID})
+			end
+		end
+		ac.log(#leaderboard .. " entries in leaderboard")
+		sortLeaderboard(leaderboard)
+	end)
+	if #leaderboards < 2 then
+		--ac.log(#leaderboards)
+		if #leaderboards == 0 then
+			leaderboard.name = "H1"
+			leaderboardActive = leaderboard
+		else leaderboard.name = "Velocity Vendetta" end
+		table.insert(leaderboards, leaderboard)
+	else
+		if leaderboard.name == "Velocity Vendetta" then leaderboards[2] = leaderboard else leaderboards[1] = leaderboard end
+	end
 end
 
 ----------------------------------------------------------------------------------------------- UI ----------------------------------------------------------------------------------------------------
@@ -449,6 +730,7 @@ local function sectorSelect()
 		end
 	end
 	discordLinks()
+	groupRaceMenu()
 end
 
 local function sectorUI()
@@ -538,7 +820,7 @@ local function sectorUpdate()
 end
 
 -- Online Interactions
---------------------------------------------------------------------------------------- Races Opponents -----------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------- Race Opponent -----------------------------------------------------------------------------------------------
 -- Variables --
 local horn = {
 	lastState = false,
@@ -1046,64 +1328,9 @@ local function hudUI()
 		ui.endTransparentWindow()
 	end
 end
--------------------------------------------------------------------------------- END HUD --------------------------------------------------------------------------------
-local leaderboards = {}
-local leaderboardActive = {}
-local leaderboardUpdated = false
 
+-------------------------------------------------------------------------------------------- Menu --------------------------------------------------------------------------------------------
 
-local function sortLeaderboard(leaderboard)
-	table.sort(leaderboard, function(a, b) return a.time < b.time end)
-	for i = 1, #leaderboard do
-		local timeFormated = ''
-		if leaderboard[i].time < 600 then
-			timeFormated = '0' .. math.floor(leaderboard[i].time / 60) .. ':'
-		else
-			timeFormated = math.floor(leaderboard[i].time / 60) .. ':'
-		end
-		if leaderboard[i].time % 60 < 10 then
-			timeFormated = timeFormated .. '0' .. string.format("%.3f", leaderboard[i].time % 60)
-		else
-			timeFormated = timeFormated .. string.format("%.3f", leaderboard[i].time % 60)
-		end
-		leaderboard[i].timeFormated = timeFormated
-	end
-end
-
-local function loadLeaderboard(getUrl)
-	local leaderboard = {}
-	web.get(getUrl, function(err, response)
-		if err then
-			print("Error: " .. err)
-			return
-		end
-		local data = response.body -- response.body is a string in csv format (comma separated values) with the following columns: driver, car, time (in second), steamID
-		local lines = string.split(data, "\n")
-		for i = 1, #lines do
-			local line = lines[i]
-			local columns = string.split(line, ",")
-			local driver = columns[1]
-			local car = columns[2]
-			local time = tonumber(columns[3])
-			local steamID = columns[4]
-			if driver and car and time and steamID then
-				table.insert(leaderboard, {driver = driver, car = car, time = time, steamID = steamID})
-			end
-		end
-		ac.log(#leaderboard .. " entries in leaderboard")
-		sortLeaderboard(leaderboard)
-	end)
-	if #leaderboards < 2 then
-		--ac.log(#leaderboards)
-		if #leaderboards == 0 then 
-			leaderboard.name = "H1" 
-			leaderboardActive = leaderboard
-		else leaderboard.name = "Velocity Vendetta" end
-		table.insert(leaderboards, leaderboard)
-	else
-		if leaderboard.name == "Velocity Vendetta" then leaderboards[2] = leaderboard else leaderboards[1] = leaderboard end
-	end
-end
 
 local function displayInGrid(leaderboard)
 	local box1 = vec2(windowWidth/14, windowHeight/70)
@@ -1198,8 +1425,6 @@ local function info()
 	end)
 end
 
--------------------------------------------------------------------------------------------- Menu --------------------------------------------------------------------------------------------
-
 local initialized = false
 local menuSize = {vec2(windowWidth/4, windowHeight/3), vec2(windowWidth/6, windowHeight*2/3)}
 local currentTab = 1
@@ -1212,7 +1437,7 @@ local function menu()
 			ui.tabItem('Sectors', function () currentTab = sectorUI() end)
 			ui.tabItem('Settings', function () currentTab = settings() end)
 			ui.tabItem('Leaderboard', function () currentTab = showLeaderboard() end)
-		end)	
+		end)
 	end
 end
 
@@ -1229,6 +1454,7 @@ function script.drawUI()
 		hudUI()
 		onlineEventMessageUI()
 		raceUI()
+		groupRaceUI()
 		if menuOpen then
 			ui.toolWindow('Menu', SETTINGS.menuPos, menuSize[currentTab], true, function ()
 				ui.childWindow('childMenu', menuSize[currentTab], true, function ()
@@ -1251,12 +1477,13 @@ function script.update(dt)
 		if settingsLoaded then
 			sectorUpdate()
 			raceUpdate(dt)
+			groupRaceUpdate()
 			sharedDataSettings = SETTINGS
 			if sim.timeMinutes % 10 == 0 and not leaderboardUpdated then
 				loadLeaderboard(getH1)
 				loadLeaderboard(getVV)
 				leaderboardUpdated = true
-			elseif sim.timeMinutes % 10 == 1 and leaderboardUpdated then 
+			elseif sim.timeMinutes % 10 == 1 and leaderboardUpdated then
 				leaderboardUpdated = false
 			end
 		end
@@ -1270,7 +1497,4 @@ function script.draw3D()
 	end
 end
 
-if ac.getCarID(0) ~= valideCar[1] and ac.getCarID(0) ~= valideCar[2] then
-	ui.registerOnlineExtra(ui.Icons.Menu, 'Menu', nil, menu, nil, ui.OnlineExtraFlags.Tool)
-end
 ui.registerOnlineExtra(ui.Icons.Info, 'Info', nil, info, nil, ui.OnlineExtraFlags.Tool)
