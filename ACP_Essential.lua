@@ -368,8 +368,8 @@ local function loadLeaderboard(getUrl)
 	end)
 	if #leaderboards < 2 then
 		if getUrl == getVV then leaderboard.name = "Velocity Vendetta"
-		else 
-			leaderboard.name = "H1" 
+		else
+			leaderboard.name = "H1"
 			leaderboardActive = leaderboard
 		end
 		table.insert(leaderboards, leaderboard)
@@ -1201,9 +1201,11 @@ local function download()
 end
 
 local function info()
-	ui.tabBar('InfoTabBar', ui.TabBarFlags.Reorderable, function ()
-		ui.tabItem('Illegal street racing', function () infoRace() end)
-		ui.tabItem('General Server Info', function () infoServer() end)
+	ui.childWindow('childInfo', false, function ()
+		ui.tabBar('InfoTabBar', ui.TabBarFlags.Reorderable, function ()
+			ui.tabItem('Illegal street racing', function () infoRace() end)
+			ui.tabItem('General Server Info', function () infoServer() end)
+		end)
 	end)
 	return 1
 end
