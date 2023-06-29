@@ -348,13 +348,8 @@ local function drawImage()
 	local uiStats = ac.getUI()
 
 	if pursuit.suspect then
-		if ui.time() % 1 < 0.5 then
-			iconsColorOn[1] = rgbm(1,0,0,1)
-		else
-			iconsColorOn[1] = rgbm(1,1,1,1)
-		end
+		iconsColorOn[1] = rgbm(1,0,0,1)
 	end
-
 	if ui.rectHovered(iconPos.arrest2, iconPos.arrest1) then
 		iconsColorOn[2] = rgbm(0,1,1,1)
 		if pursuit.suspect and car.speedKmh < 20 and uiStats.isMouseLeftKeyClicked then
@@ -442,34 +437,32 @@ end
 local function drawText()
 	ui.pushDWriteFont("Orbitron;Weight=Black")
 	local uiStats = ac.getUI()
-	local textColor = rgbm(1,1,1,1)
+	local colorText = rgbm(1,1,1,1)
 	textPos.box1 = vec2(0, 0)
 	for i = 1, #playersInRange do
-		textColor = rgbm(1,1,1,1)
-		--ui.drawRect(textPos.box1, textPos.box1 + textPos.box2, rgbm(0,0,1,1))
+		colorText = rgbm(1,1,1,1)
 		if ui.rectHovered(textPos.box1, textPos.box1 + textPos.box2) then
-			textColor = rgbm(0,1,1,1)
+			colorText = rgbm(0,1,1,1)
 			if uiStats.isMouseLeftKeyClicked then
 				playerSelected(playersInRange[i].player)
 			end
-		elseif pursuit.suspect == playersInRange[i].player then
-			textColor = rgbm.colors.cyan
 		end
 		textPos.box1 = textPos.box1 + textPos.addBox
-		ui.dwriteTextAligned(playersInRange[i].text, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, textSize.box, false, textColor)
+		ui.dwriteTextAligned(playersInRange[i].text, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, textSize.box, false, colorText)
 	end
 	ui.popDWriteFont()
 end
 
 local function radarUI()
-	ui.transparentWindow('radar', vec2(SETTINGS.statsOffsetX, SETTINGS.statsOffsetY), imageSize, true, function ()
-		drawImage()
-	end)
-	ui.transparentWindow('radarText', textSize.window1, textSize.window2, true, function ()
+
+	ui.toolWindow('radarText', textSize.window1, textSize.window2, true, function ()
 		ui.childWindow('childradar', textSize.window2, true , function ()
 			if pursuit.suspect then hudInChase()
 			else drawText() end
 		end)
+	end)
+	ui.transparentWindow('radar', vec2(SETTINGS.statsOffsetX, SETTINGS.statsOffsetY), imageSize, true, function ()
+		drawImage()
 	end)
 end
 
