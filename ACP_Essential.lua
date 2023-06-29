@@ -67,12 +67,15 @@ local sectors = {
     },
     {
         name = 'Velocity Vendetta',
-		pointsData = {{vec3(579.4, 16.5, -748.6), vec3(590.7, 17, -763.8)},
-					{vec3(-179, 24.3, 1424.0), vec3(-178, 24.3, 1338.2)},
-					{vec3(1185, 88.3, 2509.5), vec3(1178, 88.3, 2518.8)},
-					{vec3(460.9, 105.9, 2426.8), vec3(451.1, 105.9, 2433.5)}},
-        linesData = {vec4(579.4, -748.6, 590.7, -763.8), vec4(-179, 1424.0, -178, 1338.2), vec4(1185, 2509.5, 1178, 2518.8), vec4(460.9, 2426.8, 451.1, 2433.5)},
-        length = 9.1,
+		pointsData = {{vec3(285.1, -193.3, -6755.3), vec3(291.6, -193.4, -6747.1)},
+					{vec3(912.6, -215.7, -6951.7), vec3(918.4, -215.8, -6943.2)},
+					{vec3(2369.9, -275.8, -8198.2), vec3(2372.5, -275.8, -8188.1)},
+					{vec3(3409.4, -301.1, -8144.1),vec3(3401.4, -300.6, -8134.8)},
+					{vec3(2372.5, -275.8, -8188.1),vec3(2369.9, -275.8, -8198.2)},
+					{vec3(918.4, -215.8, -6943.2),vec3(912.6, -215.7, -6951.7)},
+					{vec3(291.6, -193.4, -6747.1),vec3(285.1, -193.3, -6755.3)}},
+		linesData =	{vec4(285.1, -6755.3, 291.6, -6747.1), vec4(912.6, -6951.7, 918.4, -6943.2), vec4(2369.9, -8198.2, 2372.5, -8188.1), vec4(3409.4, -8144.1, 3401.4, -8134.8), vec4(2372.5, -8188.1, 2369.9, -8198.2), vec4(918.4, -6943.2, 912.6, -6951.7), vec4(291.6, -6747.1, 285.1, -6755.3)},
+		length = 8.51,
     }
 }
 
@@ -403,6 +406,7 @@ local function displayInGrid(leaderboard)
 	ui.sameLine()
 	ui.dwriteTextAligned("Time", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
 	ui.popDWriteFont()
+	ui.newLine()
 	for i = 1, #leaderboard do
 		local entry = leaderboard[i]
 		if i == 1 then
@@ -472,12 +476,6 @@ local function discordLinks()
 		if ui.textHyperlink("Velocity Vendetta Discord") then
 			os.openURL("https://discord.com/channels/358562025032646659/1118046532168589392")
 		end
-		ui.sameLine(200)
-		if ui.textHyperlink("Route Showcase") then
-			os.openURL("https://youtu.be/TI11PdTJgH8")
-		end
-		ui.sameLine()
-		ui.text("Youtube Video")
 	end
 	ui.newLine(10)
 end
@@ -487,7 +485,7 @@ local acpEvent = ac.OnlineEvent({
 	messageType = ac.StructItem.int16(),
 	yourIndex = ac.StructItem.int16(),
 }, function (sender, data)
-	if data.yourIndex == car.sessionID and data.messageType == 5 and data.message == "duo.Request" then
+	if data.yourIndex == car.sessionID and data.messageType == 5 and data.message == "Request" then
 		duo.request = true
 		duo.onlineSender = sender
 	elseif data.yourIndex == car.sessionID and data.messageType == 5 and data.message == "Accept" then
@@ -520,10 +518,10 @@ local function doubleTrouble()
 	else
 		if duo.teammate == nil then
 			ui.setNextItemWidth(150)
-			ui.combo("duo.Teammate", duo.playerName, function ()
+			ui.combo("Teammate", duo.playerName, function ()
 				for i = 1, #players do
 					if ui.selectable(ac.getDriverName(players[i].index), duo.teammate == players[i].index) then
-						acpEvent{message = "duo.Request", messageType = 5, yourIndex = ac.getCar(players[i].index).sessionID}
+						acpEvent{message = "Request", messageType = 5, yourIndex = ac.getCar(players[i].index).sessionID}
 						duo.playerName = ac.getDriverName(players[i].index)
 						duo.waiting = true
 					end
@@ -534,7 +532,7 @@ local function doubleTrouble()
 			end
 		else
 			ui.newLine()
-			ui.dwriteTextWrapped("duo.teammate : ", 15, rgbm.colors.white)
+			ui.dwriteTextWrapped("teammate : ", 15, rgbm.colors.white)
 			ui.sameLine()
 			ui.dwriteTextWrapped(ac.getDriverName(duo.teammate.index), 15, rgbm.colors.purple)
 			ui.sameLine()
@@ -558,22 +556,8 @@ local function sectorSelect()
 			end
 		end
 	end)
-	ui.sameLine(windowWidth/4 - 120)
+	ui.sameLine(windowWidth/5 - 120)
 	if ui.button('Close', vec2(100, windowHeight/50)) then menuOpen = false end
-	if sectorInfo.sectorIndex  == #sectors then
-		ui.sameLine(220)
-		if ui.checkbox('Show Description', showDescription) then showDescription = not showDescription end
-		if showDescription then
-			ui.dwriteTextWrapped("\nChallenge Description Week 1 :", 20, rgbm.colors.white)
-			ui.dwriteTextWrapped("\nThis week's challenge is open to all C Class Cars (tuning allowed)."..
-			"\n\nStart Line: 🚦 The start line is located at the end of the series of 2 S bends on H3."..
-			"\n\nCheckpoint 1: ✅ The first checkpoint is situated at the start line of the Drag strip."..
-			"\n\nCheckpoint 2: ✅ You'll find the second checkpoint at the junction of the road forming a Y shape, connecting H1 and C1, in front of the spawn parking."..
-			"\n\nFinish Line: 🏁 The finish line is located on the left area after the ramp of the MC Danalds when facing it."..
-			"\n\n\nIMPORTANT: In order to complete the challenge you have to drive through the finish line in reverse.", 15, rgbm.colors.white)
-		end
-	end
-	discordLinks()
 end
 
 local function sectorUI()
@@ -602,6 +586,7 @@ local function sectorUI()
 			duo.request = false
 		end
 	end
+	discordLinks()
 	ui.endGroup()
 	return 1
 end
@@ -1247,7 +1232,7 @@ local function info()
 end
 
 local initialized = false
-local menuSize = {vec2(windowWidth/4, windowHeight/3), vec2(windowWidth/6, windowHeight*1.8/3), vec2(windowWidth/3, windowHeight/3)}
+local menuSize = {vec2(windowWidth/5, windowHeight/4), vec2(windowWidth/6, windowHeight*1.8/3), vec2(windowWidth/3, windowHeight/3)}
 local currentTab = 1
 local buttonPressed = false
 
