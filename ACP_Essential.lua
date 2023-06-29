@@ -368,7 +368,10 @@ local function loadLeaderboard(getUrl)
 	end)
 	if #leaderboards < 2 then
 		if getUrl == getVV then leaderboard.name = "Velocity Vendetta"
-		else leaderboard.name = "H1" end
+		else 
+			leaderboard.name = "H1" 
+			leaderboardActive = leaderboard
+		end
 		table.insert(leaderboards, leaderboard)
 	else
 		if getUrl == getVV then
