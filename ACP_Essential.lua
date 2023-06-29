@@ -367,14 +367,17 @@ local function loadLeaderboard(getUrl)
 		sortLeaderboard(leaderboard)
 	end)
 	if #leaderboards < 2 then
-		--ac.log(#leaderboards)
-		if #leaderboards == 0 then
-			leaderboard.name = "H1"
-			leaderboardActive = leaderboard
-		else leaderboard.name = "Velocity Vendetta" end
+		if getUrl == getVV then leaderboard.name = "Velocity Vendetta"
+		else leaderboard.name = "H1" end
 		table.insert(leaderboards, leaderboard)
 	else
-		if leaderboard.name == "Velocity Vendetta" then leaderboards[2] = leaderboard else leaderboards[1] = leaderboard end
+		if getUrl == getVV then
+			leaderboard.name = "Velocity Vendetta"
+			leaderboards[2] = leaderboard
+		else
+			leaderboard.name = "H1"
+			leaderboards[1] = leaderboard
+		end
 	end
 end
 
@@ -1199,6 +1202,7 @@ local function info()
 		ui.tabItem('Illegal street racing', function () infoRace() end)
 		ui.tabItem('General Server Info', function () infoServer() end)
 	end)
+	return 1
 end
 
 local initialized = false
@@ -1213,6 +1217,7 @@ local function menu()
 			ui.tabItem('Sectors', function () currentTab = sectorUI() end)
 			ui.tabItem('Settings', function () currentTab = settings() end)
 			ui.tabItem('Leaderboard', function () currentTab = showLeaderboard() end)
+			ui.tabItem('Info', function () currentTab = info() end)
 		end)
 	end
 end
@@ -1270,5 +1275,3 @@ function script.draw3D()
 		if sectorInfo.drawLine then render.debugLine(lineToRender[1], lineToRender[2], rgbm(0,100,0,1)) end
 	end
 end
-
-ui.registerOnlineExtra(ui.Icons.Info, 'Info', nil, info, nil, ui.OnlineExtraFlags.Tool)
