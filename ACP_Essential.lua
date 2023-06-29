@@ -507,7 +507,6 @@ local function sectorSelect()
 		end
 	end
 	discordLinks()
-	groupRaceMenu()
 end
 
 local function sectorUI()
@@ -1231,7 +1230,6 @@ function script.drawUI()
 		hudUI()
 		onlineEventMessageUI()
 		raceUI()
-		groupRaceUI()
 		if menuOpen then
 			ui.toolWindow('Menu', SETTINGS.menuPos, menuSize[currentTab], true, function ()
 				ui.childWindow('childMenu', menuSize[currentTab], true, function ()
@@ -1254,7 +1252,6 @@ function script.update(dt)
 		if settingsLoaded then
 			sectorUpdate()
 			raceUpdate(dt)
-			groupRaceUpdate()
 			sharedDataSettings = SETTINGS
 			if sim.timeMinutes % 10 == 0 and not leaderboardUpdated then
 				loadLeaderboard(getH1)
