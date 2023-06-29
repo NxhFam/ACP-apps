@@ -341,8 +341,8 @@ local function onScreenGroupMessages()
 		groupRace.message = "GO GO GO!"
 	elseif groupRace.timeStart < 11 then
 		groupRace.message = math.floor(groupRace.timeStart)
-	else
-		groupRace.message = "The race will start in " .. math.floor(groupRace.timeStart/60) .. " minutes and " .. math.floor(groupRace.timeStart%60) .. " seconds"
+	elseif groupRace.timeStart % 60 < 11 then
+		groupRace.message = "The race will start in " .. math.floor(groupRace.timeStart/60) .. " minutes."
 	end
 end
 
