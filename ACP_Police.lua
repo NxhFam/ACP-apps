@@ -9,7 +9,7 @@ local settingsLoaded = true
 local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 
 local sharedDataSettings = ac.connect({
-	ac.StructItem.key('ACP_police_settings'),
+	ac.StructItem.key('ACP_essential_settings'),
 	showStats = ac.StructItem.boolean(),
 	racesWon = ac.StructItem.int16(),
 	racesLost = ac.StructItem.int16(),
