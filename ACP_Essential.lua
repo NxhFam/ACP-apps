@@ -4,7 +4,7 @@ local windowWidth = sim.windowWidth
 local windowHeight = sim.windowHeight
 local menuOpen = false
 local settingsLoaded = true
-local steamID = ac.getSteamID()
+local steamID = ac.getUserSteamID()
 local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 
 local sharedDataSettings = ac.connect({
@@ -264,7 +264,9 @@ end
 
 local validOrganiserID = {"76561199125972202"}
 local playersGroup = {}
+local playersGroupStatus = {}
 local groupRace = {
+	active = false,
 	accepted = false,
 	declined = false,
 	organiser = nil,
@@ -293,22 +295,24 @@ local acpGroupRace = ac.OnlineEvent({
 		groupRace.message = "Group Race in 5 minutes. To join go in the Sector tab."
 		groupRace.messageMenu = ac.getDriverName(sender.index) .. " is organising a group race around " .. data.location .. ".\nTo join the group race click on the join button below and go line up at the start line with " .. ac.getDriverName(sender.index)
 						.. ".\n The race will start in 5 minutes."
-		groupRace.timeStart = 300
-		groupRace.timeEnd = 600
+		groupRace.timeStart = 10
+		groupRace.timeEnd = 10
 		groupRace.location = data.location
+		groupRace.active = true
 	elseif data.yourIndex == car.sessionID and data.messageType == 1 then
 		table.insert(playersGroup, sender)
 	elseif data.yourIndex == car.sessionID and data.messageType == 2 then
-		for i, v in ipairs(playersGroup) do
+		for i, v in ipairs(playersGroupStatus) do
 			if v == sender then
-				playersGroup[i].totalDistance = data.totalDistance
-				playersGroup[i].finished = true
+				playersGroupStatus[i].totalDistance = data.totalDistance
+				playersGroupStatus[i].finished = true
 			end
 		end
 	end
 end)
 
 local function resetGroupRace()
+	groupRace.active = false
 	groupRace.accepted = false
 	groupRace.declined = false
 	groupRace.organiser = nil
@@ -337,11 +341,11 @@ local function groupHasPit()
 end
 
 local function onScreenGroupMessages()
-	if groupRace.timeStart < 1 then
+	if groupRace.timeStart < 1 and groupRace.timeStart > 0 then
 		groupRace.message = "GO GO GO!"
-	elseif groupRace.timeStart < 11 then
+	elseif groupRace.timeStart < 11 and groupRace.timeStart > 0 then
 		groupRace.message = math.floor(groupRace.timeStart)
-	elseif groupRace.timeStart % 60 < 11 then
+	elseif groupRace.timeStart % 60 < 11 and groupRace.timeStart > 0 then
 		groupRace.message = "The race will start in " .. math.floor(groupRace.timeStart/60) .. " minutes."
 	else
 		groupRace.message = ""
@@ -352,12 +356,17 @@ local function organiserStart()
 	local closeToStart = 50
 	local j = 1
 	for i = 1, #playersGroup do
-		local player = ac.getCar(i)
-		if player.position.x > car.position.x - closeToStart and player.position.z > car.position.z - closeToStart and player.position.x < car.position.x + closeToStart and player.position.z < car.position.z + closeToStart then
+		local player = playersGroup[i]
+		local playerStatus = {}
+		if player.position.x > groupRace.organiser.position.x - closeToStart and player.position.z > groupRace.organiser.position.z - closeToStart and player.position.x < groupRace.organiser.position.x + closeToStart and player.position.z < groupRace.organiser.position.z + closeToStart then
 			playersGroup[j] = player
-			playersGroup[j].distance = player.distanceDrivenSessionKm
+			playerStatus.distance = player.distanceDrivenSessionKm
+			playerStatus.totalDistance = 0
+			playerStatus.finished = false
+			playerStatus.name = ac.getDriverName(player.index)
 			j = j + 1
 		end
+		table.insert(playersGroupStatus, playerStatus)
 	end
 	for i = j, #playersGroup do
 		playersGroup[i] = nil
@@ -366,15 +375,15 @@ end
 
 local function organiserfinish()
 	for i = 1, #playersGroup do
-		if not playersGroup[i].finished then
-			playersGroup[i].totalDistance = playersGroup[i].distanceDrivenSessionKm - playersGroup[i].distance
-			playersGroup[i].finished = true
+		if not playersGroupStatus[i].finished then
+			playersGroupStatus[i].totalDistance =  playersGroup[i].distanceDrivenSessionKm - playersGroupStatus[i].distance
+			playersGroupStatus[i].finished = true
 		end
 	end
-	table.sort(playersGroup, function(a, b) return a.totalDistance > b.totalDistance end)
-	local textStandings
-	for i = 1, #playersGroup do
-		textStandings = textStandings .. i .. ". @" .. ac.getDriverName(playersGroup[i].index) .. "\n"
+	table.sort(playersGroupStatus, function(a, b) return a.totalDistance > b.totalDistance end)
+	local textStandings = ""
+	for i = 1, #playersGroupStatus do
+		textStandings = textStandings .. i .. ". @" .. playersGroupStatus[i].name .. "\n"
 	end
 	ac.sendChatMessage(textStandings)
 end
@@ -400,17 +409,17 @@ local function timeUpdate()
 end
 
 local function groupRaceUpdate()
-	if not groupRace.declined then
+	if not groupRace.declined and groupRace.active then
 		timeUpdate()
 		groupHasPit()
-	end
-	if car == groupRace.organiser then
-		if groupRace.timeStart < 1 and not groupRace.checkStart then
-			organiserStart()
-			groupRace.checkStart = true
-		end
-		if groupRace.finished then
-			organiserfinish()
+		if car == groupRace.organiser then
+			if groupRace.timeStart < 1 and not groupRace.checkStart then
+				organiserStart()
+				groupRace.checkStart = true
+			end
+			if groupRace.finished then
+				organiserfinish()
+			end
 		end
 	end
 	if groupRace.finished then
@@ -441,7 +450,7 @@ local function groupRaceUIplayers()
 	if ui.button("join") then
 		resetGroupRace()
 		groupRace.accepted = true
-		acpGroupRace{location = groupRace.location, messageType = 1, yourIndex = car.sessionID}
+		acpGroupRace{location = groupRace.location, messageType = 1, totalDistance = 0, yourIndex = car.sessionID}
 	end
 	ui.sameLine()
 	if ui.button("decline") then
@@ -483,7 +492,7 @@ local function groupRaceMenu()
 	if not groupRace.accepted and not groupRace.declined and not groupRace.started and groupRace.timeStart > 0 and groupRace.organiser ~= car then
 		groupRaceUIplayers()
 	end
-	if not groupRace.started and groupRace.timeStart == 0 then
+	if not groupRace.active then
 		groupRaceUIOganiser()
 	end
 end
