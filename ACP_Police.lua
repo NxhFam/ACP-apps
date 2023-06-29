@@ -187,8 +187,8 @@ local function updatePos()
 
 	textSize.size = vec2(imageSize.x*3/5, SETTINGS.statsFont/2)
 	textSize.box = vec2(imageSize.x*3/5, SETTINGS.statsFont/2*1.2)
-	textSize.window1 = vec2(SETTINGS.statsOffsetX+imageSize.x/10, SETTINGS.statsOffsetY+imageSize.y/5.3)
-	textSize.window2 = vec2(imageSize.x*3/5, imageSize.y/2.9)
+	textSize.window1 = vec2(SETTINGS.statsOffsetX+imageSize.x/9.5, SETTINGS.statsOffsetY+imageSize.y/5.3)
+	textSize.window2 = vec2(imageSize.x*3/5, imageSize.y/2.8)
 
 	textPos.box1 = vec2(0, 0)
 	textPos.box2 = vec2(textSize.size.x, textSize.size.y*1.6)
@@ -419,6 +419,7 @@ local function hudInChase()
 	ui.pushDWriteFont("Orbitron;Weight=Black")
 	ui.sameLine(20)
 	ui.beginGroup()
+	ui.newLine(1)
 	local textPursuit = "LVL : " .. pursuit.level - 1
 	ui.dwriteTextWrapped(ac.getDriverName(pursuit.suspect.index) .. '\n'
 						.. string.gsub(string.gsub(ac.getCarName(pursuit.suspect.index), "%W", " "), "  ", "")
