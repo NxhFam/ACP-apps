@@ -4,6 +4,7 @@ local windowWidth = sim.windowWidth
 local windowHeight = sim.windowHeight
 local menuOpen = false
 local settingsLoaded = true
+local amgGtrValid = ac.INIConfig.carData(0, 'brakes.ini'):get("DATA", "MAX_TORQUE", 0) == 3950 and ac.getCarID(0) == "amgtr_acp23"
 
 local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 
@@ -319,19 +320,21 @@ local postVV = 'https://script.google.com/macros/s/AKfycbzC7bRtYCzOV2FvoQzIOoOit
 local postH1 = 'https://script.google.com/macros/s/AKfycbzC7bRtYCzOV2FvoQzIOoOitCk5wWBr36nprceH2ztEOXbQAso6GxMY5LJOCSD8CWR4/exec?gid=1055663571'
 
 local function postGoogleSheet(time, url)
-	local steamID = ac.getUserSteamID()
-	local carName = string.gsub(string.gsub(ac.getCarName(0), "%W", " "), "  ", "")
-	local driver = ac.getDriverName(0)
-	if not time then time = -1 end
-	if not url then url = postVV end
-	local data = '{\n "steamID": "' .. steamID .. '",\n  "car": "' .. carName .. '",\n  "driver": "' .. driver .. '",\n  "time": ' .. time .. '\n}'
-	web.post(url, data, function (err, response)
-		if err then
-			print('Error: ' .. err)
-		else
-			print('Response: ' .. response.body)
-		end
-	end)
+	if url == postH1 or amgGtrValid then
+		local steamID = ac.getUserSteamID()
+		local carName = string.gsub(string.gsub(ac.getCarName(0), "%W", " "), "  ", "")
+		local driver = ac.getDriverName(0)
+		if not time then time = -1 end
+		if not url then url = postVV end
+		local data = '{\n "steamID": "' .. steamID .. '",\n  "car": "' .. carName .. '",\n  "driver": "' .. driver .. '",\n  "time": ' .. time .. '\n}'
+		web.post(url, data, function (err, response)
+			if err then
+				print('Error: ' .. err)
+			else
+				print('Response: ' .. response.body)
+			end
+		end)
+	end
 end
 
 local function sortLeaderboard(leaderboard)
@@ -558,6 +561,7 @@ local function sectorSelect()
 	end)
 	ui.sameLine(windowWidth/5 - 120)
 	if ui.button('Close', vec2(100, windowHeight/50)) then menuOpen = false end
+	if sector.name == "Velocity Vendetta" and not amgGtrValid and ac.getCarID(0) == "amgtr_acp23" then ui.dwriteTextWrapped("Mercedes-AMG GTR is not rental, times won't be posted on leaderboard.", 30, rgbm.colors.white) end
 end
 
 local function sectorUI()
