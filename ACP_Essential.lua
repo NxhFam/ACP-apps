@@ -295,7 +295,7 @@ local acpGroupRace = ac.OnlineEvent({
 		groupRace.message = "Group Race in 5 minutes. To join go in the Sector tab."
 		groupRace.messageMenu = ac.getDriverName(sender.index) .. " is organising a group race around " .. data.location .. ".\nTo join the group race click on the join button below and go line up at the start line with " .. ac.getDriverName(sender.index)
 						.. ".\n The race will start in 5 minutes."
-		groupRace.timeStart = 10
+		groupRace.timeStart = 20
 		groupRace.timeEnd = 10
 		groupRace.location = data.location
 		groupRace.active = true
