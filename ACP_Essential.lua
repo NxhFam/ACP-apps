@@ -203,7 +203,7 @@ end
 
 local function previewMSG()
 	ui.beginTransparentWindow("previewMSG", vec2(0, 0), vec2(windowWidth, windowHeight))
-	ui.pushDWriteFont("Orbitron;Weight=800")
+	ui.pushDWriteFont("Orbitron;Weight=Black")
 	local textSize = ui.measureDWriteText("Messages from Police when being chased", SETTINGS.fontSizeMSG)
 	local uiOffsetX = SETTINGS.msgOffsetX - textSize.x/2
 	local uiOffsetY = SETTINGS.msgOffsetY
@@ -417,6 +417,7 @@ local function groupRaceUpdate()
 end
 
 local function groupRaceUIMessage()
+	ui.pushDWriteFont("Orbitron;Weight=Black")
 	local text = groupRace.message
 	local textLenght = ui.measureDWriteText(text, SETTINGS.fontSizeMSG)
 	local rectPos1 = vec2(SETTINGS.msgOffsetX - textLenght.x/2, SETTINGS.msgOffsetY)
@@ -428,6 +429,7 @@ local function groupRaceUIMessage()
 		ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, rgbm(0,0,0,0.5), 10)
 	end
 	ui.dwriteDrawText(text, SETTINGS.fontSizeMSG, rectPos1, rgbm.colors.white)
+	ui.popDWriteFont()
 end
 
 local function groupRaceUIplayers()
@@ -1033,7 +1035,7 @@ local function distanceBar()
 end
 
 local function raceUI()
-	ui.pushDWriteFont("Orbitron;Weight=800")
+	ui.pushDWriteFont("Orbitron;Weight=Black")
 	local displayText = false
 	local text
 	local textLenght
