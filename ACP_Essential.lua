@@ -440,7 +440,7 @@ local function showLeaderboard()
 		end
 	end)
 	ui.sameLine(windowWidth/4 - 120)
-	if ui.button('Close', vec2(100, windowHeight/50)) then menuOpen = false end
+	if ui.button('Close', vec2(100, windowHeight/50)) then leaderboardOpen = false end
 	ui.newLine()
 	displayInGrid(leaderboardActive)
 end
@@ -1100,6 +1100,10 @@ local function drawImage()
 	local rightPos1 = vec2(imageSize.x, imageSize.y/2.8)
 	local rightPos2 = vec2(imageSize.x - imageSize.x/8, imageSize.y/4.3)
 
+	ui.drawRect(theftPos2, theftPos1, SETTINGS.colorHud)
+	ui.drawRect(ranksPos2, ranksPos1, SETTINGS.colorHud)
+	ui.drawRect(menuPos2, menuPos1, SETTINGS.colorHud)
+	ui.drawRect(countdownPos2, countdownPos1, SETTINGS.colorHud)
 	ui.drawImage(hudCenter, vec2(0,0), imageSize)
 	if ui.rectHovered(leftPos2, leftPos1) then
 		ui.image(hudLeft, imageSize, SETTINGS.colorHud)
