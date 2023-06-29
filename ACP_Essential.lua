@@ -290,10 +290,10 @@ local acpGroupRace = ac.OnlineEvent({
 	if data.messageType == 0 then
 		groupRace.timeAnnouncement = 10
 		groupRace.organiser = sender
-		groupRace.message = "Group Race in 10 minutes. To join go in the Sector tab."
+		groupRace.message = "Group Race in 5 minutes. To join go in the Sector tab."
 		groupRace.messageMenu = ac.getDriverName(sender.index) .. " is organising a group race around " .. data.location .. ".\nTo join the group race click on the join button below and go line up at the start line with " .. ac.getDriverName(sender.index)
-						.. ".\n The race will start in 10 minutes."
-		groupRace.timeStart = 600
+						.. ".\n The race will start in 5 minutes."
+		groupRace.timeStart = 300
 		groupRace.timeEnd = 600
 		groupRace.location = data.location
 	elseif data.yourIndex == car.sessionID and data.messageType == 1 then
@@ -343,6 +343,8 @@ local function onScreenGroupMessages()
 		groupRace.message = math.floor(groupRace.timeStart)
 	elseif groupRace.timeStart % 60 < 11 then
 		groupRace.message = "The race will start in " .. math.floor(groupRace.timeStart/60) .. " minutes."
+	else
+		groupRace.message = ""
 	end
 end
 
@@ -470,9 +472,9 @@ local function groupRaceUIOganiser()
 end
 
 local function groupRaceUI()
-	if not groupRace.accepted and not groupRace.declined then
+	if not groupRace.accepted and not groupRace.declined and groupRace.timeAnnouncement > 0 then
 		groupRaceUIMessage()
-	elseif groupRace.accepted and not groupRace.declined and not groupRace.started then
+	elseif groupRace.accepted and not groupRace.declined and groupRace.message ~= "" then
 		groupRaceUIMessage()
 	end
 end
