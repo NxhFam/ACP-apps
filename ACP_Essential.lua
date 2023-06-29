@@ -40,6 +40,7 @@ local hudRight = assetsFolder .. "hudRight.png"
 local hudCenter = assetsFolder .. "hudCenter.png"
 local hudCountdown = assetsFolder .. "iconCountdown.png"
 local hudMenu = assetsFolder .. "iconMenu.png"
+local hudRanks = assetsFolder .. "iconRanks.png"
 local hudTheft = assetsFolder .. "iconTheft.png"
 
 local sectors = {
@@ -244,8 +245,11 @@ end
 
 local function settings()
 	imageSize = vec2(windowHeight/80 * SETTINGS.statsSize, windowHeight/80 * SETTINGS.statsSize)
+	ui.sameLine(10)
+	ui.beginGroup()
+	ui.newLine(15)
 	if ui.checkbox('Show HUD', SETTINGS.showStats) then SETTINGS.showStats = not SETTINGS.showStats end
-	ui.sameLine(windowWidth/6 - 100)
+	ui.sameLine(windowWidth/6 - 120)
 	if ui.button('Close', vec2(100, windowHeight/50)) then menuOpen = false end
 	SETTINGS.statsOffsetX = ui.slider('##' .. 'HUD Offset X', SETTINGS.statsOffsetX, 0, windowWidth, 'HUD Offset X' .. ': %.0f')
 	SETTINGS.statsOffsetY = ui.slider('##' .. 'HUD Offset Y', SETTINGS.statsOffsetY, 0, windowHeight, 'HUD Offset Y' .. ': %.0f')
@@ -257,6 +261,7 @@ local function settings()
     ui.colorPicker('Theme Color', colorHud, ui.ColorPickerFlags.AlphaBar)
     ui.newLine()
     uiTab()
+	ui.endGroup()
 	return 2
 end
 
@@ -303,6 +308,7 @@ end
 local leaderboards = {}
 local leaderboardActive = {}
 local leaderboardUpdated = false
+local leaderboardOpen = false
 
 local getVV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=683938135&single=true&output=csv'
 local getH1 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1055663571&single=true&output=csv'
@@ -382,6 +388,61 @@ local function loadLeaderboard(getUrl)
 			leaderboards[1] = leaderboard
 		end
 	end
+end
+
+local function displayInGrid(leaderboard)
+	local box1 = vec2(windowWidth/14, windowHeight/70)
+	local box2 = vec2(windowWidth/32, windowHeight/70)
+	ui.pushDWriteFont("Orbitron;Weight=Black")
+	ui.newLine()
+	ui.dwriteTextAligned("Pos", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box2, false, SETTINGS.colorHud)
+	ui.sameLine()
+	ui.dwriteTextAligned("Driver", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
+	ui.sameLine()
+	ui.dwriteTextAligned("Car", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
+	ui.sameLine()
+	ui.dwriteTextAligned("Time", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
+	ui.popDWriteFont()
+	for i = 1, #leaderboard do
+		local entry = leaderboard[i]
+		if i == 1 then
+			ui.dwriteTextAligned(i .. "st", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.white)
+		elseif i == 2 then
+			ui.dwriteTextAligned(i .. "nd", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.white)
+		elseif i == 3 then
+			ui.dwriteTextAligned(i .. "rd", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.white)
+		else
+			ui.dwriteTextAligned(i .. "th", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.white)
+		end
+		ui.sameLine()
+		ui.dwriteTextAligned(entry.driver, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
+		ui.sameLine()
+		ui.dwriteTextAligned(entry.car, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
+		ui.sameLine()
+		ui.dwriteTextAligned(entry.timeFormated, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
+	end
+	local lineHeight = math.max(ui.itemRectMax().y, windowHeight/3)
+	ui.drawLine(vec2(box2.x, windowHeight/20), vec2(box2.x, lineHeight), rgbm.colors.white, 1)
+	ui.drawLine(vec2(box2.x + box1.x, windowHeight/20), vec2(box2.x + box1.x, lineHeight), rgbm.colors.white, 1)
+	ui.drawLine(vec2(box2.x + box1.x*2.1, windowHeight/20), vec2(box2.x + box1.x*2.1, lineHeight), rgbm.colors.white, 1)
+	ui.drawLine(vec2(0, windowHeight/12), vec2(windowWidth/4, windowHeight/12), rgbm.colors.white, 1)
+end
+
+local function showLeaderboard()
+	ui.dummy(vec2(windowWidth/20, 0))
+	ui.sameLine()
+	ui.setNextItemWidth(windowWidth/12)
+	ui.combo("Leaderboard", leaderboardActive.name, function ()
+		for i = 1, #leaderboards do
+			if ui.selectable(leaderboards[i].name, leaderboardActive == leaderboards[i]) then
+				leaderboardActive = leaderboards[i]
+			end
+		end
+	end)
+	ui.sameLine(windowWidth/4 - 120)
+	if ui.button('Close', vec2(100, windowHeight/50)) then menuOpen = false end
+	ui.newLine()
+	displayInGrid(leaderboardActive)
 end
 
 ----------------------------------------------------------------------------------------------- UI ----------------------------------------------------------------------------------------------------
@@ -497,7 +558,7 @@ local function sectorSelect()
 			end
 		end
 	end)
-	ui.sameLine(windowWidth/4 - 100)
+	ui.sameLine(windowWidth/4 - 120)
 	if ui.button('Close', vec2(100, windowHeight/50)) then menuOpen = false end
 	if sectorInfo.sectorIndex  == #sectors then
 		ui.sameLine(220)
@@ -516,6 +577,9 @@ local function sectorSelect()
 end
 
 local function sectorUI()
+	ui.sameLine(10)
+	ui.beginGroup()
+	ui.newLine(15)
 	sectorSelect()
 	if sector == nil then
 		sector = sectors[1]
@@ -538,6 +602,7 @@ local function sectorUI()
 			duo.request = false
 		end
 	end
+	ui.endGroup()
 	return 1
 end
 
@@ -733,6 +798,7 @@ end
 
 local function resquestRace()
 	local opponent = ac.getCar(ac.getCarIndexInFront(0))
+	if not opponent then return end
 	horn.opponentName = ac.getDriverName(opponent.index)
 	if opponent and (not opponent.isHidingLabels) then
 		if dot(vec2(car.look.x, car.look.z), vec2(opponent.look.x, opponent.look.z)) > 0 then
@@ -949,6 +1015,7 @@ local iconsColorOn = {
 	[1] = rgbm(1,1,1,1),
 	[2] = rgbm(1,1,1,1),
 	[3] = rgbm(1,1,1,1),
+	[4] = rgbm(1,1,1,1),
 }
 
 local countdownTime = 0
@@ -1018,18 +1085,25 @@ local function drawImage()
 	iconsColorOn[1] = rgbm(0.99,0.99,0.99,1)
 	iconsColorOn[2] = rgbm(0.99,0.99,0.99,1)
 	iconsColorOn[3] = rgbm(0.99,0.99,0.99,1)
+	iconsColorOn[4] = rgbm(0.99,0.99,0.99,1)
 	local uiStats = ac.getUI()
-	local theftPos1 = vec2(imageSize.x - imageSize.x/1.7, imageSize.y/1.9)
-	local theftPos2 = vec2(imageSize.x/3.6, imageSize.y/2.6)
-	local menuPos1 = vec2(imageSize.x/1.75, imageSize.y/1.9)
-	local menuPos2 = vec2(imageSize.x - imageSize.x/1.75, imageSize.y/2.6)
-	local countdownPos1 = vec2(imageSize.x - imageSize.x/3.6, imageSize.y/1.9)
-	local countdownPos2 = vec2(imageSize.x/1.7, imageSize.y/2.6)
+	local theftPos1 = vec2(imageSize.x - imageSize.x/1.56, imageSize.y/1.9)
+	local theftPos2 = vec2(imageSize.x/4.6, imageSize.y/2.65)
+	local ranksPos1 = vec2(imageSize.x/1.97, imageSize.y/1.9)
+	local ranksPos2 = vec2(imageSize.x - imageSize.x/1.56, imageSize.y/2.65)
+	local countdownPos1 = vec2(imageSize.x/1.53, imageSize.y/1.9)
+	local countdownPos2 = vec2(imageSize.x - imageSize.x/2.04, imageSize.y/2.65)
+	local menuPos1 = vec2(imageSize.x - imageSize.x/4.9, imageSize.y/1.9)
+	local menuPos2 = vec2(imageSize.x/1.53, imageSize.y/2.65)
 	local leftPos1 = vec2(imageSize.x/8, imageSize.y/2.8)
 	local leftPos2 = vec2(0, imageSize.y/4.3)
 	local rightPos1 = vec2(imageSize.x, imageSize.y/2.8)
 	local rightPos2 = vec2(imageSize.x - imageSize.x/8, imageSize.y/4.3)
 
+	ui.drawRect(theftPos2, theftPos1, SETTINGS.colorHud)
+	ui.drawRect(ranksPos2, ranksPos1, SETTINGS.colorHud)
+	ui.drawRect(menuPos2, menuPos1, SETTINGS.colorHud)
+	ui.drawRect(countdownPos2, countdownPos1, SETTINGS.colorHud)
 	ui.drawImage(hudCenter, vec2(0,0), imageSize)
 	if ui.rectHovered(leftPos2, leftPos1) then
 		ui.image(hudLeft, imageSize, SETTINGS.colorHud)
@@ -1056,10 +1130,14 @@ local function drawImage()
 				end
 			end
 		end
-	elseif ui.rectHovered(menuPos2, menuPos1) then
+	elseif ui.rectHovered(ranksPos2, ranksPos1) then
 		iconsColorOn[2] = SETTINGS.colorHud
 		if uiStats.isMouseLeftKeyClicked then
-			if menuOpen then menuOpen = false else menuOpen = true end
+			if leaderboardOpen then leaderboardOpen = false	
+			else
+				if menuOpen then menuOpen = false end
+				leaderboardOpen = true
+			end
 		end
 	elseif ui.rectHovered(countdownPos2, countdownPos1) then
 		iconsColorOn[3] = SETTINGS.colorHud
@@ -1074,11 +1152,21 @@ local function drawImage()
 			end
 			SETTINGS.current = 2
 		end
+	elseif ui.rectHovered(menuPos2, menuPos1) then
+		iconsColorOn[4] = SETTINGS.colorHud
+		if uiStats.isMouseLeftKeyClicked then
+			if menuOpen then menuOpen = false
+			else
+				if leaderboardOpen then leaderboardOpen = false end
+				menuOpen = true
+			end
+		end
 	end
 	ui.image(hudBase, imageSize, SETTINGS.colorHud)
 	ui.drawImage(hudTheft, vec2(0,0), imageSize, iconsColorOn[1])
-	ui.drawImage(hudMenu, vec2(0,0), imageSize, iconsColorOn[2])
+	ui.drawImage(hudRanks, vec2(0,0), imageSize, iconsColorOn[2])
 	ui.drawImage(hudCountdown, vec2(0,0), imageSize, iconsColorOn[3])
+	ui.drawImage(hudMenu, vec2(0,0), imageSize, iconsColorOn[4])
 	if countDownState.countdownOn then countdown() end
 	if stealingTime > 0 then stealingTime = stealingTime - ui.deltaTime()
 	elseif stealingTime < 0 then stealingTime = 0 end
@@ -1113,63 +1201,11 @@ end
 
 -------------------------------------------------------------------------------------------- Menu --------------------------------------------------------------------------------------------
 
-
-local function displayInGrid(leaderboard)
-	local box1 = vec2(windowWidth/14, windowHeight/70)
-	local box2 = vec2(windowWidth/32, windowHeight/70)
-	ui.dwriteTextAligned("Pos", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.white)
-	ui.sameLine()
-	ui.dwriteTextAligned("Driver", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
-	ui.sameLine()
-	ui.dwriteTextAligned("Car", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
-	ui.sameLine()
-	ui.dwriteTextAligned("Time", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
-	ui.newLine()
-	for i = 1, #leaderboard do
-		local entry = leaderboard[i]
-		if i == 1 then
-			ui.dwriteTextAligned(i .. "st", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.gold)
-		elseif i == 2 then
-			ui.dwriteTextAligned(i .. "nd", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.silver)
-		elseif i == 3 then
-			ui.dwriteTextAligned(i .. "rd", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.bronze)
-		else
-			ui.dwriteTextAligned(i .. "th", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.white)
-		end
-		ui.sameLine()
-		ui.dwriteTextAligned(entry.driver, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
-		ui.sameLine()
-		ui.dwriteTextAligned(entry.car, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
-		ui.sameLine()
-		ui.dwriteTextAligned(entry.timeFormated, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
-	end
-	local lineHeight = math.max(ui.itemRectMax().y, windowHeight/3)
-	ui.drawLine(vec2(box2.x, windowHeight/20), vec2(box2.x, lineHeight), rgbm.colors.white, 1)
-	ui.drawLine(vec2(box2.x + box1.x, windowHeight/20), vec2(box2.x + box1.x, lineHeight), rgbm.colors.white, 1)
-	ui.drawLine(vec2(box2.x + box1.x*2.1, windowHeight/20), vec2(box2.x + box1.x*2.1, lineHeight), rgbm.colors.white, 1)
-	ui.drawLine(vec2(0, windowHeight/12), vec2(windowWidth/4, windowHeight/12), rgbm.colors.white, 1)
-end
-
-local function showLeaderboard()
-	ui.dummy(vec2(windowWidth/20, 0))
-	ui.sameLine()
-	ui.setNextItemWidth(windowWidth/12)
-	ui.combo("Leaderboard", leaderboardActive.name, function ()
-		for i = 1, #leaderboards do
-			if ui.selectable(leaderboards[i].name, leaderboardActive == leaderboards[i]) then
-				leaderboardActive = leaderboards[i]
-			end
-		end
-	end)
-	ui.sameLine(windowWidth/4 - 100)
-	if ui.button('Close', vec2(100, windowHeight/50)) then menuOpen = false end
-	ui.newLine()
-	displayInGrid(leaderboardActive)
-	return 1
-end
-
 local function infoRace()
-    ui.dwriteTextWrapped("\nIllegal street racing in a one-on-one format is surprisingly simple. Here's how it works:" ..
+	ui.sameLine(10)
+	ui.beginGroup()
+	ui.dwriteTextWrapped('\nIllegal street racing', 20, rgbm.colors.white)
+    ui.dwriteTextWrapped("Illegal street racing in a one-on-one format is surprisingly simple. Here's how it works:" ..
     "\n\n- The race initiator honks their horn twice to indicate the desire to race." ..
     "\n- The potential opponent responds with two horn honks to accept the invitation." ..
     "\n- The race takes place between the two participants, the app will inform both with a status bar showing the distance from the opponent" ..
@@ -1180,17 +1216,23 @@ local function infoRace()
     if ui.textHyperlink("Discord STREET-RACING") then
         os.openURL("https://discord.com/channels/358562025032646659/1082294944162660454")
     end
+	ui.endGroup()
 end
 
 local function infoServer()
-    ui.dwriteTextWrapped('\nWelcome to ACP, a persistent Assetto Corsa server that allows you to forge your virtual street racer life with every passing day. Unlike servers that periodically reset, ACP ensures that your progress remains untouched, empowering you to continuously accumulate and enhance your achievements without any interruptions. Prepare for a truly immersive and enduring gaming experience as your street racing journey unfolds, maintaining its integrity throughout.' ..
-    '\n\nWhat sets ACP apart is the integration of a unique "POINTS SYSTEM" in conjunction with your driving experience. Earned Points serve as a valuable currency, mirroring the real-life racing world. Utilize these Points to purchase cars and customize them to your liking, enabling you to tailor your virtual garage to perfection.' ..
+	
+	ui.sameLine(10)
+	ui.beginGroup()
+    ui.dwriteTextWrapped('\nWelcome to ACP', 20, rgbm.colors.white)
+	ui.dwriteTextWrapped('ACP is a persistent Assetto Corsa server that allows you to forge your virtual street racer life with every passing day.\nUnlike servers that periodically reset, ACP ensures that your progress remains untouched, empowering you to continuously accumulate and enhance your achievements without any interruptions.\nPrepare for a truly immersive and enduring gaming experience as your street racing journey unfolds, maintaining its integrity throughout.' ..
+    '\n\nWhat sets ACP apart is the integration of a unique "POINTS SYSTEM" in conjunction with your driving experience.\nEarned Points serve as a valuable currency, mirroring the real-life racing world.\nUtilize these Points to purchase cars and customize them to your liking, enabling you to tailor your virtual garage to perfection.' ..
     "\n\nBut that's not all! For the daring and fearless racers, ACP presents the opportunity to wager your hard-earned Points during exhilarating illegal races. Take risks, push your limits, and embrace the thrill of high-stakes competitions." ..
     "\n\nJoin us on ACP and embark on a racing adventure where every race, every achievement, and every bet contribute to your ever-evolving street racing legacy!")
     ui.newLine()
     if ui.textHyperlink("ACP Discord") then
         os.openURL("https://discord.gg/acpursuit")
     end
+	ui.endGroup()
 end
 
 local function download()
@@ -1201,17 +1243,15 @@ local function download()
 end
 
 local function info()
-	ui.childWindow('childInfo', false, function ()
-		ui.tabBar('InfoTabBar', ui.TabBarFlags.Reorderable, function ()
-			ui.tabItem('Illegal street racing', function () infoRace() end)
-			ui.tabItem('General Server Info', function () infoServer() end)
-		end)
+	ui.tabBar('InfoTabBar', ui.TabBarFlags.Reorderable, function ()
+		ui.tabItem('Illegal street racing', function () infoRace() end)
+		ui.tabItem('General Server Info', function () infoServer() end)
 	end)
-	return 1
+	return 3
 end
 
 local initialized = false
-local menuSize = {vec2(windowWidth/4, windowHeight/3), vec2(windowWidth/6, windowHeight*2/3)}
+local menuSize = {vec2(windowWidth/4, windowHeight/3), vec2(windowWidth/6, windowHeight*1.8/3), vec2(windowWidth/3, windowHeight/3)}
 local currentTab = 1
 local buttonPressed = false
 
@@ -1221,7 +1261,6 @@ local function menu()
 		ui.tabBar('MainTabBar', ui.TabBarFlags.Reorderable, function ()
 			ui.tabItem('Sectors', function () currentTab = sectorUI() end)
 			ui.tabItem('Settings', function () currentTab = settings() end)
-			ui.tabItem('Leaderboard', function () currentTab = showLeaderboard() end)
 			ui.tabItem('Info', function () currentTab = info() end)
 		end)
 	end
@@ -1232,6 +1271,16 @@ local function moveMenu()
 	if ui.mouseReleased() then buttonPressed = false end
 	if buttonPressed then SETTINGS.menuPos = SETTINGS.menuPos + ui.mouseDelta() end
 end
+
+local function leaderboardWindow()
+	ui.toolWindow('LeaderboardWindow', SETTINGS.menuPos, vec2(windowWidth/4, windowHeight/3), true, function ()
+		ui.childWindow('childLeaderboard', vec2(windowWidth/4, windowHeight/3), true, function ()
+			showLeaderboard()
+			moveMenu()
+		end)
+	end)
+end
+
 
 -------------------------------------------------------------------------------------------- Main script --------------------------------------------------------------------------------------------
 
@@ -1248,6 +1297,7 @@ function script.drawUI()
 				end)
 			end)
 		end
+		if leaderboardOpen then leaderboardWindow() end
 	end
 end
 
