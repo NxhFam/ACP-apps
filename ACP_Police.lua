@@ -570,6 +570,7 @@ local function showPursuitMsg()
 	end
 	if pursuit.startedTime > 0 then
 		text = "You are chasing " .. ac.getDriverName(pursuit.suspect.index) .. " driving a " .. string.gsub(string.gsub(ac.getCarName(pursuit.suspect.index), "%W", " "), "  ", "") .. " ! Get him! "
+		showPoliceLights()
 	end
 	if text ~= "" then
 		local textLenght = ui.measureDWriteText(text, SETTINGS.fontSizeMSG)
@@ -612,7 +613,6 @@ local function chaseUpdate()
 	if pursuit.suspect then
 		if pursuit.startedTime > 0 then
 			pursuit.startedTime = pursuit.startedTime - ui.deltaTime()
-			showPoliceLights()
 		else
 			pursuit.startedTime = 0
 		end
