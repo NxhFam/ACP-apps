@@ -191,8 +191,8 @@ local function updatePos()
 	textSize.window2 = vec2(imageSize.x*3/5, imageSize.y/2.8)
 
 	textPos.box1 = vec2(0, 0)
-	textPos.box2 = vec2(textSize.size.x, textSize.size.y*1.95)
-	textPos.addBox = vec2(0, textSize.size.y*1.95)
+	textPos.box2 = vec2(textSize.size.x, textSize.size.y*1.8)
+	textPos.addBox = vec2(0, textSize.size.y*1.8)
 end
 
 local showPreviewMsg = false
@@ -438,10 +438,9 @@ local function drawText()
 	ui.pushDWriteFont("Orbitron;Weight=Regular")
 	ui.dwriteDrawText("NEARBY VEHICULE SPEED SCANNING", SETTINGS.statsFont/3, vec2((textPos.box2.x - ui.measureDWriteText("NEARBY VEHICULE SPEED SCANNING", SETTINGS.statsFont/3).x)/2, SETTINGS.statsFont/1.5), rgbm(1,0,0,1))
 
-	local uiStats = ac.getUI()
 	local colorText = rgbm(1,1,1,1)
 	textPos.box1 = vec2(0, textSize.size.y*2.4)
-	ui.newLine(30)
+	ui.dummy(vec2(textPos.box2.x,SETTINGS.statsFont))
 	for i = 1, #playersInRange do
 		colorText = rgbm(1,1,1,1)
 		ui.drawRect(vec2(textPos.box2.x/9,textPos.box1.y), vec2(textPos.box2.x*8/9, textPos.box1.y + textPos.box2.y), rgbm(1,1,1,0.1), 1)
@@ -451,8 +450,10 @@ local function drawText()
 				playerSelected(playersInRange[i].player)
 			end
 		end
+		--ui.dwriteDrawText("playersInRange", SETTINGS.statsFont/2, vec2((textPos.box2.x - ui.measureDWriteText("playersInRange", SETTINGS.statsFont/2).x)/2, textPos.box1.y), colorText)
+		ui.dwriteDrawText(playersInRange[i].text, SETTINGS.statsFont/2, vec2((textPos.box2.x - ui.measureDWriteText(playersInRange[i].text, SETTINGS.statsFont/2).x)/2, 0), colorText)
 		textPos.box1 = textPos.box1 + textPos.addBox
-		ui.dwriteTextAligned(playersInRange[i].text, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, textSize.box, false, colorText)
+		ui.dummy(vec2(textPos.box2.x, i * SETTINGS.statsFont/5))
 	end
 	ui.popDWriteFont()
 end
@@ -482,7 +483,7 @@ local function radarUpdate()
 				if player.position.x > car.position.x - radarRange and player.position.z > car.position.z - radarRange and player.position.x < car.position.x + radarRange and player.position.z < car.position.z + radarRange then
 					playersInRange[j] = {}
 					playersInRange[j].player = player
-					playersInRange[j].text = ac.getDriverName(player.index) .. string.format(" - %d ", player.speedKmh * SETTINGS.unitMult) .. SETTINGS.unit
+					playersInRange[j].text = ac.getDriverName(player.index) .. string.format(" %d ", player.speedKmh * SETTINGS.unitMult) .. SETTINGS.unit
 					j = j + 1
 					if j == 9 then break end
 				end
