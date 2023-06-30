@@ -440,7 +440,7 @@ local function drawText()
 	ui.dwriteDrawText("NEARBY VEHICULE SPEED SCANNING", SETTINGS.statsFont/3, vec2((textPos.box2.x - ui.measureDWriteText("NEARBY VEHICULE SPEED SCANNING", SETTINGS.statsFont/3).x)/2, SETTINGS.statsFont/1.5), rgbm(1,0,0,1))
 
 	local colorText = rgbm(1,1,1,1)
-	textPos.box1 = vec2(0, textSize.size.y*2.4)
+	textPos.box1 = vec2(0, textSize.size.y*2.5)
 	ui.dummy(vec2(textPos.box2.x,SETTINGS.statsFont))
 	for i = 1, #playersInRange do
 		colorText = rgbm(1,1,1,1)
@@ -451,8 +451,8 @@ local function drawText()
 				playerSelected(playersInRange[i].player)
 			end
 		end
-		--ui.dwriteDrawText("playersInRange", SETTINGS.statsFont/2, vec2((textPos.box2.x - ui.measureDWriteText("playersInRange", SETTINGS.statsFont/2).x)/2, textPos.box1.y), colorText)
-		ui.dwriteDrawText(playersInRange[i].text, SETTINGS.statsFont/2, vec2((textPos.box2.x - ui.measureDWriteText(playersInRange[i].text, SETTINGS.statsFont/2).x)/2, textPos.box1.y), colorText)
+		--ui.dwriteDrawText("playersInRange", SETTINGS.statsFont/2, vec2((textPos.box2.x - ui.measureDWriteText("playersInRange", SETTINGS.statsFont/2).x)/2, textPos.box1.y*1.01), colorText)
+		ui.dwriteDrawText(playersInRange[i].text, SETTINGS.statsFont/2, vec2((textPos.box2.x - ui.measureDWriteText(playersInRange[i].text, SETTINGS.statsFont/2).x)/2, textPos.box1.y*1.01), colorText)
 		textPos.box1 = textPos.box1 + textPos.addBox
 		ui.dummy(vec2(textPos.box2.x, i * SETTINGS.statsFont/5))
 	end
