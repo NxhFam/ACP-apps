@@ -704,6 +704,17 @@ local timeStartRace = 0
 
 -- Functions --
 
+local function showRaceLights()
+	local timing = os.clock() % 1
+	if timing > 0.5 then
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), SETTINGS.colorHud, rgbm(),  rgbm(), SETTINGS.colorHud)
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), SETTINGS.colorHud, SETTINGS.colorHud, rgbm())
+	else
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), rgbm(), rgbm(),  rgbm(), rgbm())
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(), rgbm(), rgbm())
+	end
+end
+
 local function hasWin(winner)
 	raceFinish.winner = winner
 	raceFinish.finished = true
@@ -883,6 +894,7 @@ local function raceUI()
 		text = "Align yourself with " .. ac.getDriverName(raceState.opponent.index) .. " to start the race!"
 		displayText = true
 		textLenght = ui.measureDWriteText(text, 30)
+		showRaceLights()
 		if timeStartRace < 0 then timeStartRace = 0 end
 	elseif raceState.inRace and raceState.inFront then
 		distanceBar()
