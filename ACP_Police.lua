@@ -156,6 +156,7 @@ local pursuit = {
 	id = -1,
 	timerArrest = 0,
 	hasArrested = false,
+	startedTime = 0,
 }
 
 local arrestations = {}
@@ -313,6 +314,29 @@ end
 
 ---------------------------------------------------------------------------------------------- HUD ----------------------------------------------------------------------------------------------
 
+local function showPoliceLights()
+	local timing = os.clock() % 2
+	if timing > 1.66 then
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), rgbm(1, 0, 0, 0.5), rgbm(),  rgbm(), rgbm(1, 0, 0, 0.5))
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(0, 0, 1, 0.5), rgbm(0, 0, 1, 0.5), rgbm())
+	elseif timing > 1.33 then
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), rgbm(0, 0, 1, 0.5), rgbm(), rgbm(), rgbm(0, 0, 1, 0.5))
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(1, 0, 0, 0.5), rgbm(1, 0, 0, 0.5), rgbm())
+	elseif timing > 1 then
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), rgbm(1, 0, 0, 0.5), rgbm(),  rgbm(), rgbm(1, 0, 0, 0.5))
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(0, 0, 1, 0.5), rgbm(0, 0, 1, 0.5), rgbm())
+	elseif timing > 0.66 then
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), rgbm(0, 0, 1, 0.5), rgbm(), rgbm(), rgbm(0, 0, 1, 0.5))
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(1, 0, 0, 0.5), rgbm(1, 0, 0, 0.5), rgbm())
+	elseif timing > 0.33 then
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), rgbm(1, 0, 0, 0.5), rgbm(),  rgbm(), rgbm(1, 0, 0, 0.5))
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(0, 0, 1, 0.5), rgbm(0, 0, 1, 0.5), rgbm())
+	else
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), rgbm(0, 0, 1, 0.5), rgbm(), rgbm(), rgbm(0, 0, 1, 0.5))
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(1, 0, 0, 0.5), rgbm(1, 0, 0, 0.5), rgbm())
+	end
+end
+
 local chaseLVL = {
 	message = "",
 	messageTimer = 0,
@@ -410,7 +434,8 @@ local function playerSelected(player)
 		pursuit.nextMessage = 20
 		pursuit.level = 1
 		ac.setExtraSwitch(0, true)
-		local msgToSend = "Officer " .. ac.getDriverName(0) .. " is chasing you. Run! "--formatMessage(msgLost.msg[math.random(#msgLost.msg)])
+		local msgToSend = "Officer " .. ac.getDriverName(0) .. " is chasing you. Run! "
+		pursuit.startedTime = SETTINGS.timeMsg
 		acpPolice{message = msgToSend, messageType = 2, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
 	end
 end
@@ -538,9 +563,15 @@ local function sendChatToSuspect()
 end
 
 local function showPursuitMsg()
+	local text = ""
 	if chaseLVL.messageTimer > 0 then
 		chaseLVL.messageTimer = chaseLVL.messageTimer - ui.deltaTime()
-		local text = chaseLVL.message
+		text = chaseLVL.message
+	end
+	if pursuit.startedTime > 0 then
+		text = "You are chasing " .. ac.getDriverName(pursuit.suspect.index) .. " driving a " .. string.gsub(string.gsub(ac.getCarName(pursuit.suspect.index), "%W", " "), "  ", "") .. " ! Get him! "
+	end
+	if text ~= "" then
 		local textLenght = ui.measureDWriteText(text, SETTINGS.fontSizeMSG)
 		local rectPos1 = vec2(SETTINGS.msgOffsetX - textLenght.x/2, SETTINGS.msgOffsetY)
 		local rectPos2 = vec2(SETTINGS.msgOffsetX + textLenght.x/2, SETTINGS.msgOffsetY + SETTINGS.fontSizeMSG)
@@ -550,7 +581,7 @@ local function showPursuitMsg()
 		else
 			ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, rgbm(0,0,0,0.5), 10)
 		end
-		ui.dwriteDrawText(text, SETTINGS.fontSizeMSG, rectPos1, rgbm.colors.cyan)
+		ui.dwriteDrawText(text, SETTINGS.fontSizeMSG, rectPos1, rgbm.colors.white)
 	end
 end
 
@@ -579,6 +610,12 @@ end
 
 local function chaseUpdate()
 	if pursuit.suspect then
+		if pursuit.startedTime > 0 then
+			pursuit.startedTime = pursuit.startedTime - ui.deltaTime()
+			showPoliceLights()
+		else
+			pursuit.startedTime = 0
+		end
 		sendChatToSuspect()
 		inRange()
 	end
