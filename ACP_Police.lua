@@ -451,7 +451,7 @@ local function drawText()
 			end
 		end
 		--ui.dwriteDrawText("playersInRange", SETTINGS.statsFont/2, vec2((textPos.box2.x - ui.measureDWriteText("playersInRange", SETTINGS.statsFont/2).x)/2, textPos.box1.y), colorText)
-		ui.dwriteDrawText(playersInRange[i].text, SETTINGS.statsFont/2, vec2((textPos.box2.x - ui.measureDWriteText(playersInRange[i].text, SETTINGS.statsFont/2).x)/2, 0), colorText)
+		ui.dwriteDrawText(playersInRange[i].text, SETTINGS.statsFont/2, vec2((textPos.box2.x - ui.measureDWriteText(playersInRange[i].text, SETTINGS.statsFont/2).x)/2, textPos.box1.y), colorText)
 		textPos.box1 = textPos.box1 + textPos.addBox
 		ui.dummy(vec2(textPos.box2.x, i * SETTINGS.statsFont/5))
 	end
