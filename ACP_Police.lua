@@ -223,10 +223,10 @@ local function initSettings()
 		}
 	else SETTINGS = sharedDataSettings end
 	if SETTINGS.unit ~= "km/h" then SETTINGS.unitMult = 0.621371 end
+	if SETTINGS.timeMsg < 10 then SETTINGS.timeMsg = 10 end
 	SETTINGS.statsFont = SETTINGS.statsSize * windowHeight/1440
 	imageSize = vec2(windowHeight/80 * SETTINGS.statsSize, windowHeight/80 * SETTINGS.statsSize)
 	updatePos()
-	ac.log(rgbm.colors.cyan)
 end
 
 local function previewMSG()
@@ -347,12 +347,12 @@ local function drawImage()
 	local uiStats = ac.getUI()
 
 	if ui.rectHovered(iconPos.arrest2, iconPos.arrest1) then
-		iconsColorOn[2] = rgbm(0,1,1,1)
+		iconsColorOn[2] = rgbm(1,0,0,1)
 		if pursuit.suspect and car.speedKmh < 20 and uiStats.isMouseLeftKeyClicked then
 			pursuit.hasArrested = true
 		end
 	elseif ui.rectHovered(iconPos.cams2, iconPos.cams1) then
-		iconsColorOn[3] = rgbm(0,1,1,1)
+		iconsColorOn[3] = rgbm(1,0,0,1)
 		if uiStats.isMouseLeftKeyClicked then
 			if camerasOpen then camerasOpen = false
 			else
@@ -362,13 +362,13 @@ local function drawImage()
 			end
 		end
 	elseif ui.rectHovered(iconPos.lost2, iconPos.lost1) then
-		iconsColorOn[4] = rgbm(0,1,1,1)
+		iconsColorOn[4] = rgbm(1,0,0,1)
 		if pursuit.suspect and uiStats.isMouseLeftKeyClicked then
 			ac.sendChatMessage(formatMessage(msgLost.msg[math.random(#msgLost.msg)]))
 			lostSuspect()
 		end
 	elseif ui.rectHovered(iconPos.logs2, iconPos.logs1) then
-		iconsColorOn[5] = rgbm(0,1,1,1)
+		iconsColorOn[5] = rgbm(1,0,0,1)
 		if uiStats.isMouseLeftKeyClicked then
 			if arrestLogsOpen then arrestLogsOpen = false
 			else
@@ -378,7 +378,7 @@ local function drawImage()
 			end
 		end
 	elseif ui.rectHovered(iconPos.menu2, iconPos.menu1) then
-		iconsColorOn[6] = rgbm(0,1,1,1)
+		iconsColorOn[6] = rgbm(1,0,0,1)
 		if uiStats.isMouseLeftKeyClicked then
 			if settingsOpen then settingsOpen = false
 			else
@@ -407,7 +407,7 @@ local function playerSelected(player)
 		pursuit.nextMessage = 20
 		pursuit.level = 1
 		ac.setExtraSwitch(0, true)
-		ac.sendChatMessage(formatMessage(msgEngage.msg[math.random(#msgEngage.msg)]))
+		acpPolice{message = formatMessage(msgEngage.msg[math.random(#msgEngage.msg)]), messageType = 1, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
 	end
 end
 
@@ -446,7 +446,7 @@ local function drawText()
 		colorText = rgbm(1,1,1,1)
 		ui.drawRect(vec2(textPos.box2.x/9,textPos.box1.y), vec2(textPos.box2.x*8/9, textPos.box1.y + textPos.box2.y), rgbm(1,1,1,0.1), 1)
 		if ui.rectHovered(textPos.box1, textPos.box1 + textPos.box2) then
-			colorText = rgbm(0,1,1,1)
+			colorText = rgbm(1,0,0,1)
 			if uiStats.isMouseLeftKeyClicked then
 				playerSelected(playersInRange[i].player)
 			end
