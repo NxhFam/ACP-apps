@@ -432,6 +432,7 @@ local function hudInChase()
 end
 
 local function drawText()
+	local uiStats = ac.getUI()
 	ui.pushDWriteFont("Orbitron;Weight=Bold")
 	ui.dwriteDrawText("RADAR ACTIVE", SETTINGS.statsFont/2, vec2((textPos.box2.x - ui.measureDWriteText("RADAR ACTIVE", SETTINGS.statsFont/2).x)/2, 0), rgbm(1,0,0,1))
 	ui.popDWriteFont()
