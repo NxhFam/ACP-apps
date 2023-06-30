@@ -14,7 +14,8 @@ local sharedDataSettings = ac.connect({
 	racesWon = ac.StructItem.int16(),
 	racesLost = ac.StructItem.int16(),
 	busted = ac.StructItem.int16(),
-	statsSize = ac.StructItem.int16(),
+	essentialSize = ac.StructItem.int16(),
+	policeSize = ac.StructItem.int16(),
 	statsOffsetX = ac.StructItem.int16(),
 	statsOffsetY = ac.StructItem.int16(),
 	statsFont = ac.StructItem.int16(),
@@ -202,17 +203,19 @@ local function initSettings()
 	ac.log(sharedDataSettings.showStats)
 	if not sharedDataSettings.showStats then
 		settingsLoaded = false
-		SETTINGS = {
+		SETTINGS = ac.storage {
 			showStats = true,
 			racesWon = 0,
 			racesLost = 0,
 			busted = 0,
-			statsSize = 20,
+			essentialSize = 20,
+			policeSize = 20,
 			statsOffsetX = 0,
 			statsOffsetY = 0,
 			statsFont = 20,
 			current = 1,
 			colorHud = rgbm(1,0,0,1),
+			send = false,
 			timeMsg = 10,
 			msgOffsetY = 10,
 			msgOffsetX = windowWidth/2,
@@ -224,8 +227,8 @@ local function initSettings()
 	else SETTINGS = sharedDataSettings end
 	if SETTINGS.unit ~= "km/h" then SETTINGS.unitMult = 0.621371 end
 	if SETTINGS.timeMsg < 10 then SETTINGS.timeMsg = 10 end
-	SETTINGS.statsFont = SETTINGS.statsSize * windowHeight/1440
-	imageSize = vec2(windowHeight/80 * SETTINGS.statsSize, windowHeight/80 * SETTINGS.statsSize)
+	SETTINGS.statsFont = SETTINGS.policeSize * windowHeight/1440
+	imageSize = vec2(windowHeight/80 * SETTINGS.policeSize, windowHeight/80 * SETTINGS.policeSize)
 	updatePos()
 end
 
@@ -259,7 +262,7 @@ local function uiTab()
 end
 
 local function settings()
-	imageSize = vec2(windowHeight/80 * SETTINGS.statsSize, windowHeight/80 * SETTINGS.statsSize)
+	imageSize = vec2(windowHeight/80 * SETTINGS.policeSize, windowHeight/80 * SETTINGS.policeSize)
 	ui.dwriteTextAligned("Settings", 40, ui.Alignment.Center, ui.Alignment.Center, vec2(windowWidth/6.5,60), false, rgbm.colors.white)
 	ui.drawLine(vec2(0,60), vec2(windowWidth/6.5,60), rgbm.colors.white, 1)
 	ui.newLine(20)
@@ -282,9 +285,9 @@ local function settings()
 	if ui.button('Close', vec2(100, windowHeight/50)) then settingsOpen = false end
 	SETTINGS.statsOffsetX = ui.slider('##' .. 'HUD Offset X', SETTINGS.statsOffsetX, 0, windowWidth, 'HUD Offset X' .. ': %.0f')
 	SETTINGS.statsOffsetY = ui.slider('##' .. 'HUD Offset Y', SETTINGS.statsOffsetY, 0, windowHeight, 'HUD Offset Y' .. ': %.0f')
-	SETTINGS.statsSize = ui.slider('##' .. 'HUD Size', SETTINGS.statsSize, 10, 50, 'HUD Size' .. ': %.0f')
+	SETTINGS.policeSize = ui.slider('##' .. 'HUD Size', SETTINGS.policeSize, 10, 50, 'HUD Size' .. ': %.0f')
 	local fontMultiplier = windowHeight/1440
-	SETTINGS.statsFont = SETTINGS.statsSize * fontMultiplier
+	SETTINGS.statsFont = SETTINGS.policeSize * fontMultiplier
     ui.setNextItemWidth(300)
     ui.newLine()
     uiTab()
@@ -407,7 +410,8 @@ local function playerSelected(player)
 		pursuit.nextMessage = 20
 		pursuit.level = 1
 		ac.setExtraSwitch(0, true)
-		acpPolice{message = formatMessage(msgEngage.msg[math.random(#msgEngage.msg)]), messageType = 1, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
+		local msgToSend = "Officer " .. ac.getDriverName(0) .. " is chasing you. Run! "--formatMessage(msgLost.msg[math.random(#msgLost.msg)])
+		acpPolice{message = msgToSend, messageType = 2, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
 	end
 end
 
