@@ -186,13 +186,13 @@ local function updatePos()
 	iconPos.cams2 = vec2(imageSize.x/1.39, imageSize.y/3.2)
 
 	textSize.size = vec2(imageSize.x*3/5, SETTINGS.statsFont/2)
-	textSize.box = vec2(imageSize.x*3/5, SETTINGS.statsFont/2*1.2)
+	textSize.box = vec2(imageSize.x*3/5, SETTINGS.statsFont/1.3)
 	textSize.window1 = vec2(SETTINGS.statsOffsetX+imageSize.x/9.5, SETTINGS.statsOffsetY+imageSize.y/5.3)
 	textSize.window2 = vec2(imageSize.x*3/5, imageSize.y/2.8)
 
 	textPos.box1 = vec2(0, 0)
-	textPos.box2 = vec2(textSize.size.x, textSize.size.y*1.6)
-	textPos.addBox = vec2(0, textSize.size.y*1.6)
+	textPos.box2 = vec2(textSize.size.x, textSize.size.y*1.95)
+	textPos.addBox = vec2(0, textSize.size.y*1.95)
 end
 
 local showPreviewMsg = false
@@ -328,7 +328,7 @@ local function lostSuspect()
 end
 
 local iconsColorOn = {
-	[1] = rgbm(1,1,1,1),
+	[1] = rgbm(1,0,0,1),
 	[2] = rgbm(1,1,1,1),
 	[3] = rgbm(1,1,1,1),
 	[4] = rgbm(1,1,1,1),
@@ -339,7 +339,6 @@ local iconsColorOn = {
 local playersInRange = {}
 
 local function drawImage()
-	iconsColorOn[1] = rgbm(0.99,0.99,0.99,1)
 	iconsColorOn[2] = rgbm(0.99,0.99,0.99,1)
 	iconsColorOn[3] = rgbm(0.99,0.99,0.99,1)
 	iconsColorOn[4] = rgbm(0.99,0.99,0.99,1)
@@ -347,9 +346,6 @@ local function drawImage()
 	iconsColorOn[6] = rgbm(0.99,0.99,0.99,1)
 	local uiStats = ac.getUI()
 
-	if pursuit.suspect then
-		iconsColorOn[1] = rgbm(1,0,0,1)
-	end
 	if ui.rectHovered(iconPos.arrest2, iconPos.arrest1) then
 		iconsColorOn[2] = rgbm(0,1,1,1)
 		if pursuit.suspect and car.speedKmh < 20 and uiStats.isMouseLeftKeyClicked then
@@ -436,12 +432,19 @@ local function hudInChase()
 end
 
 local function drawText()
-	ui.pushDWriteFont("Orbitron;Weight=Black")
+	ui.pushDWriteFont("Orbitron;Weight=Bold")
+	ui.dwriteDrawText("RADAR ACTIVE", SETTINGS.statsFont/2, vec2((textPos.box2.x - ui.measureDWriteText("RADAR ACTIVE", SETTINGS.statsFont/2).x)/2, 0), rgbm(1,0,0,1))
+	ui.popDWriteFont()
+	ui.pushDWriteFont("Orbitron;Weight=Regular")
+	ui.dwriteDrawText("NEARBY VEHICULE SPEED SCANNING", SETTINGS.statsFont/3, vec2((textPos.box2.x - ui.measureDWriteText("NEARBY VEHICULE SPEED SCANNING", SETTINGS.statsFont/3).x)/2, SETTINGS.statsFont/1.5), rgbm(1,0,0,1))
+
 	local uiStats = ac.getUI()
 	local colorText = rgbm(1,1,1,1)
-	textPos.box1 = vec2(0, 0)
+	textPos.box1 = vec2(0, textSize.size.y*2.4)
+	ui.newLine(30)
 	for i = 1, #playersInRange do
 		colorText = rgbm(1,1,1,1)
+		ui.drawRect(vec2(textPos.box2.x/9,textPos.box1.y), vec2(textPos.box2.x*8/9, textPos.box1.y + textPos.box2.y), rgbm(1,1,1,0.1), 1)
 		if ui.rectHovered(textPos.box1, textPos.box1 + textPos.box2) then
 			colorText = rgbm(0,1,1,1)
 			if uiStats.isMouseLeftKeyClicked then
@@ -479,7 +482,7 @@ local function radarUpdate()
 				if player.position.x > car.position.x - radarRange and player.position.z > car.position.z - radarRange and player.position.x < car.position.x + radarRange and player.position.z < car.position.z + radarRange then
 					playersInRange[j] = {}
 					playersInRange[j].player = player
-					playersInRange[j].text = ac.getDriverName(player.index) .. string.format(" %d ", player.speedKmh * SETTINGS.unitMult) .. SETTINGS.unit
+					playersInRange[j].text = ac.getDriverName(player.index) .. string.format(" - %d ", player.speedKmh * SETTINGS.unitMult) .. SETTINGS.unit
 					j = j + 1
 					if j == 9 then break end
 				end
