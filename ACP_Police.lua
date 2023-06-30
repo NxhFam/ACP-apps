@@ -688,3 +688,7 @@ function script.update(dt)
 		end
 	end
 end
+
+if ac.getCarID(0) == valideCar[1] or ac.getCarID(0) == valideCar[2] then
+	ui.registerOnlineExtra("Menu", "Menu", nil, function () settingsOpen = not settingsOpen end, nil, 0, 0, 0)
+end
