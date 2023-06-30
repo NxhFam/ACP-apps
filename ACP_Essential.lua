@@ -1315,3 +1315,7 @@ function script.draw3D()
 		if sectorInfo.drawLine then render.debugLine(lineToRender[1], lineToRender[2], rgbm(0,100,0,1)) end
 	end
 end
+
+if ac.getCarID(0) ~= valideCar[1] and ac.getCarID(0) ~= valideCar[2] then
+	ui.registerOnlineExtra("Menu", "Menu", nil, function () menuOpen = not menuOpen end, nil, 0, 0, 0)
+end
