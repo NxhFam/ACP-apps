@@ -14,7 +14,8 @@ local sharedDataSettings = ac.connect({
 	racesWon = ac.StructItem.int16(),
 	racesLost = ac.StructItem.int16(),
 	busted = ac.StructItem.int16(),
-	statsSize = ac.StructItem.int16(),
+	essentialSize = ac.StructItem.int16(),
+	policeSize = ac.StructItem.int16(),
 	statsOffsetX = ac.StructItem.int16(),
 	statsOffsetY = ac.StructItem.int16(),
 	statsFont = ac.StructItem.int16(),
@@ -29,7 +30,6 @@ local sharedDataSettings = ac.connect({
 	unit = ac.StructItem.string(4),
 	unitMult = ac.StructItem.float(),
 }, true, ac.SharedNamespace.Shared)
-
 
 ui.setAsynchronousImagesLoading(true)
 local imageSize = vec2(0,0)
@@ -145,18 +145,20 @@ local function initSettings()
 		racesWon = 0,
 		racesLost = 0,
 		busted = 0,
-		statsSize = 20,
+		essentialSize = 20,
+		policeSize = 20,
 		statsOffsetX = 0,
 		statsOffsetY = 0,
 		statsFont = 20,
 		current = 1,
 		colorHud = rgbm(1,0,0,1),
+		send = false,
 		timeMsg = 10,
 		msgOffsetY = 10,
 		msgOffsetX = windowWidth/2,
 		fontSizeMSG = 30,
 		menuPos = vec2(0, 0),
-		unit = "Kmh",
+		unit = "km/h",
 		unitMult = 1,
 	}
 end
@@ -166,9 +168,9 @@ local function initLines()
 	ac.log(sharedDataSettings.showStats)
 	if not sharedDataSettings.showStats then initSettings()
 	else SETTINGS = sharedDataSettings end
-	if SETTINGS.timeMsg <= 10 then SETTINGS.timeMsg = 12 end
-	SETTINGS.statsFont = SETTINGS.statsSize * windowHeight/1440
-	imageSize = vec2(windowHeight/80 * SETTINGS.statsSize, windowHeight/80 * SETTINGS.statsSize)
+	if SETTINGS.timeMsg < 10 then SETTINGS.timeMsg = 10 end
+	SETTINGS.statsFont = SETTINGS.essentialSize * windowHeight/1440
+	imageSize = vec2(windowHeight/80 * SETTINGS.essentialSize, windowHeight/80 * SETTINGS.essentialSize)
 	for i = 1, #sectors do
 		local lines = {}
 		for j = 1, #sectors[i].linesData do
@@ -249,7 +251,7 @@ end
 
 
 local function settings()
-	imageSize = vec2(windowHeight/80 * SETTINGS.statsSize, windowHeight/80 * SETTINGS.statsSize)
+	imageSize = vec2(windowHeight/80 * SETTINGS.essentialSize, windowHeight/80 * SETTINGS.essentialSize)
 	ui.sameLine(10)
 	ui.beginGroup()
 	ui.newLine(15)
@@ -258,9 +260,9 @@ local function settings()
 	if ui.button('Close', vec2(100, windowHeight/50)) then menuOpen = false end
 	SETTINGS.statsOffsetX = ui.slider('##' .. 'HUD Offset X', SETTINGS.statsOffsetX, 0, windowWidth, 'HUD Offset X' .. ': %.0f')
 	SETTINGS.statsOffsetY = ui.slider('##' .. 'HUD Offset Y', SETTINGS.statsOffsetY, 0, windowHeight, 'HUD Offset Y' .. ': %.0f')
-	SETTINGS.statsSize = ui.slider('##' .. 'HUD Size', SETTINGS.statsSize, 10, 50, 'HUD Size' .. ': %.0f')
+	SETTINGS.essentialSize = ui.slider('##' .. 'HUD Size', SETTINGS.essentialSize, 10, 50, 'HUD Size' .. ': %.0f')
 	local fontMultiplier = windowHeight/1440
-	SETTINGS.statsFont = SETTINGS.statsSize * fontMultiplier
+	SETTINGS.statsFont = SETTINGS.essentialSize * fontMultiplier
     ui.setNextItemWidth(300)
 	local colorHud = SETTINGS.colorHud
     ui.colorPicker('Theme Color', colorHud, ui.ColorPickerFlags.AlphaBar)
@@ -971,20 +973,19 @@ end
 local function onlineEventMessageUI()
 	if online.messageTimer > 0 then
 		online.messageTimer = online.messageTimer - ui.deltaTime()
+		local text = string.gsub(online.message,"*", "⭐")
+		local textLenght = ui.measureDWriteText(text, SETTINGS.fontSizeMSG)
+		local rectPos1 = vec2(SETTINGS.msgOffsetX - textLenght.x/2, SETTINGS.msgOffsetY)
+		local rectPos2 = vec2(SETTINGS.msgOffsetX + textLenght.x/2, SETTINGS.msgOffsetY + SETTINGS.fontSizeMSG)
+		local rectOffset = vec2(10, 10)
+		if ui.time() % 1 < 0.5 then
+			ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, COLORSMSGBG, 10)
+		else
+			ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, rgbm(0,0,0,0.5), 10)
+		end
+		ui.dwriteDrawText(text, SETTINGS.fontSizeMSG, rectPos1, rgbm.colors.white)
 		if online.type == 2 then
 			showPoliceLights()
-		else
-			local text = string.gsub(online.message,"*", "⭐")
-			local textLenght = ui.measureDWriteText(text, SETTINGS.fontSizeMSG)
-			local rectPos1 = vec2(SETTINGS.msgOffsetX - textLenght.x/2, SETTINGS.msgOffsetY)
-			local rectPos2 = vec2(SETTINGS.msgOffsetX + textLenght.x/2, SETTINGS.msgOffsetY + SETTINGS.fontSizeMSG)
-			local rectOffset = vec2(10, 10)
-			if ui.time() % 1 < 0.5 then
-				ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, COLORSMSGBG, 10)
-			else
-				ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, rgbm(0,0,0,0.5), 10)
-			end
-			ui.dwriteDrawText(text, SETTINGS.fontSizeMSG, rectPos1, rgbm.colors.white)
 		end
 	elseif online.messageTimer < 0 then
 		online.message = ""
