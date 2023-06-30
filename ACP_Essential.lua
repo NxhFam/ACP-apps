@@ -166,7 +166,7 @@ local function initLines()
 	ac.log(sharedDataSettings.showStats)
 	if not sharedDataSettings.showStats then initSettings()
 	else SETTINGS = sharedDataSettings end
-	if SETTINGS.timeMsg < 10 then SETTINGS.timeMsg = 10 end
+	if SETTINGS.timeMsg <= 10 then SETTINGS.timeMsg = 12 end
 	SETTINGS.statsFont = SETTINGS.statsSize * windowHeight/1440
 	imageSize = vec2(windowHeight/80 * SETTINGS.statsSize, windowHeight/80 * SETTINGS.statsSize)
 	for i = 1, #sectors do
