@@ -321,6 +321,7 @@ local getVV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEs
 local getH1 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1055663571&single=true&output=csv'
 local postVV = 'https://script.google.com/macros/s/AKfycbzC7bRtYCzOV2FvoQzIOoOitCk5wWBr36nprceH2ztEOXbQAso6GxMY5LJOCSD8CWR4/exec?gid=683938135'
 local postH1 = 'https://script.google.com/macros/s/AKfycbzC7bRtYCzOV2FvoQzIOoOitCk5wWBr36nprceH2ztEOXbQAso6GxMY5LJOCSD8CWR4/exec?gid=1055663571'
+local discordPost = 'https://script.google.com/macros/s/AKfycbw2AJZNq_Zyrzbbxmj6jWqaXtJy49ivqdhYf3ppZIXJurixCrsWbPuIXnkctrfjt3Pa/exec'
 
 local function postGoogleSheet(time, url)
 	if url == postH1 or amgGtrValid then
@@ -335,6 +336,15 @@ local function postGoogleSheet(time, url)
 				print('Error: ' .. err)
 			else
 				print('Response: ' .. response.body)
+				if url == postVV then
+					web.post(discordPost, '', function (err2, response2)
+						if err2 then
+							print('Error: ' .. err2)
+						else
+							print('Response: ' .. response2.body)
+						end
+					end)
+				end
 			end
 		end)
 	end
