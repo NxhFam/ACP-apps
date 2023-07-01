@@ -31,6 +31,11 @@ local sharedDataSettings = ac.connect({
 	unitMult = ac.StructItem.float(),
 }, true, ac.SharedNamespace.Shared)
 
+local sharedDataPolice = ac.connect({
+	ac.StructItem.key('ACP_police'),
+	policeLights = ac.StructItem.boolean(),
+}, true, ac.SharedNamespace.Shared)
+
 ui.setAsynchronousImagesLoading(true)
 local imageSize = vec2(0,0)
 
@@ -351,7 +356,7 @@ end
 local function lostSuspect()
 	resetChase()
 	pursuit.suspect = nil
-	-- ac.setExtraSwitch(0, false)
+	sharedDataPolice.policeLights = false
 end
 
 local iconsColorOn = {
@@ -427,13 +432,13 @@ end
 local function playerSelected(player)
 	if pursuit.suspect == player then
 		pursuit.suspect = nil
-		-- ac.setExtraSwitch(0, false)
+		sharedDataPolice.policeLights = false
 	else
 		pursuit.suspect = player
 		pursuit.timeInPursuit = os.clock()
 		pursuit.nextMessage = 20
 		pursuit.level = 1
-		-- ac.setExtraSwitch(0, true)
+		sharedDataPolice.policeLights = true
 		local msgToSend = "Officer " .. ac.getDriverName(0) .. " is chasing you. Run! "
 		pursuit.startedTime = SETTINGS.timeMsg
 		acpPolice{message = msgToSend, messageType = 2, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
@@ -593,7 +598,7 @@ local function arrestSuspect()
 		ac.sendChatMessage(msgToSend .. "\nPlease Get Back Pit, GG!")
 		pursuit.id = pursuit.suspect.sessionID
 		pursuit.suspect = nil
-		-- ac.setExtraSwitch(0, false)
+		sharedDataPolice.policeLights = false
 		pursuit.timerArrest = 1
 	end
 	if pursuit.hasArrested then
