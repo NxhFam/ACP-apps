@@ -349,13 +349,16 @@ local function postPlayerElo()
 			return
 		end
 		print("Response: " .. response.body)
-		web.post(adjustEloUrl, '', function (err2, response2)
-			if err2 then
-				print("Error: " .. err2)
-				return
-			end
-			print("Response: " .. response2.body)
-		end)
+	end)
+end
+
+local function ajustingElo()
+	web.post(adjustEloUrl, '', function (err, response)
+		if err then
+			print("Error: " .. err)
+			return
+		end
+		print("Response: " .. response.body)
 	end)
 end
 
@@ -363,6 +366,7 @@ local function getPlayersElo()
 	local playerSteamID = ac.getUserSteamID()
 	local ranks = {}
 	local hasPlayer = false
+	ac.log(playerSteamID)
 	web.get(sheetEloUrl, function(err, response)
 		if err then
 			print("Error: " .. err)
@@ -378,8 +382,8 @@ local function getPlayersElo()
 			local elo = tonumber(columns[3])
 			local steamID = columns[4]
 			if driver and races and elo and steamID then
+				ac.log(steamID)
 				if steamID == playerSteamID then
-					ac.log("Found player")
 					playerElo = elo
 					playerRaces = races
 					hasPlayer = true
@@ -863,6 +867,7 @@ local function hasWin(winner)
 	end
 	playerRaces = playerRaces + 1
 	postPlayerElo()
+	ajustingElo()
 	raceState.opponent = nil
 end
 
