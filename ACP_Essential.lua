@@ -373,6 +373,7 @@ local function getPlayersElo()
 			return
 		end
 		local data = response.body
+		ac.log(data)
 		local lines = string.split(data, "\n")
 		for i = 1, #lines do
 			local line = lines[i]
@@ -383,12 +384,12 @@ local function getPlayersElo()
 			local steamID = columns[4]
 			if driver and races and elo and steamID then
 				ac.log(steamID)
+				table.insert(ranks, {driver = driver, races = races, elo = elo, steamID = steamID})
 				if steamID == playerSteamID then
 					playerElo = elo
 					playerRaces = races
 					hasPlayer = true
 				end
-				table.insert(ranks, {driver = driver, races = races, elo = elo, steamID = steamID})
 			end
 		end
 		if not hasPlayer then
