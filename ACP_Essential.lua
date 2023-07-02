@@ -860,6 +860,7 @@ local function hasWin(winner)
 		SETTINGS.racesLost = SETTINGS.racesLost + 1
 		eloRating(playerElo, raceState.opponent.elo, 0)
 	end
+	playerRaces = playerRaces + 1
 	postPlayerElo()
 	raceState.opponent = nil
 end
