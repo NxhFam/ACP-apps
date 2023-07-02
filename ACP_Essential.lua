@@ -311,12 +311,96 @@ local function dot(vector1, vector2)
 	return vector1.x * vector2.x + vector1.y * vector2.y
 end
 
------------------------------------------------------------------------------------------------ HTTP Request ----------------------------------------------------------------------------------------------------
+-- Online Interactions
+--------------------------------------------------------------------------------------- Elo Calculation -----------------------------------------------------------------------------------------------
 local leaderboards = {}
 local leaderboardActive = {}
 local leaderboardUpdated = false
 local leaderboardOpen = false
 
+local sheetEloUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1485964543&single=true&output=csv'
+local postEloUrl = 'https://script.google.com/macros/s/AKfycbzC7bRtYCzOV2FvoQzIOoOitCk5wWBr36nprceH2ztEOXbQAso6GxMY5LJOCSD8CWR4/exec?gid=1485964543'
+local adjustEloUrl = 'https://script.google.com/macros/s/AKfycbzC7bRtYCzOV2FvoQzIOoOitCk5wWBr36nprceH2ztEOXbQAso6GxMY5LJOCSD8CWR4/exec?gid=1485964543'
+local playerElo = 1200
+local playerRaces = 0
+-- Rn = Ro + K * (W - We)
+-- We = 1 / (1 + 10^((Ro - Rn) / 400))
+
+-- Rn is the new rating for the player
+-- Ro is the previous rating for the player
+-- K is a constant that determines the magnitude of rating changes (higher K means larger changes)
+-- W is the result of the match (1 for a win, 0 for a loss, 0.5 for a draw)
+-- We is the expected score based on the players' ratings
+-- The expected score (We) can be calculated using the following formula:
+
+local function eloRating(elo, opponentElo, result)
+	local k = 32
+	local we = 1 / (1 + 10^((opponentElo - elo) / 400))
+	return elo + k * (result - we)
+end
+
+local function postPlayerElo()
+	local steamID = ac.getUserSteamID()
+	local driver = ac.getDriverName(0)
+	local data = '{\n "steamID": "' .. steamID .. '",\n  "elo": ' .. playerElo .. ',\n  "driver": "' .. driver .. '",\n  "races": ' .. playerRaces .. '\n}'
+	web.post(postEloUrl, data, function (err, response)
+		if err then
+			print("Error: " .. err)
+			return
+		end
+		print("Response: " .. response.body)
+		web.post(adjustEloUrl, '', function (err2, response2)
+			if err2 then
+				print("Error: " .. err2)
+				return
+			end
+			print("Response: " .. response2.body)
+		end)
+	end)
+end
+
+local function getPlayersElo()
+	local playerSteamID = ac.getUserSteamID()
+	local ranks = {}
+	local hasPlayer = false
+	web.get(sheetEloUrl, function(err, response)
+		if err then
+			print("Error: " .. err)
+			return
+		end
+		local data = response.body
+		local lines = string.split(data, "\n")
+		for i = 1, #lines do
+			local line = lines[i]
+			local columns = string.split(line, ",")
+			local driver = columns[1]
+			local races = tonumber(columns[2])
+			local elo = tonumber(columns[3])
+			local steamID = columns[4]
+			if driver and races and elo and steamID then
+				if steamID == playerSteamID then
+					playerElo = elo
+					playerRaces = races
+					hasPlayer = true
+				end
+				table.insert(ranks, {driver = driver, races = races, elo = elo, steamID = steamID})
+			end
+		end
+		if not hasPlayer then
+			postPlayerElo()
+			table.insert(ranks, {driver = ac.getDriverName(0), races = 0, elo = 1200, steamID = playerSteamID})
+		end
+		table.sort(ranks, function(a, b) return a.elo > b.elo end)
+		ranks.name = "Elo Rankings"
+		if #leaderboards < 3 then
+			table.insert(leaderboards, ranks)
+		else
+			leaderboards[3] = ranks
+		end
+	end)
+end
+
+----------------------------------------------------------------------------------------------- HTTP Request ----------------------------------------------------------------------------------------------------
 local getVV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=683938135&single=true&output=csv'
 local getH1 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1055663571&single=true&output=csv'
 local postVV = 'https://script.google.com/macros/s/AKfycbzC7bRtYCzOV2FvoQzIOoOitCk5wWBr36nprceH2ztEOXbQAso6GxMY5LJOCSD8CWR4/exec?gid=683938135'
@@ -328,8 +412,6 @@ local function postGoogleSheet(time, url)
 		local steamID = ac.getUserSteamID()
 		local carName = string.gsub(string.gsub(ac.getCarName(0), "%W", " "), "  ", "")
 		local driver = ac.getDriverName(0)
-		if not time then time = -1 end
-		if not url then url = postVV end
 		local data = '{\n "steamID": "' .. steamID .. '",\n  "car": "' .. carName .. '",\n  "driver": "' .. driver .. '",\n  "time": ' .. time .. '\n}'
 		web.post(url, data, function (err, response)
 			if err then
@@ -448,6 +530,40 @@ local function displayInGrid(leaderboard)
 	ui.drawLine(vec2(0, windowHeight/12), vec2(windowWidth/4, windowHeight/12), rgbm.colors.white, 1)
 end
 
+local function displayEloRankings(eloRankings)
+	local box1 = vec2(windowWidth/14, windowHeight/70)
+	local box2 = vec2(windowWidth/32, windowHeight/70)
+	ui.pushDWriteFont("Orbitron;Weight=Black")
+	ui.newLine()
+	ui.dwriteTextAligned("Pos", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box2, false, SETTINGS.colorHud)
+	ui.sameLine()
+	ui.dwriteTextAligned("Driver", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
+	ui.sameLine()
+	ui.dwriteTextAligned("Elo", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
+	ui.popDWriteFont()
+	ui.newLine()
+	for i = 1, #eloRankings do
+		local entry = eloRankings[i]
+		if i == 1 then
+			ui.dwriteTextAligned(i .. "st", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.white)
+		elseif i == 2 then
+			ui.dwriteTextAligned(i .. "nd", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.white)
+		elseif i == 3 then
+			ui.dwriteTextAligned(i .. "rd", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.white)
+		else
+			ui.dwriteTextAligned(i .. "th", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.white)
+		end
+		ui.sameLine()
+		ui.dwriteTextAligned(entry.driver, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
+		ui.sameLine()
+		ui.dwriteTextAligned(entry.elo, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
+	end
+	local lineHeight = math.max(ui.itemRectMax().y, windowHeight/3)
+	ui.drawLine(vec2(box2.x, windowHeight/20), vec2(box2.x, lineHeight), rgbm.colors.white, 1)
+	ui.drawLine(vec2(box2.x + box1.x, windowHeight/20), vec2(box2.x + box1.x, lineHeight), rgbm.colors.white, 1)
+	ui.drawLine(vec2(0, windowHeight/12), vec2(windowWidth/4, windowHeight/12), rgbm.colors.white, 1)
+end
+
 local function showLeaderboard()
 	ui.dummy(vec2(windowWidth/20, 0))
 	ui.sameLine()
@@ -462,7 +578,8 @@ local function showLeaderboard()
 	ui.sameLine(windowWidth/4 - 120)
 	if ui.button('Close', vec2(100, windowHeight/50)) then leaderboardOpen = false end
 	ui.newLine()
-	displayInGrid(leaderboardActive)
+	if leaderboardActive.name == "Elo Rankings" then displayEloRankings(leaderboardActive)
+	else displayInGrid(leaderboardActive) end
 end
 
 ----------------------------------------------------------------------------------------------- UI ----------------------------------------------------------------------------------------------------
@@ -668,7 +785,6 @@ local function sectorUpdate()
 	if sectorInfo.checkpoints > 1 and not sectorInfo.finished then textTimeFormat() end
 end
 
--- Online Interactions
 --------------------------------------------------------------------------------------- Race Opponent -----------------------------------------------------------------------------------------------
 -- Variables --
 local horn = {
@@ -731,20 +847,27 @@ local function hasWin(winner)
 	raceFinish.time = 10
 	raceState.inRace = false
 	if winner == car then
+		eloRating(playerElo, raceState.opponent.elo, 1)
 		SETTINGS.racesWon = SETTINGS.racesWon + 1
 		raceFinish.opponentName = ac.getDriverName(raceState.opponent.index)
 		raceFinish.messageSent = false
-	else SETTINGS.racesLost = SETTINGS.racesLost + 1 end
+	else
+		SETTINGS.racesLost = SETTINGS.racesLost + 1
+		eloRating(playerElo, raceState.opponent.elo, 0)
+	end
+	postPlayerElo()
 	raceState.opponent = nil
 end
 
 local acpRace = ac.OnlineEvent({
 	targetSessionID = ac.StructItem.int16(),
 	messageType = ac.StructItem.int16(),
+	eloRating = ac.StructItem.int16(),
 }, function (sender, data)
 	if data.targetSessionID == car.sessionID and data.messageType == 1 then
 		raceState.opponent = sender
 		horn.resquestTime = 7
+		raceState.opponent.elo = data.eloRating
 	elseif data.targetSessionID == car.sessionID and data.messageType == 2 then
 		raceState.opponent = sender
 		raceState.inRace = true
@@ -753,6 +876,7 @@ local acpRace = ac.OnlineEvent({
 		raceState.message = true
 		raceState.time = 2
 		timeStartRace = 7
+		raceState.opponent.elo = data.eloRating
 	elseif data.targetSessionID == car.sessionID and data.messageType == 3 then
 		hasWin(car)
 	end
@@ -777,7 +901,7 @@ local function hasPit()
 		return false
 	end
 	if car.isInPit then
-		acpRace{targetSessionID = raceState.opponent.sessionID, messageType = 3}
+		acpRace{targetSessionID = raceState.opponent.sessionID, messageType = 3, eloRating = playerElo}
 		hasWin(raceState.opponent)
 		return false
 	end
@@ -815,7 +939,7 @@ local function resquestRace()
 	horn.opponentName = ac.getDriverName(opponent.index)
 	if opponent and (not opponent.isHidingLabels) then
 		if dot(vec2(car.look.x, car.look.z), vec2(opponent.look.x, opponent.look.z)) > 0 then
-			acpRace{targetSessionID = opponent.sessionID, messageType = 1}
+			acpRace{targetSessionID = opponent.sessionID, messageType = 1, eloRating = playerElo}
 			horn.resquestTime = 10
 		end
 	end
@@ -823,7 +947,7 @@ end
 
 local function acceptingRace()
 	if dot(vec2(car.look.x, car.look.z), vec2(raceState.opponent.look.x, raceState.opponent.look.z)) > 0 then
-		acpRace{targetSessionID = raceState.opponent.sessionID, messageType = 2}
+		acpRace{targetSessionID = raceState.opponent.sessionID, messageType = 2, eloRating = playerElo}
 		raceState.inRace = true
 		horn.resquestTime = 0
 		timeStartRace = 7
@@ -1317,16 +1441,18 @@ function script.update(dt)
 		loadLeaderboard(getH1)
 		initLines()
 		loadLeaderboard(getVV)
+		getPlayersElo()
 	else
 		if settingsLoaded then
 			sectorUpdate()
 			raceUpdate(dt)
 			sharedDataSettings = SETTINGS
-			if sim.timeMinutes % 10 == 0 and not leaderboardUpdated then
+			if sim.timeMinutes % 10 == ac.getCar(0).sessionID % 10 and not leaderboardUpdated then
 				loadLeaderboard(getH1)
 				loadLeaderboard(getVV)
+				getPlayersElo()
 				leaderboardUpdated = true
-			elseif sim.timeMinutes % 10 == 1 and leaderboardUpdated then
+			elseif sim.timeMinutes % 10 == ac.getCar(0).sessionID+1 % 10 and leaderboardUpdated then
 				leaderboardUpdated = false
 			end
 		end
