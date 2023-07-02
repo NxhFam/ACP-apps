@@ -376,7 +376,7 @@ local function getPlayersElo()
 			local driver = columns[1]
 			local races = tonumber(columns[2])
 			local elo = tonumber(columns[3])
-			local steamID = columns[4]
+			local steamID = tonumber(columns[4])
 			if driver and races and elo and steamID then
 				if steamID == playerSteamID then
 					playerElo = elo
@@ -540,6 +540,8 @@ local function displayEloRankings(eloRankings)
 	ui.dwriteTextAligned("Driver", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
 	ui.sameLine()
 	ui.dwriteTextAligned("Elo", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
+	ui.sameLine()
+	ui.dwriteTextAligned("Races", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
 	ui.popDWriteFont()
 	ui.newLine()
 	for i = 1, #eloRankings do
@@ -557,10 +559,13 @@ local function displayEloRankings(eloRankings)
 		ui.dwriteTextAligned(entry.driver, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
 		ui.sameLine()
 		ui.dwriteTextAligned(entry.elo, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
+		ui.sameLine()
+		ui.dwriteTextAligned(entry.races, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
 	end
 	local lineHeight = math.max(ui.itemRectMax().y, windowHeight/3)
 	ui.drawLine(vec2(box2.x, windowHeight/20), vec2(box2.x, lineHeight), rgbm.colors.white, 1)
 	ui.drawLine(vec2(box2.x + box1.x, windowHeight/20), vec2(box2.x + box1.x, lineHeight), rgbm.colors.white, 1)
+	ui.drawLine(vec2(box2.x + box1.x*2.1, windowHeight/20), vec2(box2.x + box1.x*2.1, lineHeight), rgbm.colors.white, 1)
 	ui.drawLine(vec2(0, windowHeight/12), vec2(windowWidth/4, windowHeight/12), rgbm.colors.white, 1)
 end
 
