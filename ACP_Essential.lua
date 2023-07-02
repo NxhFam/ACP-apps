@@ -320,7 +320,7 @@ local leaderboardOpen = false
 
 local sheetEloUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1485964543&single=true&output=csv'
 local postEloUrl = 'https://script.google.com/macros/s/AKfycbzC7bRtYCzOV2FvoQzIOoOitCk5wWBr36nprceH2ztEOXbQAso6GxMY5LJOCSD8CWR4/exec?gid=1485964543'
-local adjustEloUrl = 'https://script.google.com/macros/s/AKfycbzC7bRtYCzOV2FvoQzIOoOitCk5wWBr36nprceH2ztEOXbQAso6GxMY5LJOCSD8CWR4/exec?gid=1485964543'
+local adjustEloUrl = 'https://script.google.com/macros/s/AKfycbzedXVDY1CH33DwhMK31_V4NI4NXcmS96aVID-SaictmAH4ODGOjZhZwyuR888jJbAF/exec'
 local playerElo = 1200
 local playerRaces = 0
 -- Rn = Ro + K * (W - We)
