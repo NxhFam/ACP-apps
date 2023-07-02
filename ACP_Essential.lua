@@ -376,9 +376,10 @@ local function getPlayersElo()
 			local driver = columns[1]
 			local races = tonumber(columns[2])
 			local elo = tonumber(columns[3])
-			local steamID = tonumber(columns[4])
+			local steamID = columns[4]
 			if driver and races and elo and steamID then
 				if steamID == playerSteamID then
+					ac.log("Found player")
 					playerElo = elo
 					playerRaces = races
 					hasPlayer = true
