@@ -394,7 +394,7 @@ local function getPlayersElo()
 		end
 		if not hasPlayer then
 			postPlayerElo()
-			table.insert(ranks, {driver = ac.getDriverName(0), races = 0, elo = 1200, steamID = playerSteamID})
+			table.insert(ranks, {driver = ac.getDriverName(0), races = 1, elo = 1200, steamID = playerSteamID})
 		end
 		table.sort(ranks, function(a, b) return a.elo > b.elo end)
 		ranks.name = "Elo Rankings"
