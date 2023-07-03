@@ -234,6 +234,27 @@ local sectors = {
     }
 }
 
+-- POINT_0= name0
+-- POINT_0_GROUP= group
+-- POINT_0_POS= 1479.7,-263.9,-8141.4
+-- POINT_0_HEADING= -56
+
+-- POINT_1= name1
+-- POINT_1_GROUP= group
+-- POINT_1_POS= 1484.4,-264.3,-8131.3
+-- POINT_1_HEADING= -145
+
+-- POINT_2= name2
+-- POINT_2_GROUP= group
+-- POINT_2_POS= 3192.5,-296.2,-8306.6
+-- POINT_2_HEADING= -23
+
+-- POINT_3= name3
+-- POINT_3_GROUP= group
+-- POINT_3_POS= 3196.2,-296.6,-8319.6
+-- POINT_3_HEADING= -5
+
+
 local sector = nil
 
 ----------------------------------------------------------------------------------------------- Math -----------------------------------------------------------------------------------------------
@@ -595,7 +616,7 @@ local function updateSector(sectorName, time)
 	local carName = ac.getCarID(0)
 
 	if not playerData.Sectors then
-		playerData.Sectors = {}
+		table.insert(playerData, 'Sectors')
 	end
 	if sectorName == 'H1' then
 		if not playerData.Sectors.H1 then
