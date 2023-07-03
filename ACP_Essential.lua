@@ -1,161 +1,8 @@
-------------------------------------------------------------------------- JSON Utils -------------------------------------------------------------------------
-
-local json = {}
-
--- Internal functions.
-
-local function kind_of(obj)
-  if type(obj) ~= 'table' then return type(obj) end
-  local i = 1
-  for _ in pairs(obj) do
-    if obj[i] ~= nil then i = i + 1 else return 'table' end
-  end
-  if i == 1 then return 'table' else return 'array' end
-end
-
-local function escape_str(s)
-  local in_char  = {'\\', '"', '/', '\b', '\f', '\n', '\r', '\t'}
-  local out_char = {'\\', '"', '/',  'b',  'f',  'n',  'r',  't'}
-  for i, c in ipairs(in_char) do
-    s = s:gsub(c, '\\' .. out_char[i])
-  end
-  return s
-end
-
--- Returns pos, did_find; there are two cases:
--- 1. Delimiter found: pos = pos after leading space + delim; did_find = true.
--- 2. Delimiter not found: pos = pos after leading space;     did_find = false.
--- This throws an error if err_if_missing is true and the delim is not found.
-local function skip_delim(str, pos, delim, err_if_missing)
-  pos = pos + #str:match('^%s*', pos)
-  if str:sub(pos, pos) ~= delim then
-    if err_if_missing then
-      error('Expected ' .. delim .. ' near position ' .. pos)
-    end
-    return pos, false
-  end
-  return pos + 1, true
-end
-
--- Expects the given pos to be the first character after the opening quote.
--- Returns val, pos; the returned pos is after the closing quote character.
-local function parse_str_val(str, pos, val)
-  val = val or ''
-  local early_end_error = 'End of input found while parsing string.'
-  if pos > #str then error(early_end_error) end
-  local c = str:sub(pos, pos)
-  if c == '"'  then return val, pos + 1 end
-  if c ~= '\\' then return parse_str_val(str, pos + 1, val .. c) end
-  -- We must have a \ character.
-  local esc_map = {b = '\b', f = '\f', n = '\n', r = '\r', t = '\t'}
-  local nextc = str:sub(pos + 1, pos + 1)
-  if not nextc then error(early_end_error) end
-  return parse_str_val(str, pos + 2, val .. (esc_map[nextc] or nextc))
-end
-
--- Returns val, pos; the returned pos is after the number's final character.
-local function parse_num_val(str, pos)
-  local num_str = str:match('^-?%d+%.?%d*[eE]?[+-]?%d*', pos)
-  local val = tonumber(num_str)
-  if not val then error('Error parsing number at position ' .. pos .. '.') end
-  return val, pos + #num_str
-end
-
-
--- Public values and functions.
-
-function json.stringify(obj, as_key)
-  local s = {}  -- We'll build the string as an array of strings to be concatenated.
-  local kind = kind_of(obj)  -- This is 'array' if it's an array or type(obj) otherwise.
-  if kind == 'array' then
-    if as_key then error('Can\'t encode array as key.') end
-    s[#s + 1] = '['
-    for i, val in ipairs(obj) do
-      if i > 1 then s[#s + 1] = ', ' end
-      s[#s + 1] = json.stringify(val)
-    end
-    s[#s + 1] = ']'
-  elseif kind == 'table' then
-    if as_key then error('Can\'t encode table as key.') end
-    s[#s + 1] = '{'
-    for k, v in pairs(obj) do
-      if #s > 1 then s[#s + 1] = ', ' end
-      s[#s + 1] = json.stringify(k, true)
-      s[#s + 1] = ':'
-      s[#s + 1] = json.stringify(v)
-    end
-    s[#s + 1] = '}'
-  elseif kind == 'string' then
-    return '"' .. escape_str(obj) .. '"'
-  elseif kind == 'number' then
-    if as_key then return '"' .. tostring(obj) .. '"' end
-    return tostring(obj)
-  elseif kind == 'boolean' then
-    return tostring(obj)
-  elseif kind == 'nil' then
-    return 'null'
-  else
-    error('Unjsonifiable type: ' .. kind .. '.')
-  end
-  return table.concat(s)
-end
-
-json.null = {}  -- This is a one-off table to represent the null value.
-
-function json.parse(str, pos, end_delim)
-  pos = pos or 1
-  if pos > #str then error('Reached unexpected end of input.') end
-  local pos = pos + #str:match('^%s*', pos)  -- Skip whitespace.
-  local first = str:sub(pos, pos)
-  if first == '{' then  -- Parse an object.
-    local obj, key, delim_found = {}, true, true
-    pos = pos + 1
-    while true do
-      key, pos = json.parse(str, pos, '}')
-      if key == nil then return obj, pos end
-      if not delim_found then error('Comma missing between object items.') end
-      pos = skip_delim(str, pos, ':', true)  -- true -> error if missing.
-      obj[key], pos = json.parse(str, pos)
-      pos, delim_found = skip_delim(str, pos, ',')
-    end
-  elseif first == '[' then  -- Parse an array.
-    local arr, val, delim_found = {}, true, true
-    pos = pos + 1
-    while true do
-      val, pos = json.parse(str, pos, ']')
-      if val == nil then return arr, pos end
-      if not delim_found then error('Comma missing between array items.') end
-      arr[#arr + 1] = val
-      pos, delim_found = skip_delim(str, pos, ',')
-    end
-  elseif first == '"' then  -- Parse a string.
-    return parse_str_val(str, pos + 1)
-  elseif first == '-' or first:match('%d') then  -- Parse a number.
-    return parse_num_val(str, pos)
-  elseif first == end_delim then  -- End of an object or array.
-    return nil, pos + 1
-  else  -- Parse true, false, or null.
-    local literals = {['true'] = true, ['false'] = false, ['null'] = json.null}
-    for lit_str, lit_val in pairs(literals) do
-      local lit_end = pos + #lit_str - 1
-      if str:sub(pos, lit_end) == lit_str then return lit_val, lit_end + 1 end
-    end
-    local pos_info_str = 'position ' .. pos .. ': ' .. str:sub(pos, pos + 10)
-    error('Invalid json syntax starting at ' .. pos_info_str)
-  end
-end
-
---------------firebase--------------
-local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/Players.json'
-local leaderboard = {}
-local playersTable = {}
-local leaderboardName = "H1"
 local sim = ac.getSim()
 local car = ac.getCar(0)
 local windowWidth = sim.windowWidth
 local windowHeight = sim.windowHeight
 local menuOpen = false
-local leaderboardOpen = false
 local settingsLoaded = true
 local amgGtrValid = ac.INIConfig.carData(0, 'brakes.ini'):get("DATA", "MAX_TORQUE", 0) == 3950 and ac.getCarID(0) == "amgtr_acp23"
 
@@ -197,14 +44,13 @@ local hudMenu = assetsFolder .. "iconMenu.png"
 local hudRanks = assetsFolder .. "iconRanks.png"
 local hudTheft = assetsFolder .. "iconTheft.png"
 
-local playerData = {}
 local sectors = {
     {
         name = 'H1',
 		pointsData = {{vec3(-742.9, 138.9, 3558.7), vec3(-729.8, 138.9, 3542.8)},
 					{vec3(3008.2, 73, 1040.3), vec3(2998.8, 73, 1017.3)}},
         linesData = {vec4(-742.9, 3558.7, -729.8, 3542.8), vec4(3008.2, 1040.3, 2998.8, 1017.3)},
-        length = 0,
+        length = 26.3,
     },
     {
         name = 'BOBs SCRAPYARD',
@@ -233,27 +79,6 @@ local sectors = {
 		length = 8.51,
     }
 }
-
--- POINT_0= name0
--- POINT_0_GROUP= group
--- POINT_0_POS= 1479.7,-263.9,-8141.4
--- POINT_0_HEADING= -56
-
--- POINT_1= name1
--- POINT_1_GROUP= group
--- POINT_1_POS= 1484.4,-264.3,-8131.3
--- POINT_1_HEADING= -145
-
--- POINT_2= name2
--- POINT_2_GROUP= group
--- POINT_2_POS= 3192.5,-296.2,-8306.6
--- POINT_2_HEADING= -23
-
--- POINT_3= name3
--- POINT_3_GROUP= group
--- POINT_3_POS= 3196.2,-296.6,-8319.6
--- POINT_3_HEADING= -5
-
 
 local sector = nil
 
@@ -486,183 +311,105 @@ local function dot(vector1, vector2)
 	return vector1.x * vector2.x + vector1.y * vector2.y
 end
 
------------------------------------------------------------------------------------------------ Firebase -----------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------- HTTP Request ----------------------------------------------------------------------------------------------------
+local leaderboards = {}
+local leaderboardActive = {}
+local leaderboardUpdated = false
+local leaderboardOpen = false
 
-local function isPlayerInTable(steamID, table)
-	for k, v in pairs(table) do
-		if k == steamID then
-			playerData = table[k]
-			return true
-		end
-	end
-	return false
-end
+local getVV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=683938135&single=true&output=csv'
+local getH1 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1055663571&single=true&output=csv'
+local postVV = 'https://script.google.com/macros/s/AKfycbzC7bRtYCzOV2FvoQzIOoOitCk5wWBr36nprceH2ztEOXbQAso6GxMY5LJOCSD8CWR4/exec?gid=683938135'
+local postH1 = 'https://script.google.com/macros/s/AKfycbzC7bRtYCzOV2FvoQzIOoOitCk5wWBr36nprceH2ztEOXbQAso6GxMY5LJOCSD8CWR4/exec?gid=1055663571'
+local discordPost = 'https://script.google.com/macros/s/AKfycbw2AJZNq_Zyrzbbxmj6jWqaXtJy49ivqdhYf3ppZIXJurixCrsWbPuIXnkctrfjt3Pa/exec'
 
-local function addPlayerToDataBase(steamID)
-	local name = ac.getDriverName(0)
-	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","Elo": 1200,"Wins": 0,"Losses": 0,"Busted": 0,"Sectors": {"H1": {},"VV": {}}}}'
-	web.request('PATCH', firebaseUrl, str, function(err, response)
-		if err then
-			print(err)
-			return
-		end
-		local data = response.body
-		ac.log(data)
-	end)
-end
-
-local function extractFromPlayerTable(category)
-	local extractedTable = {}
-	if category == 'H1' then
-		for k, v in pairs(playersTable) do
-			if v.Sectors then
-				if v.Sectors.H1 then
-					if v.Sectors.H1[ac.getCarID(0)] then
-						local player = {
-							Name = v.Name,
-							col3 = v.Sectors.H1[ac.getCarID(0)].Time,
-							col4 = ac.getCarName(0),
-						}
-						table.insert(extractedTable, player)
-					end
-				end
-			end
-		end
-	elseif category == 'VV' then
-		for k, v in pairs(playersTable) do
-			if v.Sectors then
-				if v.Sectors.VV then
-					local player = {
-						Name = v.Name,
-						col3 = v.Sectors.VV.Time,
-						col4 = ac.getCarName(0),
-					}
-					table.insert(extractedTable, player)
-				end
-			end
-		end
-	elseif category == 'Elo' then
-		for k, v in pairs(playersTable) do
-			local player = {
-				Name = v.Name,
-				col3 = v.Elo,
-				col4 = v.Wins + v.Losses,
-			}
-			table.insert(extractedTable, player)
-		end
-	end
-	return extractedTable
-end
-
-local function sortLeaderboard(category)
-	leaderboard = extractFromPlayerTable(category)
-	if category == 'H1' or category == 'VV' then
-		table.sort(leaderboard, function(a, b) return a.col3 < b.col3 end)
-	elseif category == 'Elo' then
-		table.sort(leaderboard, function(a, b) return a.col3 > b.col3 end)
-	end
-end
-
-local function getFirebase()
-	local inDatabase = false
-	web.get(firebaseUrl, function(err, response)
-		if err then
-			print(err)
-			return
-		else
-			local jString = response.body
-			local players = json.parse(jString)
-			if isPlayerInTable(ac.getUserSteamID(), players) then
-				ac.log('Player is in table')
-				playersTable = players
-				inDatabase = true
-			else
-				ac.log('Player is not in table')
-				addPlayerToDataBase(ac.getUserSteamID())
-			end
-		end
-	end)
-	if not inDatabase then
-		web.get(firebaseUrl, function(err, response)
+local function postGoogleSheet(time, url)
+	if url == postH1 or amgGtrValid then
+		local steamID = ac.getUserSteamID()
+		local carName = string.gsub(string.gsub(ac.getCarName(0), "%W", " "), "  ", "")
+		local driver = ac.getDriverName(0)
+		if not time then time = -1 end
+		if not url then url = postVV end
+		local data = '{\n "steamID": "' .. steamID .. '",\n  "car": "' .. carName .. '",\n  "driver": "' .. driver .. '",\n  "time": ' .. time .. '\n}'
+		web.post(url, data, function (err, response)
 			if err then
-				print(err)
-				return
+				print('Error: ' .. err)
 			else
-				local jString = response.body
-				playersTable = json.parse(jString)
+				print('Response: ' .. response.body)
+				if url == postVV then
+					web.post(discordPost, '', function (err2, response2)
+						if err2 then
+							print('Error: ' .. err2)
+						else
+							print('Response: ' .. response2.body)
+						end
+					end)
+				end
 			end
 		end)
-		isPlayerInTable(ac.getUserSteamID(), playersTable)
 	end
-	sortLeaderboard(leaderboardName)
 end
 
-local function updatefirebase()
-	local str = '{"' .. ac.getUserSteamID() .. '": ' .. json.stringify(playerData) .. '}'
-	ac.log(str)
-	web.request('PATCH', firebaseUrl, str, function(err, response)
+local function sortLeaderboard(leaderboard)
+	table.sort(leaderboard, function(a, b) return a.time < b.time end)
+	for i = 1, #leaderboard do
+		local timeFormated = ''
+		if leaderboard[i].time < 600 then
+			timeFormated = '0' .. math.floor(leaderboard[i].time / 60) .. ':'
+		else
+			timeFormated = math.floor(leaderboard[i].time / 60) .. ':'
+		end
+		if leaderboard[i].time % 60 < 10 then
+			timeFormated = timeFormated .. '0' .. string.format("%.3f", leaderboard[i].time % 60)
+		else
+			timeFormated = timeFormated .. string.format("%.3f", leaderboard[i].time % 60)
+		end
+		leaderboard[i].timeFormated = timeFormated
+	end
+end
+
+local function loadLeaderboard(getUrl)
+	local leaderboard = {}
+	web.get(getUrl, function(err, response)
 		if err then
-			print(err)
+			print("Error: " .. err)
 			return
 		end
-		local data = response.body
-		ac.log(data)
+		local data = response.body -- response.body is a string in csv format (comma separated values) with the following columns: driver, car, time (in second), steamID
+		local lines = string.split(data, "\n")
+		for i = 1, #lines do
+			local line = lines[i]
+			local columns = string.split(line, ",")
+			local driver = columns[1]
+			local carName = columns[2]
+			local time = tonumber(columns[3])
+			local steamID = columns[4]
+			if driver and carName and time and steamID then
+				table.insert(leaderboard, {driver = driver, car = carName, time = time, steamID = steamID})
+			end
+		end
+		ac.log(#leaderboard .. " entries in leaderboard")
+		sortLeaderboard(leaderboard)
 	end)
-	isPlayerInTable(ac.getUserSteamID(), playersTable)
-	sortLeaderboard(leaderboardName)
-end
-
-local function updateSector(sectorName, time)
-	local carName = ac.getCarID(0)
-
-	if not playerData.Sectors then
-		table.insert(playerData, 'Sectors')
-	end
-	if sectorName == 'H1' then
-		if not playerData.Sectors.H1 then
-			playerData.Sectors.H1 = {}
-		end
-		if not playerData.Sectors.H1[carName] then
-			playerData.Sectors.H1[carName] = {}
-		end
-		if not playerData.Sectors.H1[carName].Time then
-			playerData.Sectors.H1[carName].Time = time
+	if #leaderboards < 2 then
+		if getUrl == getVV then leaderboard.name = "Velocity Vendetta"
 		else
-			if time < playerData.Sectors.H1[carName].Time then
-				playerData.Sectors.H1[carName].Time = time
-			end
+			leaderboard.name = "H1"
+			leaderboardActive = leaderboard
 		end
-	end
-	if sectorName == 'VV' then
-		if not playerData.Sectors.VV then
-			playerData.Sectors.VV = {}
-		end
-		if not playerData.Sectors.VV.Time then
-			playerData.Sectors.VV.Time = time
+		table.insert(leaderboards, leaderboard)
+	else
+		if getUrl == getVV then
+			leaderboard.name = "Velocity Vendetta"
+			leaderboards[2] = leaderboard
 		else
-			if time < playerData.Sectors.VV.Time then
-				playerData.Sectors.VV.Time = time
-			end
+			leaderboard.name = "H1"
+			leaderboards[1] = leaderboard
 		end
 	end
-	updatefirebase()
 end
 
-local function eloRating(elo, opponentElo, result)
-	local k = 32
-	local we = 1 / (1 + 10^((opponentElo - elo) / 400))
-	return elo + k * (result - we)
-end
-
-local function displayInGrid(category)
-	local col3, col4
-	if category == 'H1' or category == 'VV' then
-		col3 = 'Car'
-		col4 = 'Time'
-	elseif category == 'Elo' then
-		col3 = 'Elo'
-		col4 = 'Races'
-	end
+local function displayInGrid(leaderboard)
 	local box1 = vec2(windowWidth/14, windowHeight/70)
 	local box2 = vec2(windowWidth/32, windowHeight/70)
 	ui.pushDWriteFont("Orbitron;Weight=Black")
@@ -671,9 +418,9 @@ local function displayInGrid(category)
 	ui.sameLine()
 	ui.dwriteTextAligned("Driver", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
 	ui.sameLine()
-	ui.dwriteTextAligned(col3, SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
+	ui.dwriteTextAligned("Car", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
 	ui.sameLine()
-	ui.dwriteTextAligned(col4, SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
+	ui.dwriteTextAligned("Time", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
 	ui.popDWriteFont()
 	ui.newLine()
 	for i = 1, #leaderboard do
@@ -688,17 +435,11 @@ local function displayInGrid(category)
 			ui.dwriteTextAligned(i .. "th", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.white)
 		end
 		ui.sameLine()
-		ui.dwriteTextAligned(entry.Name, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
-		if category == 'Elo' then
-			ui.sameLine()
-			ui.dwriteTextAligned(string.format("%d", entry.col3), SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
-		end
+		ui.dwriteTextAligned(entry.driver, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
 		ui.sameLine()
-		ui.dwriteTextAligned(entry.col4, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
-		if category == 'H1' or category == 'VV' then
-			ui.sameLine()
-			ui.dwriteTextAligned(string.format("%.3f", entry.col3), SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
-		end
+		ui.dwriteTextAligned(entry.car, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
+		ui.sameLine()
+		ui.dwriteTextAligned(entry.timeFormated, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
 	end
 	local lineHeight = math.max(ui.itemRectMax().y, windowHeight/3)
 	ui.drawLine(vec2(box2.x, windowHeight/20), vec2(box2.x, lineHeight), rgbm.colors.white, 1)
@@ -707,24 +448,21 @@ local function displayInGrid(category)
 	ui.drawLine(vec2(0, windowHeight/12), vec2(windowWidth/4, windowHeight/12), rgbm.colors.white, 1)
 end
 
-
 local function showLeaderboard()
-	local leaderboardList = {"H1", "VV", "Elo"}
 	ui.dummy(vec2(windowWidth/20, 0))
 	ui.sameLine()
 	ui.setNextItemWidth(windowWidth/12)
-	ui.combo("leaderboard", leaderboardName, function ()
-		for i = 1, #leaderboardList do
-			if ui.selectable(leaderboardList[i], leaderboardName == leaderboardList[i]) then
-				leaderboardName = leaderboardList[i]
-				sortLeaderboard(leaderboardName)
+	ui.combo("Leaderboard", leaderboardActive.name, function ()
+		for i = 1, #leaderboards do
+			if ui.selectable(leaderboards[i].name, leaderboardActive == leaderboards[i]) then
+				leaderboardActive = leaderboards[i]
 			end
 		end
 	end)
 	ui.sameLine(windowWidth/4 - 120)
 	if ui.button('Close', vec2(100, windowHeight/50)) then leaderboardOpen = false end
 	ui.newLine()
-	displayInGrid(leaderboardName)
+	displayInGrid(leaderboardActive)
 end
 
 ----------------------------------------------------------------------------------------------- UI ----------------------------------------------------------------------------------------------------
@@ -916,11 +654,11 @@ local function sectorUpdate()
 					end
 					if duo.teammateHasFinished then sectorInfo.finished = true end
 				else
-					sectorInfo.finished = true
+					sectorInfo.finished = true				
 				end
 				if sectorInfo.finished and not sectorInfo.timePosted then
-					if sectors[sectorInfo.sectorIndex].name == "H1" then updateSector('H1', sectorInfo.time)
-					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" then updateSector('VV', sectorInfo.time) end
+					if sectors[sectorInfo.sectorIndex].name == "H1" then postGoogleSheet(sectorInfo.time, postH1)
+					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" then postGoogleSheet(sectorInfo.time, postVV) end
 					sectorInfo.timePosted = true
 				end
 				if sectorInfo.finished then sectorInfo.finalTime = sectorInfo.timerText end
@@ -930,6 +668,7 @@ local function sectorUpdate()
 	if sectorInfo.checkpoints > 1 and not sectorInfo.finished then textTimeFormat() end
 end
 
+-- Online Interactions
 --------------------------------------------------------------------------------------- Race Opponent -----------------------------------------------------------------------------------------------
 -- Variables --
 local horn = {
@@ -948,7 +687,6 @@ local raceState = {
 	distance = 0,
 	message = false,
 	time = 0,
-	elo = 0,
 }
 
 local raceFinish = {
@@ -993,27 +731,20 @@ local function hasWin(winner)
 	raceFinish.time = 10
 	raceState.inRace = false
 	if winner == car then
-		playerData.Elo = eloRating(playerData.Elo, raceState.elo, 1)
-		playerData.Wins = playerData.Wins + 1
+		SETTINGS.racesWon = SETTINGS.racesWon + 1
 		raceFinish.opponentName = ac.getDriverName(raceState.opponent.index)
 		raceFinish.messageSent = false
-	else
-		playerData.Losses = playerData.Losses + 1
-		playerData.Elo = eloRating(playerData.Elo, raceState.elo, 0)
-	end
-	updatefirebase()
+	else SETTINGS.racesLost = SETTINGS.racesLost + 1 end
 	raceState.opponent = nil
 end
 
 local acpRace = ac.OnlineEvent({
 	targetSessionID = ac.StructItem.int16(),
 	messageType = ac.StructItem.int16(),
-	eloRating = ac.StructItem.int16(),
 }, function (sender, data)
 	if data.targetSessionID == car.sessionID and data.messageType == 1 then
 		raceState.opponent = sender
 		horn.resquestTime = 7
-		raceState.elo = data.eloRating
 	elseif data.targetSessionID == car.sessionID and data.messageType == 2 then
 		raceState.opponent = sender
 		raceState.inRace = true
@@ -1022,7 +753,6 @@ local acpRace = ac.OnlineEvent({
 		raceState.message = true
 		raceState.time = 2
 		timeStartRace = 7
-		raceState.elo = data.eloRating
 	elseif data.targetSessionID == car.sessionID and data.messageType == 3 then
 		hasWin(car)
 	end
@@ -1047,7 +777,7 @@ local function hasPit()
 		return false
 	end
 	if car.isInPit then
-		acpRace{targetSessionID = raceState.opponent.sessionID, messageType = 3, eloRating = playerElo}
+		acpRace{targetSessionID = raceState.opponent.sessionID, messageType = 3}
 		hasWin(raceState.opponent)
 		return false
 	end
@@ -1085,7 +815,7 @@ local function resquestRace()
 	horn.opponentName = ac.getDriverName(opponent.index)
 	if opponent and (not opponent.isHidingLabels) then
 		if dot(vec2(car.look.x, car.look.z), vec2(opponent.look.x, opponent.look.z)) > 0 then
-			acpRace{targetSessionID = opponent.sessionID, messageType = 1, eloRating = playerElo}
+			acpRace{targetSessionID = opponent.sessionID, messageType = 1}
 			horn.resquestTime = 10
 		end
 	end
@@ -1093,7 +823,7 @@ end
 
 local function acceptingRace()
 	if dot(vec2(car.look.x, car.look.z), vec2(raceState.opponent.look.x, raceState.opponent.look.z)) > 0 then
-		acpRace{targetSessionID = raceState.opponent.sessionID, messageType = 2, eloRating = playerElo}
+		acpRace{targetSessionID = raceState.opponent.sessionID, messageType = 2}
 		raceState.inRace = true
 		horn.resquestTime = 0
 		timeStartRace = 7
@@ -1187,7 +917,7 @@ local function raceUI()
 		text = ac.getDriverName(raceFinish.winner.index) .. " has won the race"
 		displayText = true
 		if not raceFinish.messageSent and raceFinish.winner == car then
-			ac.sendChatMessage(ac.getDriverName(0) .. " has just beaten " .. raceFinish.opponentName .. string.format(" in an illegal race. [Win rate: %d",playerData.Wins * 100 / (playerData.Wins + playerData.Losses)) .. "%]")
+			ac.sendChatMessage(ac.getDriverName(0) .. " has just beaten " .. raceFinish.opponentName .. string.format(" in an illegal race. [Win rate: %d",SETTINGS.racesWon * 100 / (SETTINGS.racesWon + SETTINGS.racesLost)) .. "%]")
 			raceFinish.messageSent = true
 		end
 	elseif horn.resquestTime > 0  and raceState.opponent then
@@ -1235,8 +965,7 @@ local acpPolice = ac.OnlineEvent({
 	elseif data.yourIndex == car.sessionID and data.messageType == 2 then
 		online.message = data.message
 		online.messageTimer = SETTINGS.timeMsg
-		playerData.Busted = playerData.Busted + 1
-		updatefirebase()
+		SETTINGS.busted = SETTINGS.busted + 1
 	end
 end)
 
@@ -1344,11 +1073,11 @@ local function drawText()
         textSize = ui.measureDWriteText(string.format("%.2f",drivenKm) .. " km", SETTINGS.statsFont)
         ui.dwriteDrawText(string.format("%.2f",drivenKm) .. " km", SETTINGS.statsFont, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1,1,1,1))
     elseif SETTINGS.current == 2 then
-        textSize = ui.measureDWriteText(playerData.Wins .. "Win  -  Lost" .. playerData.Losses, SETTINGS.statsFont/1.1)
-        ui.dwriteDrawText("Win " .. playerData.Wins .. " - Lost " .. playerData.Losses, SETTINGS.statsFont/1.1, textOffset - vec2(textSize.x/2, -imageSize.y/12.5), rgbm(1,1,1,1))
+        textSize = ui.measureDWriteText(SETTINGS.racesWon .. "Win  -  Lost" .. SETTINGS.racesLost, SETTINGS.statsFont/1.1)
+        ui.dwriteDrawText("Win " .. SETTINGS.racesWon .. " - Lost " .. SETTINGS.racesLost, SETTINGS.statsFont/1.1, textOffset - vec2(textSize.x/2, -imageSize.y/12.5), rgbm(1,1,1,1))
     elseif SETTINGS.current == 3 then
-        textSize = ui.measureDWriteText(playerData.Busted, SETTINGS.statsFont)
-        ui.dwriteDrawText(playerData.Busted, SETTINGS.statsFont, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1,1,1,1))
+        textSize = ui.measureDWriteText(SETTINGS.busted, SETTINGS.statsFont)
+        ui.dwriteDrawText(SETTINGS.busted, SETTINGS.statsFont, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1,1,1,1))
     elseif SETTINGS.current > 3 then
         textSize = ui.measureDWriteText(sector.name, SETTINGS.statsFont)
         ui.dwriteDrawText(sector.name, SETTINGS.statsFont, textOffset - vec2(textSize.x/2, 0), SETTINGS.colorHud)
@@ -1413,11 +1142,10 @@ local function drawImage()
 	elseif ui.rectHovered(ranksPos2, ranksPos1) then
 		iconsColorOn[2] = SETTINGS.colorHud
 		if uiStats.isMouseLeftKeyClicked then
-			if leaderboardOpen then leaderboardOpen = false
+			if leaderboardOpen then leaderboardOpen = false	
 			else
 				if menuOpen then menuOpen = false end
 				leaderboardOpen = true
-				getFirebase()
 			end
 		end
 	elseif ui.rectHovered(countdownPos2, countdownPos1) then
@@ -1586,14 +1314,21 @@ function script.update(dt)
 	if not initialized then
 		if ac.getCarID(0) == valideCar[1] or ac.getCarID(0) == valideCar[2] then return end
 		initialized = true
+		loadLeaderboard(getH1)
 		initLines()
-		getFirebase()
-		sortLeaderboard('H1')
+		loadLeaderboard(getVV)
 	else
 		if settingsLoaded then
 			sectorUpdate()
 			raceUpdate(dt)
 			sharedDataSettings = SETTINGS
+			if sim.timeMinutes % 10 == 0 and not leaderboardUpdated then
+				loadLeaderboard(getH1)
+				loadLeaderboard(getVV)
+				leaderboardUpdated = true
+			elseif sim.timeMinutes % 10 == 1 and leaderboardUpdated then
+				leaderboardUpdated = false
+			end
 		end
 	end
 end
