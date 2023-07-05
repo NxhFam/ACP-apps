@@ -990,6 +990,7 @@ local function sectorUpdate()
 			end
 			if sectorInfo.sectorIndex == 3 and duo.teammate ~= nil and sectorInfo.finishedTeammate or sectorInfo.sectorIndex ~= 3 then
 				sectorInfo.finalTime = sectorInfo.timerText
+				duo.teammate = nil
 			end
 		elseif sectorInfo.checkpoints == #sector.lines then
 			if sector.length < car.distanceDrivenSessionKm - sectorInfo.distance then
