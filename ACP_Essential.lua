@@ -1100,8 +1100,8 @@ local acpRace = ac.OnlineEvent({
 		timeStartRace = 7
 		raceState.elo = data.eloRating
 	elseif data.targetSessionID == car.sessionID and data.messageType == 3 then
-		hasWin(car)
 		raceState.elo = data.eloRating
+		hasWin(car)
 	end
 end)
 
