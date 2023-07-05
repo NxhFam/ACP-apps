@@ -346,8 +346,9 @@ end
 local function initLines()
 	ac.log(sharedDataSettings.showStats)
 	if not sharedDataSettings.showStats then initSettings()
-	else SETTINGS = sharedDataSettings end
-	if SETTINGS.timeMsg < 10 then SETTINGS.timeMsg = 10 end
+	else
+		SETTINGS = sharedDataSettings
+	end
 	SETTINGS.statsFont = SETTINGS.essentialSize * windowHeight/1440
 	imageSize = vec2(windowHeight/80 * SETTINGS.essentialSize, windowHeight/80 * SETTINGS.essentialSize)
 	for i = 1, #sectors do
@@ -1672,9 +1673,10 @@ function script.update(dt)
 		if ac.getCarID(0) == valideCar[1] or ac.getCarID(0) == valideCar[2] then return end
 		initLines()
 		initialized = true
-		--SETTINGS.current = 1
-		getFirebase()
-		sortLeaderboard('H1')
+		if settingsLoaded then
+			getFirebase()
+			sortLeaderboard('H1')
+		end
 	else
 		if settingsLoaded then
 			sectorUpdate()
