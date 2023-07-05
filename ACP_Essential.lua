@@ -722,6 +722,8 @@ end
 local function eloRating(elo, opponentElo, result)
 	local k = 32
 	local we = 1 / (1 + 10^((opponentElo - elo) / 400))
+	ac.log(we)
+	ac.log(elo + k * (result - we))
 	return elo + k * (result - we)
 end
 
@@ -1070,8 +1072,8 @@ local function hasWin(winner)
 		raceFinish.opponentName = ac.getDriverName(raceState.opponent.index)
 		raceFinish.messageSent = false
 	else
-		playerData.Losses = playerData.Losses + 1
 		playerData.Elo = eloRating(playerData.Elo, raceState.elo, 0)
+		playerData.Losses = playerData.Losses + 1
 	end
 	updatefirebase()
 	raceState.opponent = nil
