@@ -719,12 +719,16 @@ local function updateSector(sectorName, time)
 	updatefirebase()
 end
 
-local function eloRating(elo, opponentElo, result)
-	local k = 32
-	local we = 1 / (1 + 10^((opponentElo - elo) / 400))
-	ac.log(we)
-	ac.log(elo + k * (result - we))
-	return elo + k * (result - we)
+local function eloRating(yourElo, opponentElo, result)
+    -- Constants
+    local K = 32 -- Adjust this value based on desired sensitivity
+
+    -- Calculate expected scores
+    local expectedScore = 1 / (1 + math.pow(10, (opponentElo - yourElo) / 400))
+
+    local newElo = yourElo + K * (result - expectedScore)
+
+    return newElo
 end
 
 local function displayInGrid(category)
