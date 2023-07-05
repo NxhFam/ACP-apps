@@ -511,7 +511,6 @@ local function addPlayerToDataBase(steamID)
 			return
 		end
 		local data = response.body
-		ac.log(data)
 	end)
 end
 
@@ -653,14 +652,12 @@ end
 
 local function updatefirebase()
 	local str = '{"' .. ac.getUserSteamID() .. '": ' .. json.stringify(playerData) .. '}'
-	ac.log(str)
 	web.request('PATCH', firebaseUrl, str, function(err, response)
 		if err then
 			print(err)
 			return
 		end
 		local data = response.body
-		ac.log(data)
 	end)
 	isPlayerInTable(ac.getUserSteamID(), playersTable)
 	sortLeaderboard(leaderboardName)
@@ -720,12 +717,9 @@ local function updateSector(sectorName, time)
 end
 
 local function eloRating(yourElo, opponentElo, result)
-    -- Constants
-	ac.log(yourElo)
-	ac.log(opponentElo)
+
     local K = 32 -- Adjust this value based on desired sensitivity
 
-    -- Calculate expected scores
     local expectedScore = 1 / (1 + 10^(opponentElo - yourElo) / 400)
 
     local newElo = yourElo + K * (result - expectedScore)
@@ -771,7 +765,7 @@ local function displayInGrid(category)
 		ui.dwriteTextAligned(entry.Name, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
 		if category == 'Elo' then
 			ui.sameLine()
-			ui.dwriteTextAligned(entry.col3, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
+			ui.dwriteTextAligned(string.format( "%d",entry.col3), SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
 		end
 		ui.sameLine()
 		ui.dwriteTextAligned(entry.col4, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
@@ -1110,6 +1104,7 @@ local acpRace = ac.OnlineEvent({
 end)
 
 local function whosInFront()
+	if raceState.opponent == nil then return end
 	local direction = cross(vec2(car.velocity.x, car.velocity.z), vec2(raceState.opponent.velocity.x, raceState.opponent.velocity.z))
 	local midBetweenPlayers = vec2((car.position.x + raceState.opponent.position.x)/2, (car.position.z + raceState.opponent.position.z)/2)
 	local midPlusDirection = vec2(midBetweenPlayers.x + direction.x, midBetweenPlayers.y + direction.y)
@@ -1136,6 +1131,7 @@ local function hasPit()
 end
 
 local function inRace()
+	if raceState.opponent == nil then return end
 	raceState.distance = distance(vec2(car.position.x, car.position.z), vec2(raceState.opponent.position.x, raceState.opponent.position.z))
 	if raceState.distance < 50 then whosInFront()
 	elseif raceState.distance > 250 then
@@ -1189,8 +1185,10 @@ local function raceUpdate(dt)
 			raceState.time = raceState.time - dt
 		elseif raceState.time < 0 then raceState.time = 0 end
 		if raceState.message and raceState.time == 0 then
-			ac.sendChatMessage(ac.getDriverName(0) .. " has started an illegal race against " .. ac.getDriverName(raceState.opponent.index) .. "!")
-			raceState.message = false
+			if raceState.opponent then
+				ac.sendChatMessage(ac.getDriverName(0) .. " has started an illegal race against " .. ac.getDriverName(raceState.opponent.index) .. "!")
+				raceState.message = false
+			end
 		end
 	else
 		if raceFinish.finished then
@@ -1252,7 +1250,11 @@ local function raceUI()
 
 	if timeStartRace > 0 then
 		timeStartRace = timeStartRace - ui.deltaTime()
-		text = "Align yourself with " .. ac.getDriverName(raceState.opponent.index) .. " to start the race!"
+		if raceState.opponent then
+			text = "Align yourself with " .. ac.getDriverName(raceState.opponent.index) .. " to start the race!"
+		else
+			text = "Waiting for opponent..."
+		end
 		displayText = true
 		textLenght = ui.measureDWriteText(text, 30)
 		showRaceLights()
@@ -1578,9 +1580,6 @@ local function infoRace()
     if ui.textHyperlink("Discord STREET-RACING") then
         os.openURL("https://discord.com/channels/358562025032646659/1082294944162660454")
     end
-	if ui.button("elo") then
-		ac.log(eloRating(1200, 1136.4352542, 1))
-	end
 	ui.endGroup()
 end
 
