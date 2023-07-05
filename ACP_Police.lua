@@ -574,7 +574,9 @@ local function showPursuitMsg()
 		text = chaseLVL.message
 	end
 	if pursuit.startedTime > 0 then
-		text = "You are chasing " .. ac.getDriverName(pursuit.suspect.index) .. " driving a " .. string.gsub(string.gsub(ac.getCarName(pursuit.suspect.index), "%W", " "), "  ", "") .. " ! Get him! "
+		if pursuit.suspect then
+			text = "You are chasing " .. ac.getDriverName(pursuit.suspect.index) .. " driving a " .. string.gsub(string.gsub(ac.getCarName(pursuit.suspect.index), "%W", " "), "  ", "") .. " ! Get him! "
+		end
 		showPoliceLights()
 	end
 	if text ~= "" then
@@ -738,3 +740,4 @@ end
 if ac.getCarID(0) == valideCar[1] or ac.getCarID(0) == valideCar[2] then
 	ui.registerOnlineExtra("Menu", "Menu", nil, function () settingsOpen = not settingsOpen end, nil, 0, 0, 0)
 end
+
