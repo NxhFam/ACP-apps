@@ -726,12 +726,13 @@ local function eloRating(yourElo, opponentElo, result)
     local K = 32 -- Adjust this value based on desired sensitivity
 
     -- Calculate expected scores
-    local expectedScore = 1 / (1 + math.pow(10, (opponentElo - yourElo) / 400))
+    local expectedScore = 1 / (1 + 10^(opponentElo - yourElo) / 400)
 
     local newElo = yourElo + K * (result - expectedScore)
 
     return newElo
 end
+
 
 local function displayInGrid(category)
 	local col3, col4
@@ -1127,7 +1128,7 @@ local function hasPit()
 		return false
 	end
 	if car.isInPit then
-		acpRace{targetSessionID = raceState.opponent.sessionID, messageType = 3, eloRating = playerElo}
+		acpRace{targetSessionID = raceState.opponent.sessionID, messageType = 3, eloRating = playerData.Elo}
 		hasWin(raceState.opponent)
 		return false
 	end
@@ -1165,7 +1166,7 @@ local function resquestRace()
 	horn.opponentName = ac.getDriverName(opponent.index)
 	if opponent and (not opponent.isHidingLabels) then
 		if dot(vec2(car.look.x, car.look.z), vec2(opponent.look.x, opponent.look.z)) > 0 then
-			acpRace{targetSessionID = opponent.sessionID, messageType = 1, eloRating = playerElo}
+			acpRace{targetSessionID = opponent.sessionID, messageType = 1, eloRating = playerData.Elo}
 			horn.resquestTime = 10
 		end
 	end
@@ -1173,7 +1174,7 @@ end
 
 local function acceptingRace()
 	if dot(vec2(car.look.x, car.look.z), vec2(raceState.opponent.look.x, raceState.opponent.look.z)) > 0 then
-		acpRace{targetSessionID = raceState.opponent.sessionID, messageType = 2, eloRating = playerElo}
+		acpRace{targetSessionID = raceState.opponent.sessionID, messageType = 2, eloRating = playerData.Elo}
 		raceState.inRace = true
 		horn.resquestTime = 0
 		timeStartRace = 7
@@ -1577,6 +1578,9 @@ local function infoRace()
     if ui.textHyperlink("Discord STREET-RACING") then
         os.openURL("https://discord.com/channels/358562025032646659/1082294944162660454")
     end
+	if ui.button("elo") then
+		ac.log(eloRating(1200, 1136.4352542, 1))
+	end
 	ui.endGroup()
 end
 
