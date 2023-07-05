@@ -721,6 +721,8 @@ end
 
 local function eloRating(yourElo, opponentElo, result)
     -- Constants
+	ac.log(yourElo)
+	ac.log(opponentElo)
     local K = 32 -- Adjust this value based on desired sensitivity
 
     -- Calculate expected scores
