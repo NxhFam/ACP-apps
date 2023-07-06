@@ -146,10 +146,17 @@ function json.parse(str, pos, end_delim)
 end
 
 --------------firebase--------------
-local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/Players.json'
+local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/Players'
+local sheetH1B = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1485964543&single=true&output=csv'
+local sheetH1C = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1055663571&single=true&output=csv'
+local sheetVV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=683938135&single=true&output=csv'
+local sheetElo = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1426211490&single=true&output=csv'
+
 local leaderboard = {}
-local playersTable = {}
-local leaderboardName = "H1"
+local leaderboardName = 'Class B - H1'
+local leaderboardNames = {'Class B - H1', 'Class C - H1', 'Velocity Vendetta', 'Elo Rating'}
+
+
 local sim = ac.getSim()
 local car = ac.getCar(0)
 local windowWidth = sim.windowWidth
@@ -187,6 +194,8 @@ local sharedDataSettings = ac.connect({
 ui.setAsynchronousImagesLoading(true)
 local imageSize = vec2(0,0)
 
+local imgPos = {}
+
 local assetsFolder = ac.getFolder(ac.FolderID.ACApps) .. "/lua/ACP_essential/HUD/"
 local hudBase = assetsFolder .. "hudBase.png"
 local hudLeft = assetsFolder .. "hudLeft.png"
@@ -196,6 +205,18 @@ local hudCountdown = assetsFolder .. "iconCountdown.png"
 local hudMenu = assetsFolder .. "iconMenu.png"
 local hudRanks = assetsFolder .. "iconRanks.png"
 local hudTheft = assetsFolder .. "iconTheft.png"
+
+local function loadImages()
+	assetsFolder = ac.getFolder(ac.FolderID.ACApps) .. "/lua/ACP_essential/HUD/"
+	hudBase = assetsFolder .. "hudBase.png"
+	hudLeft = assetsFolder .. "hudLeft.png"
+	hudRight = assetsFolder .. "hudRight.png"
+	hudCenter = assetsFolder .. "hudCenter.png"
+	hudCountdown = assetsFolder .. "iconCountdown.png"
+	hudMenu = assetsFolder .. "iconMenu.png"
+	hudRanks = assetsFolder .. "iconRanks.png"
+	hudTheft = assetsFolder .. "iconTheft.png"
+end
 
 local playerData = {}
 local sectors = {
@@ -247,17 +268,6 @@ local sectors = {
 		length = 8.51,
     }
 }
-
--- POINT_2= name2
--- POINT_2_GROUP= group
--- POINT_2_POS= 3192.5,-296.2,-8306.6
--- POINT_2_HEADING= -23
-
--- POINT_3= name3
--- POINT_3_GROUP= group
--- POINT_3_POS= 
--- POINT_3_HEADING= -5
-
 
 local sector = nil
 
@@ -317,6 +327,21 @@ end
 
 -- Init
 
+local function updatePos()
+	imgPos.theftPos1 = vec2(imageSize.x - imageSize.x/1.56, imageSize.y/1.9)
+	imgPos.theftPos2 = vec2(imageSize.x/4.6, imageSize.y/2.65)
+	imgPos.ranksPos1 = vec2(imageSize.x/1.97, imageSize.y/1.9)
+	imgPos.ranksPos2 = vec2(imageSize.x - imageSize.x/1.56, imageSize.y/2.65)
+	imgPos.countdownPos1 = vec2(imageSize.x/1.53, imageSize.y/1.9)
+	imgPos.countdownPos2 = vec2(imageSize.x - imageSize.x/2.04, imageSize.y/2.65)
+	imgPos.menuPos1 = vec2(imageSize.x - imageSize.x/4.9, imageSize.y/1.9)
+	imgPos.menuPos2 = vec2(imageSize.x/1.53, imageSize.y/2.65)
+	imgPos.leftPos1 = vec2(imageSize.x/8, imageSize.y/2.8)
+	imgPos.leftPos2 = vec2(0, imageSize.y/4.3)
+	imgPos.rightPos1 = vec2(imageSize.x, imageSize.y/2.8)
+	imgPos.rightPos2 = vec2(imageSize.x - imageSize.x/8, imageSize.y/4.3)
+end
+
 local function initSettings()
 	settingsLoaded = false
 	SETTINGS = {
@@ -365,6 +390,7 @@ local function initLines()
 		sectors[i].lines = lines
 	end
     sector = sectors[1]
+	updatePos()
 end
 
 ----------------------------------------------------------------------------------------------- Settings -----------------------------------------------------------------------------------------------
@@ -452,100 +478,18 @@ local function settings()
 	return 2
 end
 
-
------------------------------------------------------------------------------------------------ Sectors -----------------------------------------------------------------------------------------------
--- Variables --
-local sectorInfo = {
-	time = 0,
-	timerText = '00:00.00',
-	finalTime = '00:00.00',
-	checkpoints = 1,
-	sectorIndex = 1,
-	distance = 0,
-	finished = false,
-	drawLine = false,
-	timePosted = false,
-}
-
-local duo = {
-	teammate = nil,
-	request = false,
-	onlineSender = nil,
-	teammateHasFinished = false,
-	waiting = false,
-	playerName = "Online Players",
-}
-
-local function resetSectors()
-	sector = sectors[sectorInfo.sectorIndex]
-	sectorInfo.time = 0
-	sectorInfo.timerText = '00:00.00'
-	sectorInfo.finalTime = '00:00.00'
-	sectorInfo.checkpoints = 1
-	sectorInfo.distance = 0
-	sectorInfo.finished = false
-	sectorInfo.timePosted = false
-end
-
-local function dot(vector1, vector2)
-	return vector1.x * vector2.x + vector1.y * vector2.y
-end
-
 ----------------------------------------------------------------------------------------------- Firebase -----------------------------------------------------------------------------------------------
-
-local function isPlayerInTable(steamID, table)
-	for k, v in pairs(table) do
-		if k == steamID then
-			playerData = table[k]
-			return true
-		end
-	end
-	return false
-end
 
 local function addPlayerToDataBase(steamID)
 	local name = ac.getDriverName(0)
 	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","Elo": 1200,"Wins": 0,"Losses": 0,"Busted": 0,"Sectors": {"H1": {},"VV": {}}}}'
-	web.request('PATCH', firebaseUrl, str, function(err, response)
+	web.request('PATCH', firebaseUrl .. ".json", str, function(err, response)
 		if err then
 			print(err)
 			return
 		end
 		local data = response.body
 	end)
-end
-
-local function getCarNameBasedOnID(id)
-	local carIDs = {
-		["22b_acpursuit"] = "Impreza 22B STI",
-		["370z_acp"] = "370Z",
-		["911gt3992_acpursuit"] = "911 GT3 (992)",
-		["964turbo_acp23"] = "964 Turbo",
-		["chargerpolice_acpursuit"] = "Charger Police",
-		["crown_police"] = "Crown Vic Police",
-		["e46acpursuit"] = "M3 E46",
-		["f40_acp2023"] = "F40",
-		["gt86_acp23"] = "GT86",
-		["gtam_acp"] = "Giulia GTA",
-		["gtr_acp2023"] = "GTR R35 Nismo",
-		["hellcat_acp2023"] = "Challenger",
-		["is300_acp"] = "IS300",
-		["lancerix_acpursuit"] = "Lancer Evo IX",
-		["m4_acp23"] = "M4",
-		["murcielago_acp23"] = "Murcielago",
-		["mustang_acp"] = "Mustang",
-		["nsx94_acp23"] = "NSX",
-		["rs6abt_acp"] = "RS6 ABT",
-		["rx7_2_acpursuit"] = "RX-7",
-		["s15_acp"] = "Silvia S15",
-		["skyr34_acp2"] = "Skyline R34",
-		["supra93_acpursuit"] = "Supra Mk4",
-		["amgtr_acp23"] = "AMG GT-R",
-	}
-	if carIDs[id] then
-		return carIDs[id]
-	end
-	return 'Unknown'
 end
 
 local function timeFormat(sec)
@@ -563,105 +507,79 @@ local function timeFormat(sec)
 	return timeFormated
 end
 
-local function extractFromPlayerTable(category)
-	local extractedTable = {}
-	if category == 'H1' then
-		for k, v in pairs(playersTable) do
-			if v.Sectors then
-				if v.Sectors.H1 then
-					if v.Sectors.H1 then
-						for k2, v2 in pairs(v.Sectors.H1) do
-							local player = {
-								Name = v.Name,
-								col3 = timeFormat(v2.Time),
-								col4 = getCarNameBasedOnID(k2),
-							}
-							table.insert(extractedTable, player)
-						end
-					end
-				end
-			end
-		end
-	elseif category == 'VV' then
-		for k, v in pairs(playersTable) do
-			if v.Sectors then
-				if v.Sectors.VV then
-					local player = {
-						Name = v.Name,
-						col3 = timeFormat(v.Sectors.VV.Time),
-						col4 = "AMG GT-R",
-					}
-					table.insert(extractedTable, player)
-				end
-			end
-		end
-	elseif category == 'Elo' then
-		for k, v in pairs(playersTable) do
-			local player = {
-				Name = v.Name,
-				col3 = v.Elo,
-				col4 = v.Wins + v.Losses,
-			}
-			table.insert(extractedTable, player)
-		end
-	end
-	return extractedTable
-end
+-- Retrieve data from Google Sheet in CSV format
+-- Headers
+-- Data...
+local urlAppScript = 'https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec'
+local function loadLeaderboardFromSheet()
+	local sheetUrl = sheetH1B
+	if leaderboardName == leaderboardNames[2] then sheetUrl = sheetH1C
+	elseif leaderboardName == leaderboardNames[3] then sheetUrl = sheetVV
+	elseif leaderboardName == leaderboardNames[4] then sheetUrl = sheetElo end
 
-local function sortLeaderboard(category)
-	leaderboard = extractFromPlayerTable(category)
-	if category == 'H1' or category == 'VV' then
-		table.sort(leaderboard, function(a, b) return a.col3 < b.col3 end)
-	elseif category == 'Elo' then
-		table.sort(leaderboard, function(a, b) return a.col3 > b.col3 end)
-	end
-end
-
-local function getFirebase()
-	local inDatabase = false
-	web.get(firebaseUrl, function(err, response)
+	web.get(sheetUrl, function(err, response)
 		if err then
 			print(err)
 			return
 		else
-			local jString = response.body
-			local players = json.parse(jString)
-			if isPlayerInTable(ac.getUserSteamID(), players) then
-				ac.log('Player is in table')
-				playersTable = players
-				inDatabase = true
-			else
-				ac.log('Player is not in table')
-				addPlayerToDataBase(ac.getUserSteamID())
+			table.clear(leaderboard)
+			local csv = response.body
+			local lines = csv:split('\n')
+			for i=1, #lines do
+				local line = lines[i]:split(',')
+				local entry = {}
+				for j=1, #line do
+					if i > 1 then
+						if leaderboardName == leaderboardNames[4] and j == 3 then line[j] = string.format("%d",tonumber(line[j]))
+						elseif  leaderboardName ~= leaderboardNames[4] and j == 2 then line[j] = timeFormat(tonumber(line[j])) end
+					end
+					table.insert(entry, line[j])
+				end
+				table.insert(leaderboard, entry)
 			end
 		end
 	end)
-	if not inDatabase then
-		web.get(firebaseUrl, function(err, response)
-			if err then
-				print(err)
-				return
+end
+
+local function getFirebase()
+	local url = firebaseUrl .. "/" .. ac.getUserSteamID() .. '.json'
+	web.get(url, function(err, response)
+		if err then
+			print(err)
+			return
+		else
+			if response.body == 'null' then
+				addPlayerToDataBase(ac.getUserSteamID())
 			else
 				local jString = response.body
-				playersTable = json.parse(jString)
+				playerData = json.parse(jString)
 			end
-		end)
-		isPlayerInTable(ac.getUserSteamID(), playersTable)
-	end
-	sortLeaderboard(leaderboardName)
+		end
+	end)
+end
+
+local function updateSheets()
+	web.post(urlAppScript, function(err, response)
+		if err then
+			print(err)
+			return
+		else
+			print(response.body)
+			loadLeaderboardFromSheet()
+		end
+	end)
 end
 
 local function updatefirebase()
 	local str = '{"' .. ac.getUserSteamID() .. '": ' .. json.stringify(playerData) .. '}'
-	web.request('PATCH', firebaseUrl, str, function(err, response)
+	web.request('PATCH', firebaseUrl .. ".json", str, function(err, response)
 		if err then
 			print(err)
 			return
+		else
+			updateSheets()
 		end
-		local data = response.body
 	end)
-	isPlayerInTable(ac.getUserSteamID(), playersTable)
-	sortLeaderboard(leaderboardName)
 end
 
 local function updateSector(sectorName, time)
@@ -728,78 +646,135 @@ local function eloRating(yourElo, opponentElo, result)
     return newElo
 end
 
+local boxHeight = windowHeight/70
 
-local function displayInGrid(category)
-	local col3, col4
-	if category == 'H1' or category == 'VV' then
-		col3 = 'Car'
-		col4 = 'Time'
-	elseif category == 'Elo' then
-		col3 = 'Elo'
-		col4 = 'Races'
-	end
-	local box1 = vec2(windowWidth/14, windowHeight/70)
-	local box2 = vec2(windowWidth/32, windowHeight/70)
+local function displayInGrid()
+	local box1 = vec2(windowWidth/32, boxHeight)
+	local nbCol = #leaderboard[1]
+	local colWidth = (windowWidth/3 - windowWidth/32)/(nbCol-1)
 	ui.pushDWriteFont("Orbitron;Weight=Black")
 	ui.newLine()
-	ui.dwriteTextAligned("Pos", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box2, false, SETTINGS.colorHud)
-	ui.sameLine()
-	ui.dwriteTextAligned("Driver", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
-	ui.sameLine()
-	ui.dwriteTextAligned(col3, SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
-	ui.sameLine()
-	ui.dwriteTextAligned(col4, SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
-	ui.popDWriteFont()
+	ui.dwriteTextAligned("Pos", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
+	for i = 2, nbCol do
+		local textLenght = ui.measureDWriteText(leaderboard[1][i], SETTINGS.statsFont/1.5).x
+		ui.sameLine(box1.x + colWidth/2 + colWidth*(i-2) - textLenght/2)
+		ui.dwriteTextWrapped(leaderboard[1][i], SETTINGS.statsFont/1.5, SETTINGS.colorHud)
+	end
 	ui.newLine()
-	for i = 1, #leaderboard do
+	ui.popDWriteFont()
+	ui.pushDWriteFont("Orbitron;Weight=Regular")
+	for i = 2, #leaderboard do
 		local entry = leaderboard[i]
-		if i == 1 then
-			ui.dwriteTextAligned(i .. "st", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.white)
-		elseif i == 2 then
-			ui.dwriteTextAligned(i .. "nd", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.white)
-		elseif i == 3 then
-			ui.dwriteTextAligned(i .. "rd", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.white)
-		else
-			ui.dwriteTextAligned(i .. "th", SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.white)
-		end
-		ui.sameLine()
-		ui.dwriteTextAligned(entry.Name, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
-		if category == 'Elo' then
-			ui.sameLine()
-			ui.dwriteTextAligned(string.format( "%d",entry.col3), SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
-		end
-		ui.sameLine()
-		ui.dwriteTextAligned(entry.col4, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
-		if category == 'H1' or category == 'VV' then
-			ui.sameLine()
-			ui.dwriteTextAligned(entry.col3, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
+		local sufix = "th"
+		if i == 2 then sufix = "st"
+		elseif i == 3 then sufix = "nd"
+		elseif i == 4 then sufix = "rd" end
+		ui.dwriteTextAligned(i-1 .. sufix, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
+		for j = 2, #entry do
+			local textLenght = ui.measureDWriteText(entry[j], SETTINGS.statsFont/1.5).x
+			ui.sameLine(box1.x + colWidth/2 + colWidth*(j-2) - textLenght/2)
+			ui.dwriteTextWrapped(entry[j], SETTINGS.statsFont/1.5, rgbm.colors.white)
 		end
 	end
+	ui.popDWriteFont()
 	local lineHeight = math.max(ui.itemRectMax().y, windowHeight/3)
-	ui.drawLine(vec2(box2.x, windowHeight/20), vec2(box2.x, lineHeight), rgbm.colors.white, 1)
-	ui.drawLine(vec2(box2.x + box1.x, windowHeight/20), vec2(box2.x + box1.x, lineHeight), rgbm.colors.white, 1)
-	ui.drawLine(vec2(box2.x + box1.x*2.1, windowHeight/20), vec2(box2.x + box1.x*2.1, lineHeight), rgbm.colors.white, 1)
-	ui.drawLine(vec2(0, windowHeight/12), vec2(windowWidth/4, windowHeight/12), rgbm.colors.white, 1)
+	ui.drawLine(vec2(box1.x, windowHeight/20), vec2(box1.x, lineHeight), rgbm.colors.white, 1)
+	for i = 1, nbCol-2 do
+		ui.drawLine(vec2(box1.x + colWidth*i, windowHeight/20), vec2(box1.x + colWidth*i, lineHeight), rgbm.colors.white, 2)
+	end
+	ui.drawLine(vec2(0, windowHeight/12), vec2(windowWidth/3, windowHeight/12), rgbm.colors.white, 1)
 end
+-- local function displayInGrid()
+-- 	local box1 = vec2(windowWidth/32, windowHeight/70)
+-- 	local nbCol = #leaderboard[1]
+-- 	local box2 = vec2((windowWidth/3 - windowWidth/32)/(nbCol-1), windowHeight/70)
+-- 	ui.pushDWriteFont("Orbitron;Weight=Black")
+-- 	ui.newLine()
+-- 	ui.dwriteTextAligned("Pos", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
+-- 	for i = 2, nbCol do
+-- 		ui.sameLine()
+-- 		ui.dwriteTextAligned(leaderboard[1][i], SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box2, false, SETTINGS.colorHud)
+-- 	end
+-- 	ui.newLine()
+-- 	ui.popDWriteFont()
+-- 	ui.pushDWriteFont("Orbitron;Weight=Regular")
+-- 	for i = 2, #leaderboard do
+-- 		local entry = leaderboard[i]
+-- 		local sufix = "th"
+-- 		if i == 2 then sufix = "st"
+-- 		elseif i == 3 then sufix = "nd"
+-- 		elseif i == 4 then sufix = "rd" end
+-- 		ui.dwriteTextAligned(i-1 .. sufix, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
+-- 		ui.sameLine()
+-- 		for j = 2, #entry do
+-- 			ui.sameLine()
+-- 			ui.dwriteTextAligned(entry[j], SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.white)
+-- 		end
+-- 	end
+-- 	ui.popDWriteFont()
+-- 	local lineHeight = math.max(ui.itemRectMax().y, windowHeight/3)
+-- 	ui.drawLine(vec2(box1.x, windowHeight/20), vec2(box1.x, lineHeight), rgbm.colors.white, 1)
+-- 	for i = 1, nbCol-2 do
+-- 		ui.drawLine(vec2(box1.x + box2.x*i, windowHeight/20), vec2(box1.x + box2.x*i, lineHeight), rgbm.colors.white, 1)
+-- 	end
+-- 	ui.drawLine(vec2(0, windowHeight/12), vec2(windowWidth/4, windowHeight/12), rgbm.colors.white, 1)
+-- end
 
 
 local function showLeaderboard()
-	local leaderboardList = {"H1", "VV", "Elo"}
 	ui.dummy(vec2(windowWidth/20, 0))
 	ui.sameLine()
 	ui.setNextItemWidth(windowWidth/12)
 	ui.combo("leaderboard", leaderboardName, function ()
-		for i = 1, #leaderboardList do
-			if ui.selectable(leaderboardList[i], leaderboardName == leaderboardList[i]) then
-				leaderboardName = leaderboardList[i]
-				sortLeaderboard(leaderboardName)
+		for i = 1, #leaderboardNames do
+			if ui.selectable(leaderboardNames[i], leaderboardName == leaderboardNames[i]) then
+				leaderboardName = leaderboardNames[i]
+				loadLeaderboardFromSheet()
 			end
 		end
 	end)
 	ui.sameLine(windowWidth/4 - 120)
 	if ui.button('Close', vec2(100, windowHeight/50)) then leaderboardOpen = false end
 	ui.newLine()
-	displayInGrid(leaderboardName)
+	displayInGrid()
+end
+
+----------------------------------------------------------------------------------------------- Sectors -----------------------------------------------------------------------------------------------
+-- Variables --
+local sectorInfo = {
+	time = 0,
+	timerText = '00:00.00',
+	finalTime = '00:00.00',
+	checkpoints = 1,
+	sectorIndex = 1,
+	distance = 0,
+	finished = false,
+	drawLine = false,
+	timePosted = false,
+}
+
+local duo = {
+	teammate = nil,
+	request = false,
+	onlineSender = nil,
+	teammateHasFinished = false,
+	waiting = false,
+	playerName = "Online Players",
+}
+
+local function resetSectors()
+	sector = sectors[sectorInfo.sectorIndex]
+	sectorInfo.time = 0
+	sectorInfo.timerText = '00:00.00'
+	sectorInfo.finalTime = '00:00.00'
+	sectorInfo.checkpoints = 1
+	sectorInfo.distance = 0
+	sectorInfo.finished = false
+	sectorInfo.timePosted = false
+end
+
+local function dot(vector1, vector2)
+	return vector1.x * vector2.x + vector1.y * vector2.y
 end
 
 ----------------------------------------------------------------------------------------------- UI ----------------------------------------------------------------------------------------------------
@@ -1056,11 +1031,11 @@ local timeStartRace = 0
 local function showRaceLights()
 	local timing = os.clock() % 1
 	if timing > 0.5 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), SETTINGS.colorHud, rgbm(),  rgbm(), SETTINGS.colorHud)
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), SETTINGS.colorHud, SETTINGS.colorHud, rgbm())
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), SETTINGS.colorHud, rgbm(),  rgbm(), SETTINGS.colorHud)
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(), SETTINGS.colorHud, SETTINGS.colorHud, rgbm())
 	else
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), rgbm(), rgbm(),  rgbm(), rgbm())
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(), rgbm(), rgbm())
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), rgbm(), rgbm(),  rgbm(), rgbm())
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(), rgbm(), rgbm())
 	end
 end
 
@@ -1253,14 +1228,16 @@ local function raceUI()
 
 	if timeStartRace > 0 then
 		timeStartRace = timeStartRace - ui.deltaTime()
-		if raceState.opponent then
+		if raceState.opponent and timeStartRace - 5 > 0 then
 			text = "Align yourself with " .. ac.getDriverName(raceState.opponent.index) .. " to start the race!"
 		else
-			text = "Waiting for opponent..."
+			local number = math.floor(timeStartRace - 1)
+			if number <= 0 then text = "GO!"
+			else text = number .. " ..." end
 		end
 		displayText = true
 		textLenght = ui.measureDWriteText(text, 30)
-		showRaceLights()
+		if timeStartRace - 6 > 0 then showRaceLights() end
 		if timeStartRace < 0 then timeStartRace = 0 end
 	elseif raceState.inRace and raceState.inFront then
 		distanceBar()
@@ -1457,31 +1434,20 @@ local function drawImage()
 	iconsColorOn[3] = rgbm(0.99,0.99,0.99,1)
 	iconsColorOn[4] = rgbm(0.99,0.99,0.99,1)
 	local uiStats = ac.getUI()
-	local theftPos1 = vec2(imageSize.x - imageSize.x/1.56, imageSize.y/1.9)
-	local theftPos2 = vec2(imageSize.x/4.6, imageSize.y/2.65)
-	local ranksPos1 = vec2(imageSize.x/1.97, imageSize.y/1.9)
-	local ranksPos2 = vec2(imageSize.x - imageSize.x/1.56, imageSize.y/2.65)
-	local countdownPos1 = vec2(imageSize.x/1.53, imageSize.y/1.9)
-	local countdownPos2 = vec2(imageSize.x - imageSize.x/2.04, imageSize.y/2.65)
-	local menuPos1 = vec2(imageSize.x - imageSize.x/4.9, imageSize.y/1.9)
-	local menuPos2 = vec2(imageSize.x/1.53, imageSize.y/2.65)
-	local leftPos1 = vec2(imageSize.x/8, imageSize.y/2.8)
-	local leftPos2 = vec2(0, imageSize.y/4.3)
-	local rightPos1 = vec2(imageSize.x, imageSize.y/2.8)
-	local rightPos2 = vec2(imageSize.x - imageSize.x/8, imageSize.y/4.3)
+	if not ui.isImageReady(hudCenter) then loadImages() end
 
 	ui.drawImage(hudCenter, vec2(0,0), imageSize)
-	if ui.rectHovered(leftPos2, leftPos1) then
+	if ui.rectHovered(imgPos.leftPos2, imgPos.leftPos1) then
 		ui.image(hudLeft, imageSize, SETTINGS.colorHud)
 		if uiStats.isMouseLeftKeyClicked then
 			if SETTINGS.current == 1 then SETTINGS.current = #statOn else SETTINGS.current = SETTINGS.current - 1 end
 		end
-	elseif ui.rectHovered(rightPos2, rightPos1) then
+	elseif ui.rectHovered(imgPos.rightPos2, imgPos.rightPos1) then
 		ui.image(hudRight, imageSize, SETTINGS.colorHud)
 		if uiStats.isMouseLeftKeyClicked then
 			if SETTINGS.current == #statOn then SETTINGS.current = 1 else SETTINGS.current = SETTINGS.current + 1 end
 		end
-	elseif ui.rectHovered(theftPos2, theftPos1) then
+	elseif ui.rectHovered(imgPos.theftPos2, imgPos.theftPos1) then
 		iconsColorOn[1] = SETTINGS.colorHud
 		if uiStats.isMouseLeftKeyClicked then
 			if stealingTime == 0 then
@@ -1496,17 +1462,17 @@ local function drawImage()
 				end
 			end
 		end
-	elseif ui.rectHovered(ranksPos2, ranksPos1) then
+	elseif ui.rectHovered(imgPos.ranksPos2, imgPos.ranksPos1) then
 		iconsColorOn[2] = SETTINGS.colorHud
 		if uiStats.isMouseLeftKeyClicked then
 			if leaderboardOpen then leaderboardOpen = false
 			else
 				if menuOpen then menuOpen = false end
 				leaderboardOpen = true
-				getFirebase()
+				loadLeaderboardFromSheet()
 			end
 		end
-	elseif ui.rectHovered(countdownPos2, countdownPos1) then
+	elseif ui.rectHovered(imgPos.countdownPos2, imgPos.countdownPos1) then
 		iconsColorOn[3] = SETTINGS.colorHud
 		if not countDownState.countdownOn and uiStats.isMouseLeftKeyClicked then
 			if cooldownTime == 0 then
@@ -1519,7 +1485,7 @@ local function drawImage()
 			end
 			SETTINGS.current = 2
 		end
-	elseif ui.rectHovered(menuPos2, menuPos1) then
+	elseif ui.rectHovered(imgPos.menuPos2, imgPos.menuPos1) then
 		iconsColorOn[4] = SETTINGS.colorHud
 		if uiStats.isMouseLeftKeyClicked then
 			if menuOpen then menuOpen = false
@@ -1587,7 +1553,6 @@ local function infoRace()
 end
 
 local function infoServer()
-	
 	ui.sameLine(10)
 	ui.beginGroup()
     ui.dwriteTextWrapped('\nWelcome to ACP', 20, rgbm.colors.white)
@@ -1640,14 +1605,13 @@ local function moveMenu()
 end
 
 local function leaderboardWindow()
-	ui.toolWindow('LeaderboardWindow', SETTINGS.menuPos, vec2(windowWidth/4, windowHeight/3), true, function ()
-		ui.childWindow('childLeaderboard', vec2(windowWidth/4, windowHeight/3), true, function ()
+	ui.toolWindow('LeaderboardWindow', SETTINGS.menuPos, vec2(windowWidth/3, windowHeight/3), true, function ()
+		ui.childWindow('childLeaderboard', vec2(windowWidth/3, windowHeight/3), true, function ()
 			showLeaderboard()
 			moveMenu()
 		end)
 	end)
 end
-
 
 -------------------------------------------------------------------------------------------- Main script --------------------------------------------------------------------------------------------
 
@@ -1675,8 +1639,8 @@ function script.update(dt)
 		initialized = true
 		if settingsLoaded then
 			getFirebase()
-			sortLeaderboard('H1')
 		end
+		loadLeaderboardFromSheet()
 	else
 		if settingsLoaded then
 			sectorUpdate()
@@ -1695,4 +1659,8 @@ end
 
 if ac.getCarID(0) ~= valideCar[1] and ac.getCarID(0) ~= valideCar[2] then
 	ui.registerOnlineExtra("Menu", "Menu", nil, function () menuOpen = not menuOpen end, nil, 0, 0, 0)
+end
+
+if not settingsLoaded then
+	ui.registerOnlineExtra("Download", "Download", nil, function () download() end, nil, 0, 0, 0)
 end
