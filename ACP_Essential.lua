@@ -636,7 +636,7 @@ local function updateSector(sectorName, time)
 end
 
 local function eloRating(yourElo, opponentElo, result)
-
+	if opponentElo == 0 then opponentElo = 1200 end
     local K = 32 -- Adjust this value based on desired sensitivity
 
     local expectedScore = 1 / (1 + 10^(opponentElo - yourElo) / 400)
