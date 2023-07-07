@@ -1000,7 +1000,7 @@ local raceState = {
 	distance = 0,
 	message = false,
 	time = 0,
-	elo = 0,
+	elo = 1200,
 }
 
 local raceFinish = {
