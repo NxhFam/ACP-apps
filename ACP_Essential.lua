@@ -635,15 +635,13 @@ local function updateSector(sectorName, time)
 	updatefirebase()
 end
 
-local function eloRating(yourElo, opponentElo, result)
-	if opponentElo == 0 then opponentElo = 1200 end
+local function eloRating(result)
+    if raceState.elo == 0 then raceState.elo = 1200 end
     local K = 32 -- Adjust this value based on desired sensitivity
 
-    local expectedScore = 1 / (1 + 10^(opponentElo - yourElo) / 400)
+    local expectedScore = 1 / (1 + 10^(raceState.elo - playerData.elo) / 400)
 
-    local newElo = yourElo + K * (result - expectedScore)
-
-    return newElo
+    playerData.elo = playerData.elo + K * (result - expectedScore)
 end
 
 local boxHeight = windowHeight/70
@@ -1045,12 +1043,12 @@ local function hasWin(winner)
 	raceFinish.time = 10
 	raceState.inRace = false
 	if winner == car then
-		playerData.Elo = eloRating(playerData.Elo, raceState.elo, 1)
+		eloRating(raceState.elo, 1)
 		playerData.Wins = playerData.Wins + 1
 		raceFinish.opponentName = ac.getDriverName(raceState.opponent.index)
 		raceFinish.messageSent = false
 	else
-		playerData.Elo = eloRating(playerData.Elo, raceState.elo, 0)
+		eloRating(raceState.elo, 0)
 		playerData.Losses = playerData.Losses + 1
 	end
 	updatefirebase()
