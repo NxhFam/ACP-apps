@@ -1658,7 +1658,7 @@ function script.draw3D()
 end
 
 if ac.getCarID(0) ~= valideCar[1] and ac.getCarID(0) ~= valideCar[2] then
-	ui.registerOnlineExtra("Menu", "Menu", nil, function () menuOpen = not menuOpen end, nil, 0, 0, 0)
+	ui.registerOnlineExtra("Menu", "Menu", nil, function () menu() end, nil, 0, 0, 0)
 end
 
 if not settingsLoaded then
