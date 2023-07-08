@@ -155,7 +155,7 @@ local sheetElo = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hk
 local leaderboard = {}
 local leaderboardName = 'Class B - H1'
 local leaderboardNames = {'Class B - H1', 'Class C - H1', 'Velocity Vendetta', 'Elo Rating'}
-
+local opponentElo = 1200
 
 local sim = ac.getSim()
 local car = ac.getCar(0)
@@ -953,7 +953,6 @@ local raceState = {
 	distance = 0,
 	message = false,
 	time = 0,
-	elo = 1200,
 }
 
 local raceFinish = {
@@ -982,10 +981,10 @@ local timeStartRace = 0
 -- Functions --
 
 local function eloRating(result)
-    if raceState.elo == 0 then raceState.elo = 1200 end
+    if opponentElo == 0 then opponentElo = 1200 end
     local K = 32 -- Adjust this value based on desired sensitivity
 
-    local expectedScore = 1 / (1 + 10^(raceState.elo - playerData.elo) / 400)
+    local expectedScore = 1 / (1 + 10^(opponentElo - playerData.elo) / 400)
 
     playerData.elo = playerData.elo + K * (result - expectedScore)
 end
@@ -1027,7 +1026,7 @@ local acpRace = ac.OnlineEvent({
 	if data.targetSessionID == car.sessionID and data.messageType == 1 then
 		raceState.opponent = sender
 		horn.resquestTime = 7
-		raceState.elo = data.eloRating
+		opponentElo = data.eloRating
 	elseif data.targetSessionID == car.sessionID and data.messageType == 2 then
 		raceState.opponent = sender
 		raceState.inRace = true
@@ -1036,9 +1035,9 @@ local acpRace = ac.OnlineEvent({
 		raceState.message = true
 		raceState.time = 2
 		timeStartRace = 7
-		raceState.elo = data.eloRating
+		opponentElo = data.eloRating
 	elseif data.targetSessionID == car.sessionID and data.messageType == 3 then
-		raceState.elo = data.eloRating
+		opponentElo = data.eloRating
 		hasWin(car)
 	end
 end)
