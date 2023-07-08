@@ -635,15 +635,6 @@ local function updateSector(sectorName, time)
 	updatefirebase()
 end
 
-local function eloRating(result)
-    if raceState.elo == 0 then raceState.elo = 1200 end
-    local K = 32 -- Adjust this value based on desired sensitivity
-
-    local expectedScore = 1 / (1 + 10^(raceState.elo - playerData.elo) / 400)
-
-    playerData.elo = playerData.elo + K * (result - expectedScore)
-end
-
 local boxHeight = windowHeight/70
 
 local function displayInGrid()
@@ -682,42 +673,6 @@ local function displayInGrid()
 	end
 	ui.drawLine(vec2(0, windowHeight/12), vec2(windowWidth/3, windowHeight/12), rgbm.colors.white, 1)
 end
--- local function displayInGrid()
--- 	local box1 = vec2(windowWidth/32, windowHeight/70)
--- 	local nbCol = #leaderboard[1]
--- 	local box2 = vec2((windowWidth/3 - windowWidth/32)/(nbCol-1), windowHeight/70)
--- 	ui.pushDWriteFont("Orbitron;Weight=Black")
--- 	ui.newLine()
--- 	ui.dwriteTextAligned("Pos", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
--- 	for i = 2, nbCol do
--- 		ui.sameLine()
--- 		ui.dwriteTextAligned(leaderboard[1][i], SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box2, false, SETTINGS.colorHud)
--- 	end
--- 	ui.newLine()
--- 	ui.popDWriteFont()
--- 	ui.pushDWriteFont("Orbitron;Weight=Regular")
--- 	for i = 2, #leaderboard do
--- 		local entry = leaderboard[i]
--- 		local sufix = "th"
--- 		if i == 2 then sufix = "st"
--- 		elseif i == 3 then sufix = "nd"
--- 		elseif i == 4 then sufix = "rd" end
--- 		ui.dwriteTextAligned(i-1 .. sufix, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
--- 		ui.sameLine()
--- 		for j = 2, #entry do
--- 			ui.sameLine()
--- 			ui.dwriteTextAligned(entry[j], SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box2, false, rgbm.colors.white)
--- 		end
--- 	end
--- 	ui.popDWriteFont()
--- 	local lineHeight = math.max(ui.itemRectMax().y, windowHeight/3)
--- 	ui.drawLine(vec2(box1.x, windowHeight/20), vec2(box1.x, lineHeight), rgbm.colors.white, 1)
--- 	for i = 1, nbCol-2 do
--- 		ui.drawLine(vec2(box1.x + box2.x*i, windowHeight/20), vec2(box1.x + box2.x*i, lineHeight), rgbm.colors.white, 1)
--- 	end
--- 	ui.drawLine(vec2(0, windowHeight/12), vec2(windowWidth/4, windowHeight/12), rgbm.colors.white, 1)
--- end
-
 
 local function showLeaderboard()
 	ui.dummy(vec2(windowWidth/20, 0))
@@ -1026,6 +981,15 @@ local timeStartRace = 0
 
 -- Functions --
 
+local function eloRating(result)
+    if raceState.elo == 0 then raceState.elo = 1200 end
+    local K = 32 -- Adjust this value based on desired sensitivity
+
+    local expectedScore = 1 / (1 + 10^(raceState.elo - playerData.elo) / 400)
+
+    playerData.elo = playerData.elo + K * (result - expectedScore)
+end
+
 local function showRaceLights()
 	local timing = os.clock() % 1
 	if timing > 0.5 then
@@ -1043,12 +1007,12 @@ local function hasWin(winner)
 	raceFinish.time = 10
 	raceState.inRace = false
 	if winner == car then
-		eloRating(raceState.elo, 1)
+		eloRating(1)
 		playerData.Wins = playerData.Wins + 1
 		raceFinish.opponentName = ac.getDriverName(raceState.opponent.index)
 		raceFinish.messageSent = false
 	else
-		eloRating(raceState.elo, 0)
+		eloRating(0)
 		playerData.Losses = playerData.Losses + 1
 	end
 	updatefirebase()
