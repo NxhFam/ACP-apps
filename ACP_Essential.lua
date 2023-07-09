@@ -481,13 +481,12 @@ end
 
 local function addPlayerToDataBase(steamID)
 	local name = ac.getDriverName(0)
-	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","WR": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Sectors": {"H1": {},"VV": {}}}}'
+	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","WR": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Sectors": {"H1": {},"VV": {}}}}'
 	web.request('PATCH', firebaseUrl .. ".json", str, function(err, response)
 		if err then
 			print(err)
 			return
 		end
-		local data = response.body
 	end)
 end
 
@@ -1003,6 +1002,7 @@ local function hasWin(winner)
 		playerData.Losses = playerData.Losses + 1
 	end
 	if playerData.Wins + playerData.Losses > 0 then
+		if playerData.WR == nil then table.insert(playerData, {WR = 0}) end
 		playerData.WR = math.floor((playerData.Wins * 100 / (playerData.Wins + playerData.Losses))*100)/100
 	end
 	updatefirebase()
