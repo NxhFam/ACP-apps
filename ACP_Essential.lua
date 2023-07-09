@@ -984,9 +984,9 @@ local function eloRating(result)
     if opponentElo == 0 then opponentElo = 1200 end
     local K = 32 -- Adjust this value based on desired sensitivity
 
-    local expectedScore = 1 / (1 + 10^(opponentElo - playerData.elo) / 400)
+    local expectedScore = 1 / (1 + 10^(opponentElo - playerData.Elo) / 400)
 
-    playerData.elo = playerData.elo + K * (result - expectedScore)
+    playerData.Elo = playerData.Elo + K * (result - expectedScore)
 end
 
 local function showRaceLights()
