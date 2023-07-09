@@ -551,6 +551,8 @@ local function getFirebase()
 			else
 				local jString = response.body
 				playerData = json.parse(jString)
+				if playerData.WR == nil then table.insert(playerData, {WR = 0}) end
+				if playerData.Arrests == nil then table.insert(playerData, {Arrests = 0}) end
 			end
 		end
 	end)
@@ -1002,7 +1004,6 @@ local function hasWin(winner)
 		playerData.Losses = playerData.Losses + 1
 	end
 	if playerData.Wins + playerData.Losses > 0 then
-		if playerData.WR == nil then table.insert(playerData, {WR = 0}) end
 		playerData.WR = math.floor((playerData.Wins * 100 / (playerData.Wins + playerData.Losses))*100)/100
 	end
 	updatefirebase()
