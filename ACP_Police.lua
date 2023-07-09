@@ -362,12 +362,8 @@ local function getFirebase()
 			else
 				local jString = response.body
 				playerData = json.parse(jString)
-				if playerData.WR == nil then
-					playerData.WR = 0
-				end
-				if playerData.Arrests == nil then
-					playerData.Arrests = 0
-				end
+				if playerData.WR == nil then playerData.WR = 0 end
+				if playerData.Arrests == nil then playerData.Arrests = 0 end
 			end
 		end
 	end)
@@ -813,6 +809,7 @@ local function arrestSuspect()
 		ac.sendChatMessage(msgToSend .. "\nPlease Get Back Pit, GG!")
 		pursuit.id = pursuit.suspect.sessionID
 		playerData.Arrests = playerData.Arrests + 1
+		pursuit.startedTime = 0
 		updatefirebase()
 		pursuit.suspect = nil
 		sharedDataPolice.policeLights = false
