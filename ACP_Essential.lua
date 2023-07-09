@@ -154,8 +154,7 @@ local sheetElo = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hk
 
 local leaderboard = {}
 local leaderboardName = 'Class B - H1'
-local leaderboardNames = {'Class B - H1', 'Class C - H1', 'Velocity Vendetta', 'Elo Rating'}
-local opponentElo = 1200
+local leaderboardNames = {'Class B - H1', 'Class C - H1', 'Velocity Vendetta', 'Win Ratio'}
 
 local sim = ac.getSim()
 local car = ac.getCar(0)
@@ -482,7 +481,7 @@ end
 
 local function addPlayerToDataBase(steamID)
 	local name = ac.getDriverName(0)
-	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","Elo": 1200,"Wins": 0,"Losses": 0,"Busted": 0,"Sectors": {"H1": {},"VV": {}}}}'
+	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","WR": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Sectors": {"H1": {},"VV": {}}}}'
 	web.request('PATCH', firebaseUrl .. ".json", str, function(err, response)
 		if err then
 			print(err)
@@ -980,15 +979,6 @@ local timeStartRace = 0
 
 -- Functions --
 
-local function eloRating(result)
-    if opponentElo == 0 then opponentElo = 1200 end
-    local K = 32 -- Adjust this value based on desired sensitivity
-
-    local expectedScore = 1 / (1 + 10^(opponentElo - playerData.Elo) / 400)
-
-    playerData.Elo = playerData.Elo + K * (result - expectedScore)
-end
-
 local function showRaceLights()
 	local timing = os.clock() % 1
 	if timing > 0.5 then
@@ -1006,13 +996,14 @@ local function hasWin(winner)
 	raceFinish.time = 10
 	raceState.inRace = false
 	if winner == car then
-		eloRating(1)
 		playerData.Wins = playerData.Wins + 1
 		raceFinish.opponentName = ac.getDriverName(raceState.opponent.index)
 		raceFinish.messageSent = false
 	else
-		eloRating(0)
 		playerData.Losses = playerData.Losses + 1
+	end
+	if playerData.Wins + playerData.Losses > 0 then
+		playerData.WR = math.floor((playerData.Wins * 100 / (playerData.Wins + playerData.Losses))*100)/100
 	end
 	updatefirebase()
 	raceState.opponent = nil
@@ -1021,12 +1012,10 @@ end
 local acpRace = ac.OnlineEvent({
 	targetSessionID = ac.StructItem.int16(),
 	messageType = ac.StructItem.int16(),
-	eloRating = ac.StructItem.int16(),
 }, function (sender, data)
 	if data.targetSessionID == car.sessionID and data.messageType == 1 then
 		raceState.opponent = sender
 		horn.resquestTime = 7
-		opponentElo = data.eloRating
 	elseif data.targetSessionID == car.sessionID and data.messageType == 2 then
 		raceState.opponent = sender
 		raceState.inRace = true
@@ -1035,9 +1024,7 @@ local acpRace = ac.OnlineEvent({
 		raceState.message = true
 		raceState.time = 2
 		timeStartRace = 7
-		opponentElo = data.eloRating
 	elseif data.targetSessionID == car.sessionID and data.messageType == 3 then
-		opponentElo = data.eloRating
 		hasWin(car)
 	end
 end)
@@ -1062,7 +1049,7 @@ local function hasPit()
 		return false
 	end
 	if car.isInPit then
-		acpRace{targetSessionID = raceState.opponent.sessionID, messageType = 3, eloRating = playerData.Elo}
+		acpRace{targetSessionID = raceState.opponent.sessionID, messageType = 3}
 		hasWin(raceState.opponent)
 		return false
 	end
@@ -1101,7 +1088,7 @@ local function resquestRace()
 	horn.opponentName = ac.getDriverName(opponent.index)
 	if opponent and (not opponent.isHidingLabels) then
 		if dot(vec2(car.look.x, car.look.z), vec2(opponent.look.x, opponent.look.z)) > 0 then
-			acpRace{targetSessionID = opponent.sessionID, messageType = 1, eloRating = playerData.Elo}
+			acpRace{targetSessionID = opponent.sessionID, messageType = 1}
 			horn.resquestTime = 10
 		end
 	end
@@ -1109,7 +1096,7 @@ end
 
 local function acceptingRace()
 	if dot(vec2(car.look.x, car.look.z), vec2(raceState.opponent.look.x, raceState.opponent.look.z)) > 0 then
-		acpRace{targetSessionID = raceState.opponent.sessionID, messageType = 2, eloRating = playerData.Elo}
+		acpRace{targetSessionID = raceState.opponent.sessionID, messageType = 2}
 		raceState.inRace = true
 		horn.resquestTime = 0
 		timeStartRace = 7
