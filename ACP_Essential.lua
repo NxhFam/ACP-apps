@@ -551,8 +551,8 @@ local function getFirebase()
 			else
 				local jString = response.body
 				playerData = json.parse(jString)
-				if playerData.WR == nil then table.insert(playerData, {WR = 0}) end
-				if playerData.Arrests == nil then table.insert(playerData, {Arrests = 0}) end
+				if playerData.WR == nil then playerData.WR = 0 end
+				if playerData.Arrests == nil then playerData.Arrests = 0 end
 			end
 		end
 	end)
