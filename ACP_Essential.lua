@@ -156,6 +156,8 @@ local leaderboard = {}
 local leaderboardName = 'Class B - H1'
 local leaderboardNames = {'Class B - H1', 'Class C - H1', 'Velocity Vendetta', 'Win Ratio'}
 
+local class = 'C'
+local timeRequirement = 150
 local sim = ac.getSim()
 local car = ac.getCar(0)
 local windowWidth = sim.windowWidth
@@ -205,16 +207,45 @@ local hudMenu = assetsFolder .. "iconMenu.png"
 local hudRanks = assetsFolder .. "iconRanks.png"
 local hudTheft = assetsFolder .. "iconTheft.png"
 
-local function loadImages()
-	assetsFolder = ac.getFolder(ac.FolderID.ACApps) .. "/lua/ACP_essential/HUD/"
-	hudBase = assetsFolder .. "hudBase.png"
-	hudLeft = assetsFolder .. "hudLeft.png"
-	hudRight = assetsFolder .. "hudRight.png"
-	hudCenter = assetsFolder .. "hudCenter.png"
-	hudCountdown = assetsFolder .. "iconCountdown.png"
-	hudMenu = assetsFolder .. "iconMenu.png"
-	hudRanks = assetsFolder .. "iconRanks.png"
-	hudTheft = assetsFolder .. "iconTheft.png"
+local classC = {
+	["22b_acpursuit"]= "Impreza 22B STI",
+	["370z_acp"]= "370Z",
+	["964turbo_acp23"]= "964 Turbo",
+	["gt86_acp23"]= "GT86",
+	["e46acpursuit"]= "M3 E46",
+	["is300_acp"]= "IS300",
+	["lancerix_acpursuit"]= "Lancer Evo IX",
+	["rx7_2_acpursuit"]= "RX-7",
+	["s15_acp"]= "Silvia S15",
+	["skyr34_acp2"]= "Skyline R34",
+	["supra93_acpursuit"]= "Supra Mk4",
+	["mustang_acp"]= "Mustang",
+	["nsx94_acp23"]= "NSX",
+}
+  
+local classB = {
+	["911gt3992_acpursuit"]= "911 GT3 (992)",
+	["f40_acp2023"]= "F40",
+	["gtam_acp"]= "Giulia GTA",
+	["gtr_acp2023"]= "R35 Nismo",
+	["hellcat_acp2023"]= "Challenger",
+	["m4_acp23"]= "M4",
+	["murcielago_acp23"]= "Murcielago",
+	["rs6abt_acp"]= "RS6 ABT",
+	["amgtr_acp23"]= "AMG GT-R",
+}
+
+local function verifyClass()
+	local carID = ac.getCarID(0)
+	if classC[carID] then
+		class = "C"
+		timeRequirement = 150
+	elseif classB[carID] then
+		class = "B"
+		timeRequirement = 130
+	end
+	table.clear(classC)
+	table.clear(classB)
 end
 
 local playerData = {}
@@ -481,7 +512,7 @@ end
 
 local function addPlayerToDataBase(steamID)
 	local name = ac.getDriverName(0)
-	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","WR": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Sectors": {"H1": {},"VV": {}}}}'
+	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","WR": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0,"Sectors": {"H1": {},"VV": {}}}}'
 	web.request('PATCH', firebaseUrl .. ".json", str, function(err, response)
 		if err then
 			print(err)
@@ -553,6 +584,7 @@ local function getFirebase()
 				playerData = json.parse(jString)
 				if playerData.WR == nil then playerData.WR = 0 end
 				if playerData.Arrests == nil then playerData.Arrests = 0 end
+				if playerData.Theft == nil then playerData.Theft = 0 end
 			end
 		end
 	end)
@@ -913,7 +945,11 @@ local function sectorUpdate()
 		end
 		if sectorInfo.finished then
 			if sectorInfo.finished and not sectorInfo.timePosted then
-				if sectors[sectorInfo.sectorIndex].name == "H1" then updateSector('H1', sectorInfo.time)
+				if sectors[sectorInfo.sectorIndex].name == "BOBs SCRAPYARD" then
+					if class == "C" and timeRequirement > sectorInfo.time then playerData.Theft = playerData.Theft + 1
+					elseif class == "B" and timeRequirement > sectorInfo.time then playerData.Theft = playerData.Theft + 1 end
+					updatefirebase()
+				elseif sectors[sectorInfo.sectorIndex].name == "H1" then updateSector('H1', sectorInfo.time)
 				elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" then updateSector('VV', sectorInfo.time) end
 				sectorInfo.timePosted = true
 			end
@@ -1383,7 +1419,6 @@ local function drawImage()
 	iconsColorOn[3] = rgbm(0.99,0.99,0.99,1)
 	iconsColorOn[4] = rgbm(0.99,0.99,0.99,1)
 	local uiStats = ac.getUI()
-	if not ui.isImageReady(hudCenter) then loadImages() end
 
 	ui.drawImage(hudCenter, vec2(0,0), imageSize)
 	if ui.rectHovered(imgPos.leftPos2, imgPos.leftPos1) then
@@ -1585,31 +1620,30 @@ function script.update(dt)
 	if not initialized then
 		if ac.getCarID(0) == valideCar[1] or ac.getCarID(0) == valideCar[2] then return end
 		initLines()
+		verifyClass()
 		initialized = true
 		if settingsLoaded then
 			getFirebase()
 		end
 		loadLeaderboardFromSheet()
 	else
-		if settingsLoaded then
-			sectorUpdate()
-			raceUpdate(dt)
-			sharedDataSettings = SETTINGS
-		end
+		sectorUpdate()
+		raceUpdate(dt)
+		sharedDataSettings = SETTINGS
 	end
 end
 
 function script.draw3D()
-	if settingsLoaded and initialized and SETTINGS.current == 4 then
+	if initialized and SETTINGS.current == 4 then
 		local lineToRender = sector.pointsData[sectorInfo.checkpoints]
 		if sectorInfo.drawLine then render.debugLine(lineToRender[1], lineToRender[2], rgbm(0,100,0,1)) end
 	end
 end
 
 if ac.getCarID(0) ~= valideCar[1] and ac.getCarID(0) ~= valideCar[2] then
-	ui.registerOnlineExtra("Menu", "Menu", nil, function () menu() end, nil, 0, 0, 0)
+	ui.registerOnlineExtra("Menu", "Menu", nil, function () menu() end, nil, ui.OnlineExtraFlags.Tool)
 end
 
 if not settingsLoaded then
-	ui.registerOnlineExtra("Download", "Download", nil, function () download() end, nil, 0, 0, 0)
+	ui.registerOnlineExtra("Download", "Download", nil, function () download() end, nil, ui.OnlineExtraFlags.Tool)
 end
