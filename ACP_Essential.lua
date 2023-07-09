@@ -787,7 +787,7 @@ local function doubleTrouble()
 	for i = ac.getSim().carsCount - 1, 0, -1 do
 		local carPlayer = ac.getCar(i)
 		if carPlayer.isConnected and (not carPlayer.isHidingLabels) then
-			if carPlayer.index ~= car.index then
+			if carPlayer.index ~= car.index and ac.getCarID(i) ~= valideCar[1] and ac.getCarID(i) ~= valideCar[2] then
 				table.insert(players, carPlayer)
 			end
 		end
