@@ -362,6 +362,8 @@ local function getFirebase()
 			else
 				local jString = response.body
 				playerData = json.parse(jString)
+				if playerData.WR == nil then table.insert(playerData, {WR = 0}) end
+				if playerData.Arrests == nil then table.insert(playerData, {Arrests = 0}) end
 			end
 		end
 	end)
@@ -806,11 +808,7 @@ local function arrestSuspect()
 		table.insert(arrestations, msgToSend .. os.date("\nDate of the Arrestation: %c"))
 		ac.sendChatMessage(msgToSend .. "\nPlease Get Back Pit, GG!")
 		pursuit.id = pursuit.suspect.sessionID
-		if playerData.Arrests == nil then
-			table.insert(playerData, {Arrests = 1})
-		else
-			playerData.Arrests = playerData.Arrests + 1
-		end
+		playerData.Arrests = playerData.Arrests + 1
 		updatefirebase()
 		pursuit.suspect = nil
 		sharedDataPolice.policeLights = false
