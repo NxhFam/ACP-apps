@@ -165,7 +165,7 @@ local windowHeight = sim.windowHeight
 local menuOpen = false
 local leaderboardOpen = false
 local settingsLoaded = true
-local amgGtrValid = ac.INIConfig.carData(0, 'brakes.ini'):get("DATA", "MAX_TORQUE", 0) == 3950 and ac.getCarID(0) == "amgtr_acp23"
+local skyr34Valid = ac.INIConfig.carData(0, 'brakes.ini'):get("DATA", "MAX_TORQUE", 0) == 4100 and ac.getCarID(0) == "skyr34_acp2"
 
 local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 
@@ -273,31 +273,27 @@ local sectors = {
     },
     {
         name = 'Velocity Vendetta',
-		pointsData = {{vec3(285.1, -193.3, -6755.3),vec3(291.6, -193.4, -6747.1)},
-					{vec3(912.6, -215.7, -6951.7),vec3(918.4, -215.8, -6943.2)},
-					{vec3(1479.7,-263.9,-8141.4),vec3(1484.4,-264.3,-8131.3)},
-					{vec3(2369.9, -275.8, -8198.2),vec3(2372.5, -275.8, -8188.1)},
-					{vec3(3192.5,-296.2,-8306.6),vec3(3196.2,-296.6,-8319.6)},
-					{vec3(3409.4, -301.1, -8144.1),vec3(3401.4, -300.6, -8134.8)},
-					{vec3(3196.2,-296.6,-8319.6),vec3(3192.5,-296.2,-8306.6)},
-					{vec3(2372.5, -275.8, -8188.1),vec3(2369.9, -275.8, -8198.2)},
-					{vec3(1484.4,-264.3,-8131.3),vec3(1479.7,-263.9,-8141.4)},
-					{vec3(918.4, -215.8, -6943.2),vec3(912.6, -215.7, -6951.7)},
-					{vec3(291.6, -193.4, -6747.1),vec3(285.1, -193.3, -6755.3)}},
-		linesData =	{vec4(285.1, -6755.3, 291.6, -6747.1),
-					vec4(912.6, -6951.7, 918.4, -6943.2),
-					vec4(1479.7,-8141.4,1484.4,-8131.3),
-					vec4(2369.9, -8198.2, 2372.5, -8188.1),
-					vec4(3196.2,-8319.6,3192.5,-8306.6),
-					vec4(3409.4, -8144.1, 3401.4, -8134.8),
-					vec4(3192.5,-8306.6,3196.2,-8319.6),
-					vec4(2372.5, -8188.1, 2369.9, -8198.2),
-					vec4(1484.4,-8131.3,1479.7,-8141.4),
-					vec4(918.4, -6943.2, 912.6, -6951.7),
-					vec4(291.6, -6747.1, 285.1, -6755.3)},
-		length = 8.51,
+		pointsData = {{vec3(426.4,-32.5,-1249.5),vec3(415.8,-32.5,-1247.6)},
+					{vec3(885.4,3.3,-613.4),vec3(895.9,4.1,-608.5)},
+					{vec3(691.6,43,-7.8),vec3(682,42.8,-3.3)},
+					{vec3(168.7,41.5,358.7),vec3(176.7,41.5,366.9)},
+					{vec3(133.4,39.9,326.7),vec3(145.2,39.8,319.7)},
+					{vec3(-172.4,19.5,-102.6),vec3(-177.4,19,-114.2)},
+					{vec3(-234.5,24.9,0),vec3(-225,25.1,3.7)},
+					{vec3(-278.1,35,395.9),vec3(-287.8,34.8,400.2)},
+					{vec3(-383.1,24,47.8),vec3(-373.2,23.6,52.2)},
+					{vec3(-198.5,25.1,-7.9),vec3(-194.4,24.8,-18.7)},
+					{vec3(-36.5,35.8,286.4),vec3(-51.4,35.8,282.3)},
+					{vec3(148.9,41,364.4),vec3(136,41,360.4)},
+					{vec3(277.8,34.8,53.7),vec3(285.6,35.1,60.3)}},
+		linesData = {vec4(426.4,-1249.5,415.8,-1247.6), vec4(895.9,-608.5,885.4,-613.4), vec4(691.6,-7.8,682,-3.3), vec4(176.7,366.9,168.7,358.7), vec4(133.4,326.7,145.2,319.7),vec4(-172.4,-102.6,-177.4,-114.2),vec4(-225,3.7,-234.5,0),vec4(-287.8,400.2,-278.1,395.9),vec4(-383.1,47.8,-373.2,52.2),vec4(-194.4,-18.7,-198.5,-7.9),vec4(-36.5,286.4,-51.4,282.3),vec4(136,360.4,148.9,364.4),vec4(277.8,53.7,285.6,60.3)},
+		length = 5.65,
     }
 }
+
+
+
+
 
 local sector = nil
 
@@ -871,7 +867,7 @@ local function sectorSelect()
 	end)
 	ui.sameLine(windowWidth/5 - 120)
 	if ui.button('Close', vec2(100, windowHeight/50)) then menuOpen = false end
-	if sector.name == "Velocity Vendetta" and not amgGtrValid and ac.getCarID(0) == "amgtr_acp23" then ui.dwriteTextWrapped("Mercedes-AMG GTR is not rental, times won't be posted on leaderboard.", 30, rgbm.colors.white) end
+	if sector.name == "Velocity Vendetta" and not skyr34Valid and ac.getCarID(0) == "skyr34_acp2" then ui.dwriteTextWrapped("Skyline R34 is not rental, times won't be posted on leaderboard.", 30, rgbm.colors.white) end
 end
 
 local function sectorUI()
@@ -1598,9 +1594,104 @@ local function leaderboardWindow()
 end
 
 -------------------------------------------------------------------------------------------- Main script --------------------------------------------------------------------------------------------
+local welcomeClosed = false
+local welcomeMessages = {"WELCOME TO ASSETTO CORSA PURSUIT SERVER!",
+	"We're the first persistent Assetto Corsa server to combine a (Points System) with the driving experience. ",
+	"Earned points function like real-life currency, allowing you to buy and customize cars: ",
+	"► CRUSHING KILOMETERS ",
+	"This is the primary way to earn money on the server. ",
+	"Simply drive on the server, then confirm your milestones on Discord to receive points. ",
+	"All the information is available in the: ",
+	"► STEALING CARS ",
+	"Click on the (THEFT) icon in the ACP essential app on your screen to steal a car. ",
+	"You must bring the car to Bob's scrapyard within a certain time limit. The timer starts after the Bank. ",
+	"So, click (THEFT) and run!",
+	"Find more information in the: ",
+	"► STREET RACING ",
+	"Challenge another player by double-tapping the horn button while you're behind them. ",
+	"They will receive a warning message and can accept your challenge by double-tapping their horn as well. ",
+	"Learn more in the: ",
+	"► HORIZON FESTIVAL ",
+	"The Horizon Festival keeps track of your criminal activities in the metropolis and ranks them on a leaderboard. ",
+	"The higher you rank in the various competitions, the more points you'll earn on this ULTIMATE leaderboard! ",
+	"Being on the Horizon Leaderboard unlocks special prizes like cars. ",
+	"Find additional details in the: ",
+	"If you're experiencing a 99% CPU WARNING, try loading one of these presets: ",
+	"Visit our Official Discord and check out the Server FAQ for more information: "}
+
+local function welcomeMessageUI()
+	ui.sameLine(windowWidth/10)
+	ui.beginGroup()
+	ui.dwriteTextWrapped(welcomeMessages[1], 40, rgbm.colors.cyan)
+	ui.newLine(50)
+	ui.dwriteTextWrapped(welcomeMessages[2], 25, rgbm.colors.white)
+	ui.dwriteTextWrapped(welcomeMessages[3], 25, rgbm.colors.white)
+	ui.sameLine()
+	if ui.dwriteTextHyperlink('CAR DEALER CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1076123906362056784") end
+	ui.newLine()
+	ui.dwriteTextWrapped(welcomeMessages[4], 40, rgbm.colors.white)
+	ui.beginSubgroup(windowWidth/50)
+	ui.dwriteTextWrapped(welcomeMessages[5], 25, rgbm.colors.white)
+	ui.dwriteTextWrapped(welcomeMessages[6], 25, rgbm.colors.white)
+	ui.dwriteTextWrapped(welcomeMessages[7], 25, rgbm.colors.white)
+	ui.sameLine()
+	if ui.dwriteTextHyperlink('DRIVEN-KM CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1059795376879714364") end
+	ui.endSubgroup()
+	ui.newLine()
+	ui.dwriteTextWrapped(welcomeMessages[8], 40, rgbm.colors.white)
+	ui.beginSubgroup(windowWidth/50)
+	ui.dwriteTextWrapped(welcomeMessages[9], 25, rgbm.colors.white)
+	ui.dwriteTextWrapped(welcomeMessages[10], 25, rgbm.colors.white)
+	ui.dwriteTextWrapped(welcomeMessages[11], 25, rgbm.colors.white)
+	ui.dwriteTextWrapped(welcomeMessages[12], 25, rgbm.colors.white)
+	ui.sameLine()
+	if ui.dwriteTextHyperlink('CAR-THEFT CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1096470595392241704") end
+	ui.endSubgroup()
+	ui.newLine()
+	ui.dwriteTextWrapped(welcomeMessages[13], 40, rgbm.colors.white)
+	ui.beginSubgroup(windowWidth/50)
+	ui.dwriteTextWrapped(welcomeMessages[14], 25, rgbm.colors.white)
+	ui.dwriteTextWrapped(welcomeMessages[15], 25, rgbm.colors.white)
+	ui.dwriteTextWrapped(welcomeMessages[16], 25, rgbm.colors.white)
+	ui.sameLine()
+	if ui.dwriteTextHyperlink('STREET RACING CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1082294944162660454") end
+	ui.endSubgroup()
+	ui.newLine()
+	ui.dwriteTextWrapped(welcomeMessages[17], 40, rgbm.colors.white)
+	ui.beginSubgroup(windowWidth/50)
+	ui.dwriteTextWrapped(welcomeMessages[18], 25, rgbm.colors.white)
+	ui.dwriteTextWrapped(welcomeMessages[19], 25, rgbm.colors.white)
+	ui.dwriteTextWrapped(welcomeMessages[20], 25, rgbm.colors.white)
+	ui.dwriteTextWrapped(welcomeMessages[21], 25, rgbm.colors.white)
+	ui.sameLine()
+	if ui.dwriteTextHyperlink('HORIZON CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1127619394328076318") end
+	ui.endSubgroup()
+	ui.newLine()
+	ui.dwriteTextWrapped(welcomeMessages[22], 25, rgbm.colors.white)
+	ui.sameLine()
+	if ui.dwriteTextHyperlink('FPS BOOST CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1053427131222343811") end
+	ui.dwriteTextWrapped(welcomeMessages[23], 25, rgbm.colors.white)
+	ui.sameLine()
+	if ui.dwriteTextHyperlink('DISCORD | FAQ', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1062186611091185784") end
+	ui.newLine()
+	ui.sameLine(windowWidth/20)
+	if ui.button('Close', vec2(windowWidth/2, windowHeight/20)) then welcomeClosed = true end
+	ui.endGroup()
+end
+
+local function welcomeWindow()
+	ui.toolWindow('WelcomeWindow', vec2(windowWidth/10, windowHeight/10), vec2(windowWidth-windowWidth/5, windowHeight-windowHeight/5), false, function ()
+		ui.childWindow('childWelcome', vec2(), false, function ()
+			welcomeMessageUI()
+		end)
+	end)
+end
 
 function script.drawUI()
-	if settingsLoaded and initialized then
+	if not welcomeClosed then
+		welcomeWindow()
+	end
+	if settingsLoaded and initialized and welcomeClosed then
 		hudUI()
 		onlineEventMessageUI()
 		raceUI()
@@ -1641,9 +1732,5 @@ function script.draw3D()
 end
 
 if ac.getCarID(0) ~= valideCar[1] and ac.getCarID(0) ~= valideCar[2] then
-	ui.registerOnlineExtra("Menu", "Menu", nil, function () menu() end, nil, ui.OnlineExtraFlags.Tool)
-end
-
-if not settingsLoaded then
-	ui.registerOnlineExtra("Download", "Download", nil, function () download() end, nil, ui.OnlineExtraFlags.Tool)
+	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
