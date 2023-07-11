@@ -160,8 +160,8 @@ local class = 'C'
 local timeRequirement = 150
 local sim = ac.getSim()
 local car = ac.getCar(0)
-local windowWidth = sim.windowWidth
-local windowHeight = sim.windowHeight
+local windowWidth = sim.windowWidth/ac.getUI().uiScale
+local windowHeight = sim.windowHeight/ac.getUI().uiScale
 local menuOpen = false
 local leaderboardOpen = false
 local settingsLoaded = true
@@ -1628,7 +1628,7 @@ local function welcomeMessageUI()
 	ui.dwriteTextWrapped(welcomeMessages[2], 25, rgbm.colors.white)
 	ui.dwriteTextWrapped(welcomeMessages[3], 25, rgbm.colors.white)
 	ui.sameLine()
-	if 2144 < cspVersion then
+	if 2362 < cspVersion then
 		if ui.dwriteTextHyperlink('CAR DEALER CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1076123906362056784") end
 	else
 		if ui.textHyperlink('ACP POINTS SYSTEM') then os.openURL("https://discord.com/channels/358562025032646659/1059795376879714364") end
@@ -1640,7 +1640,7 @@ local function welcomeMessageUI()
 	ui.dwriteTextWrapped(welcomeMessages[6], 25, rgbm.colors.white)
 	ui.dwriteTextWrapped(welcomeMessages[7], 25, rgbm.colors.white)
 	ui.sameLine()
-	if 2144 < cspVersion then
+	if 2362 < cspVersion then
 		if ui.dwriteTextHyperlink('DRIVEN-KM CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1076123906362056784") end
 	else
 		if ui.textHyperlink('DRIVEN-KM CHANNEL') then os.openURL("https://discord.com/channels/358562025032646659/1059795376879714364") end
@@ -1654,7 +1654,7 @@ local function welcomeMessageUI()
 	ui.dwriteTextWrapped(welcomeMessages[11], 25, rgbm.colors.white)
 	ui.dwriteTextWrapped(welcomeMessages[12], 25, rgbm.colors.white)
 	ui.sameLine()
-	if 2144 < cspVersion then
+	if 2362 < cspVersion then
 		if ui.dwriteTextHyperlink('CAR-THEFT CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1076123906362056784") end
 	else
 		if ui.textHyperlink('CAR-THEFT CHANNEL') then os.openURL("https://discord.com/channels/358562025032646659/1059795376879714364") end
@@ -1667,7 +1667,7 @@ local function welcomeMessageUI()
 	ui.dwriteTextWrapped(welcomeMessages[15], 25, rgbm.colors.white)
 	ui.dwriteTextWrapped(welcomeMessages[16], 25, rgbm.colors.white)
 	ui.sameLine()
-	if 2144 < cspVersion then
+	if 2362 < cspVersion then
 		if ui.dwriteTextHyperlink('STREET RACING CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1076123906362056784") end
 	else
 		if ui.textHyperlink('STREET RACING CHANNEL') then os.openURL("https://discord.com/channels/358562025032646659/1059795376879714364") end
@@ -1681,7 +1681,7 @@ local function welcomeMessageUI()
 	ui.dwriteTextWrapped(welcomeMessages[20], 25, rgbm.colors.white)
 	ui.dwriteTextWrapped(welcomeMessages[21], 25, rgbm.colors.white)
 	ui.sameLine()
-	if 2144 < cspVersion then
+	if 2362 < cspVersion then
 		if ui.dwriteTextHyperlink('HORIZON CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1127619394328076318") end
 	else
 		if ui.textHyperlink('HORIZON CHANNEL') then os.openURL("https://discord.com/channels/358562025032646659/1127619394328076318") end
@@ -1690,14 +1690,14 @@ local function welcomeMessageUI()
 	ui.newLine()
 	ui.dwriteTextWrapped(welcomeMessages[22], 25, rgbm.colors.white)
 	ui.sameLine()
-	if 2144 < cspVersion then
+	if 2362 < cspVersion then
 		if ui.dwriteTextHyperlink('FPS BOOST CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1053427131222343811") end
 	else
 		if ui.textHyperlink('FPS BOOST CHANNEL') then os.openURL("https://discord.com/channels/358562025032646659/1053427131222343811") end
 	end
 	ui.dwriteTextWrapped(welcomeMessages[23], 25, rgbm.colors.white)
 	ui.sameLine()
-	if 2144 < cspVersion then
+	if 2362 < cspVersion then
 		if ui.dwriteTextHyperlink('DISCORD | FAQ', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1062186611091185784") end
 	else
 		if ui.textHyperlink('DISCORD | FAQ') then os.openURL("https://discord.com/channels/358562025032646659/1062186611091185784") end
@@ -1711,7 +1711,7 @@ end
 local function welcomeWindow()
 	ui.toolWindow('WelcomeWindow', vec2(windowWidth/10, windowHeight/10), vec2(windowWidth-windowWidth/5, windowHeight-windowHeight/5), false, function ()
 		ui.childWindow('childWelcome', vec2(), false, function ()
-			welcomeMessageUI()
+			welcomeMessageUI()		
 		end)
 	end)
 end
@@ -1763,5 +1763,4 @@ end
 if ac.getCarID(0) ~= valideCar[1] and ac.getCarID(0) ~= valideCar[2] then
 	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
-
 
