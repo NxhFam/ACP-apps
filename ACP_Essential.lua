@@ -1688,10 +1688,7 @@ local function welcomeWindow()
 end
 
 function script.drawUI()
-	if not welcomeClosed then
-		welcomeWindow()
-	end
-	if settingsLoaded and initialized and welcomeClosed then
+	if settingsLoaded and initialized then
 		hudUI()
 		onlineEventMessageUI()
 		raceUI()
