@@ -1594,6 +1594,7 @@ local function leaderboardWindow()
 end
 
 -------------------------------------------------------------------------------------------- Main script --------------------------------------------------------------------------------------------
+local cspVersion = ac.getPatchVersionCode()
 local welcomeClosed = false
 local welcomeMessages = {"WELCOME TO ASSETTO CORSA PURSUIT SERVER!",
 	"We're the first persistent Assetto Corsa server to combine a (Points System) with the driving experience. ",
@@ -1627,7 +1628,11 @@ local function welcomeMessageUI()
 	ui.dwriteTextWrapped(welcomeMessages[2], 25, rgbm.colors.white)
 	ui.dwriteTextWrapped(welcomeMessages[3], 25, rgbm.colors.white)
 	ui.sameLine()
-	if ui.dwriteTextHyperlink('CAR DEALER CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1076123906362056784") end
+	if 2144 < cspVersion then
+		if ui.dwriteTextHyperlink('CAR DEALER CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1076123906362056784") end
+	else
+		if ui.textHyperlink('ACP POINTS SYSTEM') then os.openURL("https://discord.com/channels/358562025032646659/1059795376879714364") end
+	end
 	ui.newLine()
 	ui.dwriteTextWrapped(welcomeMessages[4], 40, rgbm.colors.white)
 	ui.beginSubgroup(windowWidth/50)
@@ -1635,7 +1640,11 @@ local function welcomeMessageUI()
 	ui.dwriteTextWrapped(welcomeMessages[6], 25, rgbm.colors.white)
 	ui.dwriteTextWrapped(welcomeMessages[7], 25, rgbm.colors.white)
 	ui.sameLine()
-	if ui.dwriteTextHyperlink('DRIVEN-KM CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1059795376879714364") end
+	if 2144 < cspVersion then
+		if ui.dwriteTextHyperlink('DRIVEN-KM CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1076123906362056784") end
+	else
+		if ui.textHyperlink('DRIVEN-KM CHANNEL') then os.openURL("https://discord.com/channels/358562025032646659/1059795376879714364") end
+	end
 	ui.endSubgroup()
 	ui.newLine()
 	ui.dwriteTextWrapped(welcomeMessages[8], 40, rgbm.colors.white)
@@ -1645,7 +1654,11 @@ local function welcomeMessageUI()
 	ui.dwriteTextWrapped(welcomeMessages[11], 25, rgbm.colors.white)
 	ui.dwriteTextWrapped(welcomeMessages[12], 25, rgbm.colors.white)
 	ui.sameLine()
-	if ui.dwriteTextHyperlink('CAR-THEFT CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1096470595392241704") end
+	if 2144 < cspVersion then
+		if ui.dwriteTextHyperlink('CAR-THEFT CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1076123906362056784") end
+	else
+		if ui.textHyperlink('CAR-THEFT CHANNEL') then os.openURL("https://discord.com/channels/358562025032646659/1059795376879714364") end
+	end
 	ui.endSubgroup()
 	ui.newLine()
 	ui.dwriteTextWrapped(welcomeMessages[13], 40, rgbm.colors.white)
@@ -1654,7 +1667,11 @@ local function welcomeMessageUI()
 	ui.dwriteTextWrapped(welcomeMessages[15], 25, rgbm.colors.white)
 	ui.dwriteTextWrapped(welcomeMessages[16], 25, rgbm.colors.white)
 	ui.sameLine()
-	if ui.dwriteTextHyperlink('STREET RACING CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1082294944162660454") end
+	if 2144 < cspVersion then
+		if ui.dwriteTextHyperlink('STREET RACING CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1076123906362056784") end
+	else
+		if ui.textHyperlink('STREET RACING CHANNEL') then os.openURL("https://discord.com/channels/358562025032646659/1059795376879714364") end
+	end
 	ui.endSubgroup()
 	ui.newLine()
 	ui.dwriteTextWrapped(welcomeMessages[17], 40, rgbm.colors.white)
@@ -1664,15 +1681,27 @@ local function welcomeMessageUI()
 	ui.dwriteTextWrapped(welcomeMessages[20], 25, rgbm.colors.white)
 	ui.dwriteTextWrapped(welcomeMessages[21], 25, rgbm.colors.white)
 	ui.sameLine()
-	if ui.dwriteTextHyperlink('HORIZON CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1127619394328076318") end
+	if 2144 < cspVersion then
+		if ui.dwriteTextHyperlink('HORIZON CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1127619394328076318") end
+	else
+		if ui.textHyperlink('HORIZON CHANNEL') then os.openURL("https://discord.com/channels/358562025032646659/1127619394328076318") end
+	end
 	ui.endSubgroup()
 	ui.newLine()
 	ui.dwriteTextWrapped(welcomeMessages[22], 25, rgbm.colors.white)
 	ui.sameLine()
-	if ui.dwriteTextHyperlink('FPS BOOST CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1053427131222343811") end
+	if 2144 < cspVersion then
+		if ui.dwriteTextHyperlink('FPS BOOST CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1053427131222343811") end
+	else
+		if ui.textHyperlink('FPS BOOST CHANNEL') then os.openURL("https://discord.com/channels/358562025032646659/1053427131222343811") end
+	end
 	ui.dwriteTextWrapped(welcomeMessages[23], 25, rgbm.colors.white)
 	ui.sameLine()
-	if ui.dwriteTextHyperlink('DISCORD | FAQ', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1062186611091185784") end
+	if 2144 < cspVersion then
+		if ui.dwriteTextHyperlink('DISCORD | FAQ', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1062186611091185784") end
+	else
+		if ui.textHyperlink('DISCORD | FAQ') then os.openURL("https://discord.com/channels/358562025032646659/1062186611091185784") end
+	end
 	ui.newLine()
 	ui.sameLine(windowWidth/20)
 	if ui.button('Close', vec2(windowWidth/2, windowHeight/20)) then welcomeClosed = true end
@@ -1688,7 +1717,10 @@ local function welcomeWindow()
 end
 
 function script.drawUI()
-	if settingsLoaded and initialized then
+	if not welcomeClosed then
+		welcomeWindow()
+	end
+	if settingsLoaded and initialized and welcomeClosed then
 		hudUI()
 		onlineEventMessageUI()
 		raceUI()
@@ -1731,3 +1763,5 @@ end
 if ac.getCarID(0) ~= valideCar[1] and ac.getCarID(0) ~= valideCar[2] then
 	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
+
+
