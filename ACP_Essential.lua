@@ -1725,7 +1725,7 @@ end
 
 function script.drawUI()
 	--if not welcomeClosed then welcomeWindow() end
-	if settingsLoaded and initialized and then
+	if settingsLoaded and initialized then
 		if cspVersion < cspMinVersion then return end
 		hudUI()
 		onlineEventMessageUI()
