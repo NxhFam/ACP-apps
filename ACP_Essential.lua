@@ -1595,6 +1595,7 @@ end
 
 -------------------------------------------------------------------------------------------- Main script --------------------------------------------------------------------------------------------
 local cspVersion = ac.getPatchVersionCode()
+local cspMinVersion = 2144
 local welcomeClosed = false
 local welcomeMessages = {"WELCOME TO ASSETTO CORSA PURSUIT SERVER!",
 	"We're the first persistent Assetto Corsa server to combine a (Points System) with the driving experience. ",
@@ -1711,16 +1712,21 @@ end
 local function welcomeWindow()
 	ui.toolWindow('WelcomeWindow', vec2(windowWidth/10, windowHeight/10), vec2(windowWidth-windowWidth/5, windowHeight-windowHeight/5), false, function ()
 		ui.childWindow('childWelcome', vec2(), false, function ()
-			welcomeMessageUI()		
+			if cspVersion >= cspMinVersion then welcomeMessageUI()
+			else
+				ui.dwriteTextWrapped("You are using an old version of CSP. Please update CSP to the latest version to use this app.", 25, rgbm.colors.white)
+				ui.newLine()
+				ui.sameLine(windowWidth/20)
+				if ui.button('Close', vec2(windowWidth/2, windowHeight/20)) then welcomeClosed = true end
+			end
 		end)
 	end)
 end
 
 function script.drawUI()
-	-- if not welcomeClosed then
-	-- 	welcomeWindow()
-	-- end
-	if settingsLoaded and initialized then
+	if not welcomeClosed then welcomeWindow() end
+	if settingsLoaded and initialized and not welcomeClosed then
+		if cspVersion < cspMinVersion then return end
 		hudUI()
 		onlineEventMessageUI()
 		raceUI()
@@ -1738,7 +1744,7 @@ end
 
 function script.update(dt)
 	if not initialized then
-		if ac.getCarID(0) == valideCar[1] or ac.getCarID(0) == valideCar[2] then return end
+		if ac.getCarID(0) == valideCar[1] or ac.getCarID(0) == valideCar[2] or cspVersion < cspMinVersion then return end
 		initLines()
 		verifyClass()
 		initialized = true
@@ -1760,7 +1766,6 @@ function script.draw3D()
 	end
 end
 
-if ac.getCarID(0) ~= valideCar[1] and ac.getCarID(0) ~= valideCar[2] then
+if ac.getCarID(0) ~= valideCar[1] and ac.getCarID(0) ~= valideCar[2] and cspVersion >= cspMinVersion then
 	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
-
