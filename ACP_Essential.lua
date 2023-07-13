@@ -1724,8 +1724,8 @@ local function welcomeWindow()
 end
 
 function script.drawUI()
-	if not welcomeClosed then welcomeWindow() end
-	if settingsLoaded and initialized and not welcomeClosed then
+	--if not welcomeClosed then welcomeWindow() end
+	if settingsLoaded and initialized and then
 		if cspVersion < cspMinVersion then return end
 		hudUI()
 		onlineEventMessageUI()
@@ -1744,7 +1744,7 @@ end
 
 function script.update(dt)
 	if not initialized then
-		if ac.getCarID(0) == valideCar[1] or ac.getCarID(0) == valideCar[2] or cspVersion < cspMinVersion then return end
+		if ac.getCarID(0) == valideCar[1] or ac.getCarID(0) == valideCar[2] then return end
 		initLines()
 		verifyClass()
 		initialized = true
