@@ -1043,7 +1043,6 @@ local function hasWin(winner)
 	if playerData.Wins + playerData.Losses > 0 then
 		playerData.WR = math.floor((playerData.Wins * 100 / (playerData.Wins + playerData.Losses))*100)/100
 	end
-	updatefirebase()
 	raceState.opponent = nil
 end
 
@@ -1238,6 +1237,7 @@ local function raceUI()
 		if not raceFinish.messageSent and raceFinish.winner == car then
 			ac.sendChatMessage(ac.getDriverName(0) .. " has just beaten " .. raceFinish.opponentName .. string.format(" in an illegal race. [Win rate: %d",playerData.Wins * 100 / (playerData.Wins + playerData.Losses)) .. "%]")
 			raceFinish.messageSent = true
+			updatefirebase()
 		end
 	elseif horn.resquestTime > 0  and raceState.opponent then
 		text = ac.getDriverName(raceState.opponent.index) .. " wants to challenge you to a race. To accept activate your horn twice quickly"
