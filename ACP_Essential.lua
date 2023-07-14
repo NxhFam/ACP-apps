@@ -151,6 +151,9 @@ local sheetH1B = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hk
 local sheetH1C = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1055663571&single=true&output=csv'
 local sheetVV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=683938135&single=true&output=csv'
 local sheetElo = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1426211490&single=true&output=csv'
+local cspVersion = ac.getPatchVersionCode()
+local cspMinVersion = 2144
+local welcomeClosed = false
 
 local leaderboard = {}
 local leaderboardName = 'Class B - H1'
@@ -165,7 +168,8 @@ local windowHeight = sim.windowHeight/ac.getUI().uiScale
 local menuOpen = false
 local leaderboardOpen = false
 local settingsLoaded = true
-local skyr34Valid = ac.INIConfig.carData(0, 'brakes.ini'):get("DATA", "MAX_TORQUE", 0) == 4100 and ac.getCarID(0) == "skyr34_acp2"
+
+local skyr34Valid
 
 local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 
@@ -395,6 +399,7 @@ end
 
 
 local function initLines()
+	skyr34Valid = ac.INIConfig.carData(0, 'brakes.ini'):get("DATA", "MAX_TORQUE", 0) == 4100 and ac.getCarID(0) == "skyr34_acp2"
 	ac.log(sharedDataSettings.showStats)
 	if not sharedDataSettings.showStats then initSettings()
 	else
@@ -1594,9 +1599,7 @@ local function leaderboardWindow()
 end
 
 -------------------------------------------------------------------------------------------- Main script --------------------------------------------------------------------------------------------
-local cspVersion = ac.getPatchVersionCode()
-local cspMinVersion = 2144
-local welcomeClosed = false
+
 local welcomeMessages = {"WELCOME TO ASSETTO CORSA PURSUIT SERVER!",
 	"We're the first persistent Assetto Corsa server to combine a (Points System) with the driving experience. ",
 	"Earned points function like real-life currency, allowing you to buy and customize cars: ",
@@ -1714,7 +1717,7 @@ local function welcomeWindow()
 		ui.childWindow('childWelcome', vec2(), false, function ()
 			if cspVersion >= cspMinVersion then welcomeMessageUI()
 			else
-				ui.dwriteTextWrapped("You are using an old version of CSP. Please update CSP to the latest version to use this app.", 25, rgbm.colors.white)
+				ui.dwriteTextWrapped("You are using an old version of CSP. Please update CSP to the latest version to use the ACP Essential APP.", 25, rgbm.colors.white)
 				ui.newLine()
 				ui.sameLine(windowWidth/20)
 				if ui.button('Close', vec2(windowWidth/2, windowHeight/20)) then welcomeClosed = true end
@@ -1724,8 +1727,8 @@ local function welcomeWindow()
 end
 
 function script.drawUI()
-	--if not welcomeClosed then welcomeWindow() end
-	if settingsLoaded and initialized then
+	if not welcomeClosed then welcomeWindow() end
+	if settingsLoaded and initialized and welcomeClosed then
 		if cspVersion < cspMinVersion then return end
 		hudUI()
 		onlineEventMessageUI()
@@ -1744,7 +1747,7 @@ end
 
 function script.update(dt)
 	if not initialized then
-		if ac.getCarID(0) == valideCar[1] or ac.getCarID(0) == valideCar[2] then return end
+		if ac.getCarID(0) == valideCar[1] or ac.getCarID(0) == valideCar[2] or cspVersion < cspMinVersion then return end
 		initLines()
 		verifyClass()
 		initialized = true
