@@ -151,13 +151,16 @@ local sheetH1B = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hk
 local sheetH1C = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1055663571&single=true&output=csv'
 local sheetVV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=683938135&single=true&output=csv'
 local sheetElo = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1426211490&single=true&output=csv'
+local sheetOverall = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=854722630&single=true&output=csv'
+local sheetTheft = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=746134609&single=true&output=csv'
+local sheetArrests = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=60814056&single=true&output=csv'
 local cspVersion = ac.getPatchVersionCode()
 local cspMinVersion = 2144
 local welcomeClosed = false
 
 local leaderboard = {}
 local leaderboardName = 'Class B - H1'
-local leaderboardNames = {'Class B - H1', 'Class C - H1', 'Velocity Vendetta', 'Win Ratio'}
+local leaderboardNames = {'Class B - H1', 'Class C - H1', 'Velocity Vendetta', 'Street Racing', 'Car Thefts', 'Arrestations','OVERALL'}
 
 local class = 'C'
 local timeRequirement = 150
@@ -543,9 +546,18 @@ end
 local urlAppScript = 'https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec'
 local function loadLeaderboardFromSheet()
 	local sheetUrl = sheetH1B
+	local times = true
+	local colStart = 2
 	if leaderboardName == leaderboardNames[2] then sheetUrl = sheetH1C
 	elseif leaderboardName == leaderboardNames[3] then sheetUrl = sheetVV
-	elseif leaderboardName == leaderboardNames[4] then sheetUrl = sheetElo end
+	elseif leaderboardName == leaderboardNames[4] then sheetUrl = sheetElo times = false
+	elseif leaderboardName == leaderboardNames[5] then sheetUrl = sheetTheft times = false
+	elseif leaderboardName == leaderboardNames[6] then sheetUrl = sheetArrests times = false
+	elseif leaderboardName == leaderboardNames[7] then
+		sheetUrl = sheetOverall
+		times = false
+		colStart = 1
+	end
 
 	web.get(sheetUrl, function(err, response)
 		if err then
@@ -558,11 +570,11 @@ local function loadLeaderboardFromSheet()
 			for i=1, #lines do
 				local line = lines[i]:split(',')
 				local entry = {}
-				for j=1, #line do
+				for j=colStart, #line do
 					if i > 1 then
-						if leaderboardName == leaderboardNames[4] and j == 3 then line[j] = string.format("%d",tonumber(line[j]))
-						elseif  leaderboardName ~= leaderboardNames[4] and j == 2 then line[j] = timeFormat(tonumber(line[j])) end
+						if  times and j == 2 then line[j] = timeFormat(tonumber(line[j])) end
 					end
+					ac.log(line[j])
 					table.insert(entry, line[j])
 				end
 				table.insert(leaderboard, entry)
@@ -673,13 +685,13 @@ local boxHeight = windowHeight/70
 local function displayInGrid()
 	local box1 = vec2(windowWidth/32, boxHeight)
 	local nbCol = #leaderboard[1]
-	local colWidth = (windowWidth/3 - windowWidth/32)/(nbCol-1)
+	local colWidth = (windowWidth/2 - windowWidth/32)/(nbCol)
 	ui.pushDWriteFont("Orbitron;Weight=Black")
 	ui.newLine()
 	ui.dwriteTextAligned("Pos", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
-	for i = 2, nbCol do
+	for i = 1, nbCol do
 		local textLenght = ui.measureDWriteText(leaderboard[1][i], SETTINGS.statsFont/1.5).x
-		ui.sameLine(box1.x + colWidth/2 + colWidth*(i-2) - textLenght/2)
+		ui.sameLine(box1.x + colWidth/2 + colWidth*(i-1) - textLenght/2)
 		ui.dwriteTextWrapped(leaderboard[1][i], SETTINGS.statsFont/1.5, SETTINGS.colorHud)
 	end
 	ui.newLine()
@@ -692,19 +704,19 @@ local function displayInGrid()
 		elseif i == 3 then sufix = "nd"
 		elseif i == 4 then sufix = "rd" end
 		ui.dwriteTextAligned(i-1 .. sufix, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
-		for j = 2, #entry do
+		for j = 1, #entry do
 			local textLenght = ui.measureDWriteText(entry[j], SETTINGS.statsFont/1.5).x
-			ui.sameLine(box1.x + colWidth/2 + colWidth*(j-2) - textLenght/2)
+			ui.sameLine(box1.x + colWidth/2 + colWidth*(j-1) - textLenght/2)
 			ui.dwriteTextWrapped(entry[j], SETTINGS.statsFont/1.5, rgbm.colors.white)
 		end
 	end
 	ui.popDWriteFont()
 	local lineHeight = math.max(ui.itemRectMax().y, windowHeight/3)
 	ui.drawLine(vec2(box1.x, windowHeight/20), vec2(box1.x, lineHeight), rgbm.colors.white, 1)
-	for i = 1, nbCol-2 do
+	for i = 1, nbCol-1 do
 		ui.drawLine(vec2(box1.x + colWidth*i, windowHeight/20), vec2(box1.x + colWidth*i, lineHeight), rgbm.colors.white, 2)
 	end
-	ui.drawLine(vec2(0, windowHeight/12), vec2(windowWidth/3, windowHeight/12), rgbm.colors.white, 1)
+	ui.drawLine(vec2(0, windowHeight/12), vec2(windowWidth/2, windowHeight/12), rgbm.colors.white, 1)
 end
 
 local function showLeaderboard()
@@ -1590,8 +1602,8 @@ local function moveMenu()
 end
 
 local function leaderboardWindow()
-	ui.toolWindow('LeaderboardWindow', SETTINGS.menuPos, vec2(windowWidth/3, windowHeight/3), true, function ()
-		ui.childWindow('childLeaderboard', vec2(windowWidth/3, windowHeight/3), true, function ()
+	ui.toolWindow('LeaderboardWindow', SETTINGS.menuPos, vec2(windowWidth/2, windowHeight/2), true, function ()
+		ui.childWindow('childLeaderboard', vec2(windowWidth/2, windowHeight/2), true, function ()
 			showLeaderboard()
 			moveMenu()
 		end)
