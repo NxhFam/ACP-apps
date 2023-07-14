@@ -531,23 +531,23 @@ end
 local function showPoliceLights()
 	local timing = os.clock() % 2
 	if timing > 1.66 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), rgbm(1, 0, 0, 0.5), rgbm(),  rgbm(), rgbm(1, 0, 0, 0.5))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(0, 0, 1, 0.5), rgbm(0, 0, 1, 0.5), rgbm())
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), rgbm(1, 0, 0, 0.5), rgbm(),  rgbm(), rgbm(1, 0, 0, 0.5))
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(0, 0, 1, 0.5), rgbm(0, 0, 1, 0.5), rgbm())
 	elseif timing > 1.33 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), rgbm(0, 0, 1, 0.5), rgbm(), rgbm(), rgbm(0, 0, 1, 0.5))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(1, 0, 0, 0.5), rgbm(1, 0, 0, 0.5), rgbm())
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), rgbm(0, 0, 1, 0.5), rgbm(), rgbm(), rgbm(0, 0, 1, 0.5))
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(1, 0, 0, 0.5), rgbm(1, 0, 0, 0.5), rgbm())
 	elseif timing > 1 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), rgbm(1, 0, 0, 0.5), rgbm(),  rgbm(), rgbm(1, 0, 0, 0.5))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(0, 0, 1, 0.5), rgbm(0, 0, 1, 0.5), rgbm())
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), rgbm(1, 0, 0, 0.5), rgbm(),  rgbm(), rgbm(1, 0, 0, 0.5))
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(0, 0, 1, 0.5), rgbm(0, 0, 1, 0.5), rgbm())
 	elseif timing > 0.66 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), rgbm(0, 0, 1, 0.5), rgbm(), rgbm(), rgbm(0, 0, 1, 0.5))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(1, 0, 0, 0.5), rgbm(1, 0, 0, 0.5), rgbm())
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), rgbm(0, 0, 1, 0.5), rgbm(), rgbm(), rgbm(0, 0, 1, 0.5))
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(1, 0, 0, 0.5), rgbm(1, 0, 0, 0.5), rgbm())
 	elseif timing > 0.33 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), rgbm(1, 0, 0, 0.5), rgbm(),  rgbm(), rgbm(1, 0, 0, 0.5))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(0, 0, 1, 0.5), rgbm(0, 0, 1, 0.5), rgbm())
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), rgbm(1, 0, 0, 0.5), rgbm(),  rgbm(), rgbm(1, 0, 0, 0.5))
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(0, 0, 1, 0.5), rgbm(0, 0, 1, 0.5), rgbm())
 	else
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), rgbm(0, 0, 1, 0.5), rgbm(), rgbm(), rgbm(0, 0, 1, 0.5))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(1, 0, 0, 0.5), rgbm(1, 0, 0, 0.5), rgbm())
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), rgbm(0, 0, 1, 0.5), rgbm(), rgbm(), rgbm(0, 0, 1, 0.5))
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(1, 0, 0, 0.5), rgbm(1, 0, 0, 0.5), rgbm())
 	end
 end
 
@@ -680,7 +680,7 @@ local function drawText()
 	ui.dwriteDrawText("RADAR ACTIVE", SETTINGS.statsFont/2, vec2((textPos.box2.x - ui.measureDWriteText("RADAR ACTIVE", SETTINGS.statsFont/2).x)/2, 0), rgbm(1,0,0,1))
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=Regular")
-	ui.dwriteDrawText("NEARBY VEHICULE SPEED SCANNING", SETTINGS.statsFont/3, vec2((textPos.box2.x - ui.measureDWriteText("NEARBY VEHICULE SPEED SCANNING", SETTINGS.statsFont/3).x)/2, SETTINGS.statsFont/1.5), rgbm(1,0,0,1))
+	ui.dwriteDrawText("NEARBY VEHICULE SPEED > 50Kmh SCANNING", SETTINGS.statsFont/3, vec2((textPos.box2.x - ui.measureDWriteText("NEARBY VEHICULE SPEED > 50Kmh SCANNING", SETTINGS.statsFont/3).x)/2, SETTINGS.statsFont/1.5), rgbm(1,0,0,1))
 
 	local colorText = rgbm(1,1,1,1)
 	textPos.box1 = vec2(0, textSize.size.y*2.5)
@@ -694,7 +694,6 @@ local function drawText()
 				playerSelected(playersInRange[i].player)
 			end
 		end
-		--ui.dwriteDrawText("playersInRange", SETTINGS.statsFont/2, vec2((textPos.box2.x - ui.measureDWriteText("playersInRange", SETTINGS.statsFont/2).x)/2, textPos.box1.y), colorText)
 		ui.dwriteDrawText(playersInRange[i].text, SETTINGS.statsFont/2, vec2((textPos.box2.x - ui.measureDWriteText(playersInRange[i].text, SETTINGS.statsFont/2).x)/2, textPos.box1.y + textSize.size.y/5), colorText)
 		textPos.box1 = textPos.box1 + textPos.addBox
 		ui.dummy(vec2(textPos.box2.x, i * SETTINGS.statsFont/5))
@@ -788,7 +787,7 @@ local function showPursuitMsg()
 		if pursuit.suspect then
 			text = "You are chasing " .. ac.getDriverName(pursuit.suspect.index) .. " driving a " .. string.gsub(string.gsub(ac.getCarName(pursuit.suspect.index), "%W", " "), "  ", "") .. " ! Get him! "
 		end
-		showPoliceLights()
+		if pursuit.startedTime > 6 then showPoliceLights() end
 	end
 	if text ~= "" then
 		local textLenght = ui.measureDWriteText(text, SETTINGS.fontSizeMSG)
