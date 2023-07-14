@@ -725,11 +725,13 @@ local function radarUpdate()
 		if player.isConnected and (not player.isHidingLabels) then
 			if player.index ~= car.index then
 				if player.position.x > car.position.x - radarRange and player.position.z > car.position.z - radarRange and player.position.x < car.position.x + radarRange and player.position.z < car.position.z + radarRange then
-					playersInRange[j] = {}
-					playersInRange[j].player = player
-					playersInRange[j].text = ac.getDriverName(player.index) .. string.format(" - %d ", player.speedKmh * SETTINGS.unitMult) .. SETTINGS.unit
-					j = j + 1
-					if j == 9 then break end
+					if player.speedKmh > 50 then
+						playersInRange[j] = {}
+						playersInRange[j].player = player
+						playersInRange[j].text = ac.getDriverName(player.index) .. string.format(" - %d ", player.speedKmh * SETTINGS.unitMult) .. SETTINGS.unit
+						j = j + 1
+						if j == 9 then break end
+					end
 				end
 			end
 		end
