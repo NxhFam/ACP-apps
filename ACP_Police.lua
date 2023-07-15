@@ -692,7 +692,7 @@ local function drawText()
 				playerSelected(playersInRange[i].player)
 			end
 		end
-		ui.dwriteDrawText(playersInRange[i].text, SETTINGS.statsFont/2, vec2(playersInRange[i].textSizeX, textPos.box1.y + textSize.size.y/5), colorText)
+		ui.dwriteDrawText(playersInRange[i].text, SETTINGS.statsFont/2, vec2((textPos.box2.x - ui.measureDWriteText(ac.getDriverName(playersInRange[i].player.index) .. " - 000 " .. SETTINGS.unit, SETTINGS.statsFont/2).x)/2, textPos.box1.y + textSize.size.y/5), colorText)
 		textPos.box1 = textPos.box1 + textPos.addBox
 		ui.dummy(vec2(textPos.box2.x, i * SETTINGS.statsFont/5))
 	end
@@ -726,7 +726,6 @@ local function radarUpdate()
 					playersInRange[j] = {}
 					playersInRange[j].player = player
 					playersInRange[j].text = ac.getDriverName(player.index) .. string.format(" - %d ", player.speedKmh * SETTINGS.unitMult) .. SETTINGS.unit
-					playersInRange[j].textSizeX = (textPos.box2.x - ui.measureDWriteText(ac.getDriverName(player.index) .. " - 000 " .. SETTINGS.unit, SETTINGS.statsFont/2).x)/2
 					j = j + 1
 					if j == 9 then break end
 				end
