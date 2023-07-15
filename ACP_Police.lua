@@ -749,10 +749,12 @@ local function inRange()
 		resetChase()
 	else
 		if pursuit.suspect.rpm > 400 and pursuit.suspect.speedKmh > 20 then
-			if lastArrest > 0 then ac.shutdownAssettoCorsa() end
+			if lastArrest == 0 then
 			local msgToSend = formatMessage(msgLost.msg[math.random(#msgLost.msg)])
 			ac.sendChatMessage(msgToSend)
-			lastArrest = 20
+			else
+				ac.shutdownAssettoCorsa()
+			end
 		end
 		lostSuspect()
 	end
