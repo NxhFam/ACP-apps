@@ -155,6 +155,7 @@ local camerasOpen = false
 local settingsLoaded = true
 local carID = ac.getCarID(0)
 local valideCar = {"chargerpolice_acpursuit", "crown_police"}
+local lastArrest = 0
 
 local sharedDataSettings = ac.connect({
 	ac.StructItem.key('ACP_essential_settings'),
@@ -748,8 +749,10 @@ local function inRange()
 		resetChase()
 	else
 		if pursuit.suspect.rpm > 400 and pursuit.suspect.speedKmh > 20 then
+			if lastArrest > 0 then ac.shutdownAssettoCorsa() end
 			local msgToSend = formatMessage(msgLost.msg[math.random(#msgLost.msg)])
 			ac.sendChatMessage(msgToSend)
+			lastArrest = 20
 		end
 		lostSuspect()
 	end
@@ -827,6 +830,11 @@ local function arrestSuspect()
 end
 
 local function chaseUpdate()
+	if lastArrest > 0 then
+		lastArrest = lastArrest - ui.deltaTime()
+	else
+		lastArrest = 0
+	end
 	if pursuit.suspect then
 		if pursuit.startedTime > 0 then
 			pursuit.startedTime = pursuit.startedTime - ui.deltaTime()
