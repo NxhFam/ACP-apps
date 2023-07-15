@@ -204,6 +204,9 @@ local imageSize = vec2(0,0)
 
 local imgPos = {}
 
+local cpu99occupancy = false
+local showCPUoccupancy = true
+
 local assetsFolder = ac.getFolder(ac.FolderID.ACApps) .. "/lua/ACP_essential/HUD/"
 local hudBase = assetsFolder .. "hudBase.png"
 local hudLeft = assetsFolder .. "hudLeft.png"
@@ -914,6 +917,7 @@ local function sectorUI()
 		end
 	end
 	discordLinks()
+	ui.text(sim.cpuOccupancy)
 	ui.endGroup()
 	return 1
 end
@@ -1612,7 +1616,7 @@ end
 
 -------------------------------------------------------------------------------------------- Main script --------------------------------------------------------------------------------------------
 
-local welcomeMessages = {"WELCOME TO ASSETTO CORSA PURSUIT SERVER!",
+local welcomeMessages = {"\nWELCOME TO ASSETTO CORSA PURSUIT SERVER!",
 	"We're the first persistent Assetto Corsa server to combine a (Points System) with the driving experience. ",
 	"Earned points function like real-life currency, allowing you to buy and customize cars: ",
 	"► CRUSHING KILOMETERS ",
@@ -1639,7 +1643,12 @@ local welcomeMessages = {"WELCOME TO ASSETTO CORSA PURSUIT SERVER!",
 local function welcomeMessageUI()
 	ui.sameLine(windowWidth/10)
 	ui.beginGroup()
-	ui.dwriteTextWrapped(welcomeMessages[1], 40, rgbm.colors.cyan)
+	ui.popDWriteFont()
+	ui.pushDWriteFont("Orbitron;Weight=BLACK")
+	ui.dwriteTextWrapped(welcomeMessages[1], 50, rgbm.colors.orange)
+	local titleSize = ui.measureDWriteText(welcomeMessages[1], 50)
+	ui.popDWriteFont()
+	ui.pushDWriteFont("Orbitron;Weight=REGULAR")
 	ui.newLine(50)
 	ui.dwriteTextWrapped(welcomeMessages[2], 25, rgbm.colors.white)
 	ui.dwriteTextWrapped(welcomeMessages[3], 25, rgbm.colors.white)
@@ -1718,15 +1727,17 @@ local function welcomeMessageUI()
 	else
 		if ui.textHyperlink('DISCORD | FAQ') then os.openURL("https://discord.com/channels/358562025032646659/1062186611091185784") end
 	end
+	ui.newLine(50)
 	ui.newLine()
 	ui.sameLine(windowWidth/20)
-	if ui.button('Close', vec2(windowWidth/2, windowHeight/20)) then welcomeClosed = true end
+	if ui.button('Close', vec2(windowWidth/2, windowHeight/15)) then welcomeClosed = true end
 	ui.endGroup()
 end
 
 local function welcomeWindow()
-	ui.toolWindow('WelcomeWindow', vec2(windowWidth/10, windowHeight/10), vec2(windowWidth-windowWidth/5, windowHeight-windowHeight/5), false, function ()
-		ui.childWindow('childWelcome', vec2(), false, function ()
+	ui.transparentWindow('WelcomeWindow', vec2(windowWidth/10, windowHeight/100), vec2(windowWidth-windowWidth/5, windowHeight-windowHeight/50), true, function ()
+		ui.childWindow('childWelcome', vec2(), true, function ()
+			ui.drawRectFilled(vec2(), vec2(windowWidth-windowWidth/5, windowHeight-windowHeight/50), rgbm(0, 0, 0, 0.8), 20)
 			if cspVersion >= cspMinVersion then welcomeMessageUI()
 			else
 				ui.dwriteTextWrapped("You are using an old version of CSP. Please update CSP to the latest version to use the ACP Essential APP.", 25, rgbm.colors.white)
@@ -1738,9 +1749,39 @@ local function welcomeWindow()
 	end)
 end
 
+local function cpuOccupancyWindow()
+	ui.transparentWindow('CPU99Window', vec2(windowWidth/6, windowHeight/100), vec2(windowWidth-windowWidth/3, windowHeight/6), true, function ()
+		ui.childWindow('childCPU99', vec2(), true, function ()
+			ui.drawRectFilled(vec2(), vec2(windowWidth-windowWidth/3, windowHeight/8), rgbm(0, 0, 0, 0.8), 10)
+			ui.popDWriteFont()
+			ui.pushDWriteFont("Orbitron;Weight=BLACK")
+			ui.sameLine((windowWidth*2/3-ui.measureDWriteText("CPU OCCUPANCY 99%", 40).x)/2)
+			ui.dwriteTextWrapped("CPU OCCUPANCY 99%", 40, rgbm.colors.red)
+			ui.popDWriteFont()
+			ui.pushDWriteFont("Orbitron;Weight=REGULAR")
+			ui.newLine()
+			ui.sameLine((windowWidth*2/3-ui.measureDWriteText("If your car is warping around the track, is because your CPU is not able to keep up with the game.", 25).x)/2)
+			ui.dwriteTextWrapped("If your car is warping around the track, is because your CPU is not able to keep up with the game.", 25, rgbm.colors.white)
+			ui.newLine()
+			ui.sameLine((windowWidth*2/3-ui.measureDWriteText("Close all unnecessary programs and Download one of our graphics preset from Discord FPS BOOST CHANNEL", 25).x)/2)
+			ui.dwriteTextWrapped("Close all unnecessary programs and Download one of our graphics preset from Discord", 25, rgbm.colors.white)
+			ui.sameLine()
+			if 2362 < cspVersion then
+				if ui.dwriteTextHyperlink('FPS BOOST CHANNEL', 25, rgbm.colors.red) then os.openURL("https://discord.com/channels/358562025032646659/1053427131222343811") end
+			else
+				if ui.textHyperlink('FPS BOOST CHANNEL') then os.openURL("https://discord.com/channels/358562025032646659/1053427131222343811") end
+			end
+			ui.newLine()
+			ui.sameLine(windowWidth/6)
+			if ui.button('Close', vec2(windowWidth/3, windowHeight/40)) then showCPUoccupancy = false end
+		end)
+	end)
+end
+
 function script.drawUI()
-	if not welcomeClosed then welcomeWindow() end
-	if settingsLoaded and initialized and welcomeClosed then
+	if not welcomeClosed then welcomeWindow()
+	elseif cpu99occupancy and showCPUoccupancy then cpuOccupancyWindow()
+	elseif settingsLoaded and initialized then
 		if cspVersion < cspMinVersion then return end
 		hudUI()
 		onlineEventMessageUI()
@@ -1771,6 +1812,7 @@ function script.update(dt)
 		sectorUpdate()
 		raceUpdate(dt)
 		sharedDataSettings = SETTINGS
+		if sim.cpuOccupancy > 90 and not cpu99occupancy then cpu99occupancy = true end
 	end
 end
 
