@@ -153,6 +153,7 @@ local settingsOpen = false
 local arrestLogsOpen = false
 local camerasOpen = false
 local settingsLoaded = true
+local carID = ac.getCarID(0)
 local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 
 local sharedDataSettings = ac.connect({
@@ -639,10 +640,7 @@ local function drawImage()
 end
 
 local function playerSelected(player)
-	if pursuit.suspect == player then
-		pursuit.suspect = nil
-		sharedDataPolice.policeLights = false
-	else
+	if player.speedKmh > 50 then
 		pursuit.suspect = player
 		pursuit.timeInPursuit = os.clock()
 		pursuit.nextMessage = 20
@@ -680,7 +678,7 @@ local function drawText()
 	ui.dwriteDrawText("RADAR ACTIVE", SETTINGS.statsFont/2, vec2((textPos.box2.x - ui.measureDWriteText("RADAR ACTIVE", SETTINGS.statsFont/2).x)/2, 0), rgbm(1,0,0,1))
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=Regular")
-	ui.dwriteDrawText("NEARBY VEHICULE SPEED > 50Kmh SCANNING", SETTINGS.statsFont/3, vec2((textPos.box2.x - ui.measureDWriteText("NEARBY VEHICULE SPEED > 50Kmh SCANNING", SETTINGS.statsFont/3).x)/2, SETTINGS.statsFont/1.5), rgbm(1,0,0,1))
+	ui.dwriteDrawText("NEARBY VEHICULE SPEED SCANNING", SETTINGS.statsFont/3, vec2((textPos.box2.x - ui.measureDWriteText("NEARBY VEHICULE SPEED SCANNING", SETTINGS.statsFont/3).x)/2, SETTINGS.statsFont/1.5), rgbm(1,0,0,1))
 
 	local colorText = rgbm(1,1,1,1)
 	textPos.box1 = vec2(0, textSize.size.y*2.5)
@@ -694,7 +692,7 @@ local function drawText()
 				playerSelected(playersInRange[i].player)
 			end
 		end
-		ui.dwriteDrawText(playersInRange[i].text, SETTINGS.statsFont/2, vec2((textPos.box2.x - ui.measureDWriteText(playersInRange[i].text, SETTINGS.statsFont/2).x)/2, textPos.box1.y + textSize.size.y/5), colorText)
+		ui.dwriteDrawText(playersInRange[i].text, SETTINGS.statsFont/2, vec2(playersInRange[i].textSizeX, textPos.box1.y + textSize.size.y/5), colorText)
 		textPos.box1 = textPos.box1 + textPos.addBox
 		ui.dummy(vec2(textPos.box2.x, i * SETTINGS.statsFont/5))
 	end
@@ -722,15 +720,14 @@ local function radarUpdate()
 	for i = ac.getSim().carsCount - 1, 0, -1 do
 		local player = ac.getCar(i)
 		if player.isConnected and (not player.isHidingLabels) then
-			if player.index ~= car.index then
+			if carID ~= valideCar[1] and carID ~= valideCar[2] then
 				if player.position.x > car.position.x - radarRange and player.position.z > car.position.z - radarRange and player.position.x < car.position.x + radarRange and player.position.z < car.position.z + radarRange then
-					if player.speedKmh > 50 then
-						playersInRange[j] = {}
-						playersInRange[j].player = player
-						playersInRange[j].text = ac.getDriverName(player.index) .. string.format(" - %d ", player.speedKmh * SETTINGS.unitMult) .. SETTINGS.unit
-						j = j + 1
-						if j == 9 then break end
-					end
+					playersInRange[j] = {}
+					playersInRange[j].player = player
+					playersInRange[j].text = ac.getDriverName(player.index) .. string.format(" - %d ", player.speedKmh * SETTINGS.unitMult) .. SETTINGS.unit
+					playersInRange[j].textSizeX = (textPos.box2.x - ui.measureDWriteText(ac.getDriverName(player.index) .. " - 000 " .. SETTINGS.unit, SETTINGS.statsFont/2).x)/2
+					j = j + 1
+					if j == 9 then break end
 				end
 			end
 		end
@@ -937,7 +934,7 @@ function script.drawUI()
 end
 
 function script.update(dt)
-	if ac.getCarID(0) ~= valideCar[1] and ac.getCarID(0) ~= valideCar[2] then return end
+	if carID ~= valideCar[1] and carID ~= valideCar[2] then return end
 	if not initialized then
 		initialized = true
         initSettings()
@@ -949,6 +946,6 @@ function script.update(dt)
 	end
 end
 
-if ac.getCarID(0) == valideCar[1] or ac.getCarID(0) == valideCar[2] then
+if carID == valideCar[1] or carID == valideCar[2] then
 	ui.registerOnlineExtra("Menu", "Menu", nil, function () settingsOpen = not settingsOpen end, nil, 0, 0, 0)
 end
