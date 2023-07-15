@@ -926,7 +926,7 @@ end
 function script.drawUI()
 	if initialized then
 		radarUI()
-		showPursuitMsg()
+		if pursuit.suspect then showPursuitMsg() end
 		if settingsOpen then
 			ui.toolWindow('Settings', SETTINGS.menuPos, menuSize[2], true, function ()
 				ui.childWindow('childSettings', menuSize[2], true, function () settings() moveMenu() end)
