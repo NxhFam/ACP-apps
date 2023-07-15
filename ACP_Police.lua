@@ -719,8 +719,9 @@ local function radarUpdate()
 	local j = 1
 	for i = ac.getSim().carsCount - 1, 0, -1 do
 		local player = ac.getCar(i)
+		local playerCarID = ac.getCarID(i)
 		if player.isConnected and (not player.isHidingLabels) then
-			if carID ~= valideCar[1] and carID ~= valideCar[2] then
+			if playerCarID ~= valideCar[1] and playerCarID ~= valideCar[2] then
 				if player.position.x > car.position.x - radarRange and player.position.z > car.position.z - radarRange and player.position.x < car.position.x + radarRange and player.position.z < car.position.z + radarRange then
 					playersInRange[j] = {}
 					playersInRange[j].player = player
