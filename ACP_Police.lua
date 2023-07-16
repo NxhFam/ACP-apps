@@ -1023,7 +1023,7 @@ function script.update(dt)
 		getFirebase()
 		initialized = true
 	else
-		if not pursuit.suspect and settings.policeSize then radarUpdate() end
+		if firstload and not pursuit.suspect then radarUpdate() end
 		chaseUpdate()
 	end
 end
