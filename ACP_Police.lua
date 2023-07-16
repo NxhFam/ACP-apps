@@ -1,3 +1,17 @@
+local sim = ac.getSim()
+local car = ac.getCar(0)
+local windowWidth = sim.windowWidth
+local windowHeight = sim.windowHeight
+local settingsOpen = false
+local arrestLogsOpen = false
+local camerasOpen = false
+local carID = ac.getCarID(0)
+local valideCar = {"chargerpolice_acpursuit", "crown_police"}
+local cspVersion = ac.getPatchVersionCode()
+local cspMinVersion = 2144
+local fontMultiplier = windowHeight/1440
+
+if carID ~= valideCar[1] and carID ~= valideCar[2] or cspVersion < cspMinVersion then return end
 ------------------------------------------------------------------------- JSON Utils -------------------------------------------------------------------------
 
 local json = {}
@@ -145,56 +159,76 @@ function json.parse(str, pos, end_delim)
   end
 end
 
-local sim = ac.getSim()
-local car = ac.getCar(0)
-local windowWidth = sim.windowWidth
-local windowHeight = sim.windowHeight
-local settingsOpen = false
-local arrestLogsOpen = false
-local camerasOpen = false
-local settingsLoaded = true
-local carID = ac.getCarID(0)
-local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 
-local sharedDataSettings = ac.connect({
-	ac.StructItem.key('ACP_essential_settings'),
-	showStats = ac.StructItem.boolean(),
-	racesWon = ac.StructItem.int16(),
-	racesLost = ac.StructItem.int16(),
-	busted = ac.StructItem.int16(),
-	essentialSize = ac.StructItem.int16(),
-	policeSize = ac.StructItem.int16(),
-	statsOffsetX = ac.StructItem.int16(),
-	statsOffsetY = ac.StructItem.int16(),
-	statsFont = ac.StructItem.int16(),
-	current = ac.StructItem.int16(),
-	colorHud = ac.StructItem.rgbm(),
-	send = ac.StructItem.boolean(),
-	timeMsg = ac.StructItem.int16(),
-	msgOffsetY = ac.StructItem.int16(),
-	msgOffsetX = ac.StructItem.int16(),
-	fontSizeMSG = ac.StructItem.int16(),
-	menuPos = ac.StructItem.vec2(),
-	unit = ac.StructItem.string(4),
-	unitMult = ac.StructItem.float(),
-}, true, ac.SharedNamespace.Shared)
+local settings = {}
 
-local sharedDataPolice = ac.connect({
-	ac.StructItem.key('ACP_police'),
-	policeLights = ac.StructItem.boolean(),
-}, true, ac.SharedNamespace.Shared)
+local settingsJSON = {
+	essentialSize = 20,
+	policeSize = 20,
+	hudOffsetX = 0,
+	hudOffsetY = 0,
+	fontSize = 20,
+	current = 1,
+	colorHud = "1,0,0,1",
+	timeMsg = 10,
+	msgOffsetY = 10,
+	msgOffsetX = "1280",
+	fontSizeMSG = 30,
+	menuPos = vec2(0, 0),
+	unit = "km/h",
+	unitMult = 1,
+}
+
+local function stringToVec2(str)
+	local x = string.match(str, "([^,]+)")
+	local y = string.match(str, "[^,]+,(.+)")
+	return vec2(tonumber(x), tonumber(y))
+end
+
+local function vec2ToString(vec)
+	return tostring(vec.x) .. ',' .. tostring(vec.y)
+end
+
+local function stringToRGBM(str)
+	local r = string.match(str, "([^,]+)")
+	local g = string.match(str, "[^,]+,([^,]+)")
+	local b = string.match(str, "[^,]+,[^,]+,([^,]+)")
+	local m = string.match(str, "[^,]+,[^,]+,[^,]+,(.+)")
+	return rgbm(tonumber(r), tonumber(g), tonumber(b), tonumber(m))
+end
+
+local function rgbmToString(rgbm)
+	return tostring(rgbm.r) .. ',' .. tostring(rgbm.g) .. ',' .. tostring(rgbm.b) .. ',' .. tostring(rgbm.mult)
+end
+
+local function parsesettings(table)
+	settings.essentialSize = table.essentialSize
+	settings.policeSize = table.policeSize
+	settings.hudOffsetX = table.hudOffsetX
+	settings.hudOffsetY = table.hudOffsetY
+	settings.fontSize = table.fontSize
+	settings.current = table.current
+	settings.colorHud = stringToRGBM(table.colorHud)
+	settings.timeMsg = table.timeMsg
+	settings.msgOffsetY = table.msgOffsetY
+	settings.msgOffsetX = table.msgOffsetX
+	settings.fontSizeMSG = table.fontSizeMSG
+	settings.menuPos = stringToVec2(table.menuPos)
+	settings.unit = table.unit
+	settings.unitMult = table.unitMult
+end
+
 
 ui.setAsynchronousImagesLoading(true)
 local imageSize = vec2(0,0)
 
-local assetsFolder = ac.getFolder(ac.FolderID.ACApps) .. "/lua/ACP_essential/HudPolice/"
-local hud = assetsFolder .. "hud.png"
-local iconCams = assetsFolder .. "iconCams.png"
-local iconLost = assetsFolder .. "iconLost.png"
-local iconLogs = assetsFolder .. "iconLogs.png"
-local iconMenu = assetsFolder .. "iconMenu.png"
-local iconRadar = assetsFolder .. "iconRadar.png"
-local iconArrest = assetsFolder .. "iconArrest.png"
+local hud = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004827322196040/hud.png"
+local iconCams = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004828039422102/iconCams.png"
+local iconLost = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004828668567662/iconLost.png"
+local iconLogs = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004828370776115/iconLogs.png"
+local iconMenu = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004829067038750/iconMenuPolice.png"
+local iconRadar = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004827020210246/iconRadar.png"
+local iconArrest = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004827624190052/iconArrest.png"
 
 
 local msgChase = {
@@ -324,10 +358,9 @@ local playerData = {}
 
 ---------------------------------------------------------------------------------------------- Firebase ----------------------------------------------------------------------------------------------
 
+local firebaseUrlsettings = 'https://acp-server-97674-default-rtdb.firebaseio.com/Settings'
 local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/Players'
 local urlAppScript = 'https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec'
-local sheetArrest = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=60814056&single=true&output=csv'
-
 
 local function updateSheets()
 	web.post(urlAppScript, function(err, response)
@@ -365,7 +398,9 @@ local function getFirebase()
 				playerData = json.parse(jString)
 				if playerData.WR == nil then playerData.WR = 0 end
 				if playerData.Arrests == nil then playerData.Arrests = 0 end
+
 			end
+			ac.log('Player data loaded')
 		end
 	end)
 end
@@ -382,7 +417,65 @@ local function updatefirebase()
 	end)
 end
 
----------------------------------------------------------------------------------------------- Settings ----------------------------------------------------------------------------------------------
+local function addPlayersettingsToDataBase(steamID)
+	local str = '{"' .. steamID .. '": {"essentialSize":20,"policeSize":20,"hudOffsetX":0,"hudOffsetY":0,"fontSize":20,"current":1,"colorHud":"1,0,0,1","timeMsg":10,"msgOffsetY":10,"msgOffsetX":' .. windowWidth/2 .. ',"fontSizeMSG":30,"menuPos":"0,0","unit":"km/h","unitMult":1}}'
+	web.request('PATCH', firebaseUrlsettings .. ".json", str, function(err, response)
+		if err then
+			print(err)
+			return
+		end
+	end)
+end
+
+local function loadsettings()
+	local url = firebaseUrlsettings .. "/" .. ac.getUserSteamID() .. '.json'
+	web.get(url, function(err, response)
+		if err then
+			print(err)
+			return
+		else
+			if response.body == 'null' then
+				addPlayersettingsToDataBase(ac.getUserSteamID())
+			else
+				ac.log("settings loaded")
+				local jString = response.body
+				local table = json.parse(jString)
+				parsesettings(table)
+			end
+		end
+	end)
+end
+
+local function updatesettings()
+	local str = '{"' .. ac.getUserSteamID() .. '": ' .. json.stringify(settingsJSON) .. '}'
+	web.request('PATCH', firebaseUrlsettings .. ".json", str, function(err, response)
+		if err then
+			print(err)
+			return
+		end
+	end)
+end
+
+local function onsettingsChange()
+	settingsJSON.colorHud = rgbmToString(settings.colorHud)
+	settingsJSON.menuPos = vec2ToString(settings.menuPos)
+	settingsJSON.essentialSize = settings.essentialSize
+	settingsJSON.policeSize = settings.policeSize
+	settingsJSON.hudOffsetX = settings.hudOffsetX
+	settingsJSON.hudOffsetY = settings.hudOffsetY
+	settingsJSON.fontSize = settings.fontSize
+	settingsJSON.current = settings.current
+	settingsJSON.timeMsg = settings.timeMsg
+	settingsJSON.msgOffsetY  = settings.msgOffsetY
+	settingsJSON.msgOffsetX  = settings.msgOffsetX
+	settingsJSON.fontSizeMSG = settings.fontSizeMSG
+	settingsJSON.unit = settings.unit
+	settingsJSON.unitMult = settings.unitMult
+	ac.log("Updated settings")
+	updatesettings()
+end
+
+---------------------------------------------------------------------------------------------- settings ----------------------------------------------------------------------------------------------
 
 local acpPolice = ac.OnlineEvent({
     message = ac.StructItem.string(110),
@@ -391,6 +484,7 @@ local acpPolice = ac.OnlineEvent({
 }, function (sender, data) end)
 
 local function updatePos()
+	imageSize = vec2(windowHeight/80 * settings.policeSize, windowHeight/80 * settings.policeSize)
 	iconPos.arrest1 = vec2(imageSize.x - imageSize.x/12, imageSize.y/3.2)
 	iconPos.arrest2 = vec2(imageSize.x/1.215, imageSize.y/5)
 	iconPos.lost1 = vec2(imageSize.x - imageSize.x/12, imageSize.y/2.35)
@@ -402,108 +496,87 @@ local function updatePos()
 	iconPos.cams1 = vec2(imageSize.x/1.215, imageSize.y/2.35)
 	iconPos.cams2 = vec2(imageSize.x/1.39, imageSize.y/3.2)
 
-	textSize.size = vec2(imageSize.x*3/5, SETTINGS.statsFont/2)
-	textSize.box = vec2(imageSize.x*3/5, SETTINGS.statsFont/1.3)
-	textSize.window1 = vec2(SETTINGS.statsOffsetX+imageSize.x/9.5, SETTINGS.statsOffsetY+imageSize.y/5.3)
+	textSize.size = vec2(imageSize.x*3/5, settings.fontSize/2)
+	textSize.box = vec2(imageSize.x*3/5, settings.fontSize/1.3)
+	textSize.window1 = vec2(settings.hudOffsetX+imageSize.x/9.5, settings.hudOffsetY+imageSize.y/5.3)
 	textSize.window2 = vec2(imageSize.x*3/5, imageSize.y/2.8)
 
 	textPos.box1 = vec2(0, 0)
 	textPos.box2 = vec2(textSize.size.x, textSize.size.y*1.8)
 	textPos.addBox = vec2(0, textSize.size.y*1.8)
+	settings.fontSize = settings.policeSize * fontMultiplier
 end
 
 local showPreviewMsg = false
 COLORSMSGBG = rgbm(0.5,0.5,0.5,0.5)
 
-local function initSettings()
-	ac.log(sharedDataSettings.showStats)
-	if not sharedDataSettings.showStats then
-		settingsLoaded = false
-		SETTINGS = ac.storage {
-			showStats = true,
-			racesWon = 0,
-			racesLost = 0,
-			busted = 0,
-			essentialSize = 20,
-			policeSize = 20,
-			statsOffsetX = 0,
-			statsOffsetY = 0,
-			statsFont = 20,
-			current = 1,
-			colorHud = rgbm(1,0,0,1),
-			send = false,
-			timeMsg = 10,
-			msgOffsetY = 10,
-			msgOffsetX = windowWidth/2,
-			fontSizeMSG = 30,
-			menuPos = vec2(0, 0),
-			unit = "km/h",
-			unitMult = 1,
-		}
-	else SETTINGS = sharedDataSettings end
-	if SETTINGS.unit ~= "km/h" then SETTINGS.unitMult = 0.621371 end
-	if SETTINGS.timeMsg < 10 then SETTINGS.timeMsg = 10 end
-	SETTINGS.statsFont = SETTINGS.policeSize * windowHeight/1440
-	imageSize = vec2(windowHeight/80 * SETTINGS.policeSize, windowHeight/80 * SETTINGS.policeSize)
-	updatePos()
+local function initsettings()
+	if settings.unit then
+		settings.fontSize = settings.policeSize * fontMultiplier
+		if settings.unit ~= "km/h" then settings.unitMult = 0.621371 end
+		settings.policeSize = settings.policeSize * windowHeight/1440
+		settings.fontSize = settings.policeSize * windowHeight/1440
+		imageSize = vec2(windowHeight/80 * settings.policeSize, windowHeight/80 * settings.policeSize)
+		updatePos()
+	end
 end
 
 local function previewMSG()
 	ui.beginTransparentWindow("previewMSG", vec2(0, 0), vec2(windowWidth, windowHeight))
 	ui.pushDWriteFont("Orbitron;Weight=800")
-	local tSize = ui.measureDWriteText("Messages from Police when being chased", SETTINGS.fontSizeMSG)
-	local uiOffsetX = SETTINGS.msgOffsetX - tSize.x/2
-	local uiOffsetY = SETTINGS.msgOffsetY
+	local tSize = ui.measureDWriteText("Messages from Police when being chased", settings.fontSizeMSG)
+	local uiOffsetX = settings.msgOffsetX - tSize.x/2
+	local uiOffsetY = settings.msgOffsetY
 	ui.drawRectFilled(vec2(uiOffsetX - 5, uiOffsetY-5), vec2(uiOffsetX + tSize.x + 5, uiOffsetY + tSize.y + 5), COLORSMSGBG)
-	ui.dwriteDrawText("Messages from Police when being chased", SETTINGS.fontSizeMSG, vec2(uiOffsetX, uiOffsetY), rgbm.colors.cyan)
+	ui.dwriteDrawText("Messages from Police when being chased", settings.fontSizeMSG, vec2(uiOffsetX, uiOffsetY), rgbm.colors.cyan)
 	ui.popDWriteFont()
 	ui.endTransparentWindow()
 end
 
 local function uiTab()
 	ui.text('On Screen Message : ')
-	SETTINGS.timeMsg = ui.slider('##' .. 'Time Msg On Screen', SETTINGS.timeMsg, 1, 15, 'Time Msg On Screen' .. ': %.0fs')
-	SETTINGS.fontSizeMSG = ui.slider('##' .. 'Font Size MSG', SETTINGS.fontSizeMSG, 10, 50, 'Font Size' .. ': %.0f')
+	settings.timeMsg = ui.slider('##' .. 'Time Msg On Screen', settings.timeMsg, 1, 15, 'Time Msg On Screen' .. ': %.0fs')
+	settings.fontSizeMSG = ui.slider('##' .. 'Font Size MSG', settings.fontSizeMSG, 10, 50, 'Font Size' .. ': %.0f')
 	ui.newLine()
 	ui.text('Offset : ')
-	SETTINGS.msgOffsetY = ui.slider('##' .. 'Msg On Screen Offset Y', SETTINGS.msgOffsetY, 0, windowHeight, 'Msg On Screen Offset Y' .. ': %.0f')
-	SETTINGS.msgOffsetX = ui.slider('##' .. 'Msg On Screen Offset X', SETTINGS.msgOffsetX, 0, windowWidth, 'Msg On Screen Offset X' .. ': %.0f')
+	settings.msgOffsetY = ui.slider('##' .. 'Msg On Screen Offset Y', settings.msgOffsetY, 0, windowHeight, 'Msg On Screen Offset Y' .. ': %.0f')
+	settings.msgOffsetX = ui.slider('##' .. 'Msg On Screen Offset X', settings.msgOffsetX, 0, windowWidth, 'Msg On Screen Offset X' .. ': %.0f')
     ui.newLine()
 	ui.text('Preview : ')
     if ui.button('Message') then showPreviewMsg = not showPreviewMsg end
     if showPreviewMsg then previewMSG() end
 	ui.sameLine()
-	if ui.button('Offset X to center') then SETTINGS.msgOffsetX = windowWidth/2 end
+	if ui.button('Offset X to center') then settings.msgOffsetX = windowWidth/2 end
 	ui.newLine()
 end
 
-local function settings()
-	imageSize = vec2(windowHeight/80 * SETTINGS.policeSize, windowHeight/80 * SETTINGS.policeSize)
-	ui.dwriteTextAligned("Settings", 40, ui.Alignment.Center, ui.Alignment.Center, vec2(windowWidth/6.5,60), false, rgbm.colors.white)
+local function settingsWindow()
+	imageSize = vec2(windowHeight/80 * settings.policeSize, windowHeight/80 * settings.policeSize)
+	ui.dwriteTextAligned("settings", 40, ui.Alignment.Center, ui.Alignment.Center, vec2(windowWidth/6.5,60), false, rgbm.colors.white)
 	ui.drawLine(vec2(0,60), vec2(windowWidth/6.5,60), rgbm.colors.white, 1)
 	ui.newLine(20)
 	ui.sameLine(10)
 	ui.beginGroup()
-	if ui.checkbox('Show HUD', SETTINGS.showStats) then SETTINGS.showStats = not SETTINGS.showStats end
-	ui.sameLine(120)
 	ui.text('Unit : ')
 	ui.sameLine(160)
-	if ui.selectable('mph', SETTINGS.unit == 'mph',_, ui.measureText('km/h')) then
-		SETTINGS.unit = 'mph'
-		SETTINGS.unitMult = 0.621371
+	if ui.selectable('mph', settings.unit == 'mph',_, ui.measureText('km/h')) then
+		settings.unit = 'mph'
+		settings.unitMult = 0.621371
 	end
 	ui.sameLine(200)
-	if ui.selectable('km/h', SETTINGS.unit == 'km/h',_, ui.measureText('km/h')) then
-		SETTINGS.unit = 'km/h'
-		SETTINGS.unitMult = 1
+	if ui.selectable('km/h', settings.unit == 'km/h',_, ui.measureText('km/h')) then
+		settings.unit = 'km/h'
+		settings.unitMult = 1
 	end
 	ui.sameLine(windowWidth/6.5 - 120)
-	if ui.button('Close', vec2(100, windowHeight/50)) then settingsOpen = false end
-	SETTINGS.statsOffsetX = ui.slider('##' .. 'HUD Offset X', SETTINGS.statsOffsetX, 0, windowWidth, 'HUD Offset X' .. ': %.0f')
-	SETTINGS.statsOffsetY = ui.slider('##' .. 'HUD Offset Y', SETTINGS.statsOffsetY, 0, windowHeight, 'HUD Offset Y' .. ': %.0f')
-	SETTINGS.policeSize = ui.slider('##' .. 'HUD Size', SETTINGS.policeSize, 10, 50, 'HUD Size' .. ': %.0f')
-	local fontMultiplier = windowHeight/1440
-	SETTINGS.statsFont = SETTINGS.policeSize * fontMultiplier
+	if ui.button('Close', vec2(100, windowHeight/50)) then
+		settingsOpen = false
+		onsettingsChange()
+	end
+	settings.hudOffsetX = ui.slider('##' .. 'HUD Offset X', settings.hudOffsetX, 0, windowWidth, 'HUD Offset X' .. ': %.0f')
+	settings.hudOffsetY = ui.slider('##' .. 'HUD Offset Y', settings.hudOffsetY, 0, windowHeight, 'HUD Offset Y' .. ': %.0f')
+	settings.policeSize = ui.slider('##' .. 'HUD Size', settings.policeSize, 10, 50, 'HUD Size' .. ': %.0f')
+	settings.fontSize = settings.policeSize * fontMultiplier
     ui.setNextItemWidth(300)
     ui.newLine()
     uiTab()
@@ -523,7 +596,7 @@ local function formatMessage(message)
 	end
 	msgToSend = string.gsub(msgToSend,"`CAR`", string.gsub(string.gsub(ac.getCarName(pursuit.suspect.index), "%W", " "), "  ", ""))
 	msgToSend = string.gsub(msgToSend,"`NAME`", "@" .. ac.getDriverName(pursuit.suspect.index))
-	msgToSend = string.gsub(msgToSend,"`SPEED`", string.format("%d ", ac.getCarSpeedKmh(pursuit.suspect.index) * SETTINGS.unitMult) .. SETTINGS.unit)
+	msgToSend = string.gsub(msgToSend,"`SPEED`", string.format("%d ", ac.getCarSpeedKmh(pursuit.suspect.index) * settings.unitMult) .. settings.unit)
 	return msgToSend
 end
 
@@ -566,7 +639,6 @@ end
 local function lostSuspect()
 	resetChase()
 	pursuit.suspect = nil
-	sharedDataPolice.policeLights = false
 end
 
 local iconsColorOn = {
@@ -600,7 +672,10 @@ local function drawImage()
 			else
 				camerasOpen = true
 				arrestLogsOpen = false
-				settingsOpen = false
+				if settingsOpen then
+					onsettingsChange()
+					settingsOpen = false
+				end
 			end
 		end
 	elseif ui.rectHovered(iconPos.lost2, iconPos.lost1) then
@@ -616,13 +691,18 @@ local function drawImage()
 			else
 				arrestLogsOpen = true
 				camerasOpen = false
-				settingsOpen = false
+				if settingsOpen then
+					onsettingsChange()
+					settingsOpen = false
+				end
 			end
 		end
 	elseif ui.rectHovered(iconPos.menu2, iconPos.menu1) then
 		iconsColorOn[6] = rgbm(1,0,0,1)
 		if uiStats.isMouseLeftKeyClicked then
-			if settingsOpen then settingsOpen = false
+			if settingsOpen then
+				onsettingsChange()
+				settingsOpen = false
 			else
 				settingsOpen = true
 				arrestLogsOpen = false
@@ -645,9 +725,8 @@ local function playerSelected(player)
 		pursuit.timeInPursuit = os.clock()
 		pursuit.nextMessage = 20
 		pursuit.level = 1
-		sharedDataPolice.policeLights = true
 		local msgToSend = "Officer " .. ac.getDriverName(0) .. " is chasing you. Run! "
-		pursuit.startedTime = SETTINGS.timeMsg
+		pursuit.startedTime = settings.timeMsg
 		acpPolice{message = msgToSend, messageType = 2, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
 	end
 end
@@ -660,8 +739,8 @@ local function hudInChase()
 	local textPursuit = "LVL : " .. pursuit.level - 1
 	ui.dwriteTextWrapped(ac.getDriverName(pursuit.suspect.index) .. '\n'
 						.. string.gsub(string.gsub(ac.getCarName(pursuit.suspect.index), "%W", " "), "  ", "")
-						.. '\n' .. string.format("Speed: %d ", pursuit.suspect.speedKmh * SETTINGS.unitMult) .. SETTINGS.unit
-						.. '\n' .. textPursuit, SETTINGS.statsFont/2, rgbm.colors.white)
+						.. '\n' .. string.format("Speed: %d ", pursuit.suspect.speedKmh * settings.unitMult) .. settings.unit
+						.. '\n' .. textPursuit, settings.fontSize/2, rgbm.colors.white)
 	ui.dummy(vec2(imageSize.x/5,imageSize.y/20))
 	ui.newLine(30)
 	ui.sameLine()
@@ -675,14 +754,14 @@ end
 local function drawText()
 	local uiStats = ac.getUI()
 	ui.pushDWriteFont("Orbitron;Weight=Bold")
-	ui.dwriteDrawText("RADAR ACTIVE", SETTINGS.statsFont/2, vec2((textPos.box2.x - ui.measureDWriteText("RADAR ACTIVE", SETTINGS.statsFont/2).x)/2, 0), rgbm(1,0,0,1))
+	ui.dwriteDrawText("RADAR ACTIVE", settings.fontSize/2, vec2((textPos.box2.x - ui.measureDWriteText("RADAR ACTIVE", settings.fontSize/2).x)/2, 0), rgbm(1,0,0,1))
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=Regular")
-	ui.dwriteDrawText("NEARBY VEHICULE SPEED SCANNING", SETTINGS.statsFont/3, vec2((textPos.box2.x - ui.measureDWriteText("NEARBY VEHICULE SPEED SCANNING", SETTINGS.statsFont/3).x)/2, SETTINGS.statsFont/1.5), rgbm(1,0,0,1))
+	ui.dwriteDrawText("NEARBY VEHICULE SPEED SCANNING", settings.fontSize/3, vec2((textPos.box2.x - ui.measureDWriteText("NEARBY VEHICULE SPEED SCANNING", settings.fontSize/3).x)/2, settings.fontSize/1.5), rgbm(1,0,0,1))
 
 	local colorText = rgbm(1,1,1,1)
 	textPos.box1 = vec2(0, textSize.size.y*2.5)
-	ui.dummy(vec2(textPos.box2.x,SETTINGS.statsFont))
+	ui.dummy(vec2(textPos.box2.x,settings.fontSize))
 	for i = 1, #playersInRange do
 		colorText = rgbm(1,1,1,1)
 		ui.drawRect(vec2(textPos.box2.x/9,textPos.box1.y), vec2(textPos.box2.x*8/9, textPos.box1.y + textPos.box2.y), rgbm(1,1,1,0.1), 1)
@@ -692,22 +771,21 @@ local function drawText()
 				playerSelected(playersInRange[i].player)
 			end
 		end
-		ui.dwriteDrawText(playersInRange[i].text, SETTINGS.statsFont/2, vec2((textPos.box2.x - ui.measureDWriteText(ac.getDriverName(playersInRange[i].player.index) .. " - 000 " .. SETTINGS.unit, SETTINGS.statsFont/2).x)/2, textPos.box1.y + textSize.size.y/5), colorText)
+		ui.dwriteDrawText(playersInRange[i].text, settings.fontSize/2, vec2((textPos.box2.x - ui.measureDWriteText(ac.getDriverName(playersInRange[i].player.index) .. " - 000 " .. settings.unit, settings.fontSize/2).x)/2, textPos.box1.y + textSize.size.y/5), colorText)
 		textPos.box1 = textPos.box1 + textPos.addBox
-		ui.dummy(vec2(textPos.box2.x, i * SETTINGS.statsFont/5))
+		ui.dummy(vec2(textPos.box2.x, i * settings.fontSize/5))
 	end
 	ui.popDWriteFont()
 end
 
 local function radarUI()
-
 	ui.toolWindow('radarText', textSize.window1, textSize.window2, true, function ()
 		ui.childWindow('childradar', textSize.window2, true , function ()
 			if pursuit.suspect then hudInChase()
 			else drawText() end
 		end)
 	end)
-	ui.transparentWindow('radar', vec2(SETTINGS.statsOffsetX, SETTINGS.statsOffsetY), imageSize, true, function ()
+	ui.transparentWindow('radar', vec2(settings.hudOffsetX, settings.hudOffsetY), imageSize, true, function ()
 		drawImage()
 	end)
 end
@@ -725,7 +803,7 @@ local function radarUpdate()
 				if player.position.x > car.position.x - radarRange and player.position.z > car.position.z - radarRange and player.position.x < car.position.x + radarRange and player.position.z < car.position.z + radarRange then
 					playersInRange[j] = {}
 					playersInRange[j].player = player
-					playersInRange[j].text = ac.getDriverName(player.index) .. string.format(" - %d ", player.speedKmh * SETTINGS.unitMult) .. SETTINGS.unit
+					playersInRange[j].text = ac.getDriverName(player.index) .. string.format(" - %d ", player.speedKmh * settings.unitMult) .. settings.unit
 					j = j + 1
 					if j == 9 then break end
 				end
@@ -760,7 +838,7 @@ local function sendChatToSuspect()
 		if os.clock() - pursuit.timeInPursuit > pursuit.nextMessage then
 			local msgToSend = formatMessage(msgChase[pursuit.level].msg[math.random(#msgChase[pursuit.level].msg)])
 			chaseLVL.message = string.format("Level %d⭐", pursuit.level)
-			chaseLVL.messageTimer = SETTINGS.timeMsg
+			chaseLVL.messageTimer = settings.timeMsg
 			if pursuit.level < 5 then
 				acpPolice{message = msgToSend, messageType = 1, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
 			else
@@ -787,16 +865,16 @@ local function showPursuitMsg()
 		if pursuit.startedTime > 6 then showPoliceLights() end
 	end
 	if text ~= "" then
-		local textLenght = ui.measureDWriteText(text, SETTINGS.fontSizeMSG)
-		local rectPos1 = vec2(SETTINGS.msgOffsetX - textLenght.x/2, SETTINGS.msgOffsetY)
-		local rectPos2 = vec2(SETTINGS.msgOffsetX + textLenght.x/2, SETTINGS.msgOffsetY + SETTINGS.fontSizeMSG)
+		local textLenght = ui.measureDWriteText(text, settings.fontSizeMSG)
+		local rectPos1 = vec2(settings.msgOffsetX - textLenght.x/2, settings.msgOffsetY)
+		local rectPos2 = vec2(settings.msgOffsetX + textLenght.x/2, settings.msgOffsetY + settings.fontSizeMSG)
 		local rectOffset = vec2(10, 10)
 		if ui.time() % 1 < 0.5 then
 			ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, COLORSMSGBG, 10)
 		else
 			ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, rgbm(0,0,0,0.5), 10)
 		end
-		ui.dwriteDrawText(text, SETTINGS.fontSizeMSG, rectPos1, rgbm.colors.white)
+		ui.dwriteDrawText(text, settings.fontSizeMSG, rectPos1, rgbm.colors.white)
 	end
 end
 
@@ -810,7 +888,6 @@ local function arrestSuspect()
 		pursuit.startedTime = 0
 		updatefirebase()
 		pursuit.suspect = nil
-		sharedDataPolice.policeLights = false
 		pursuit.timerArrest = 1
 	end
 	if pursuit.hasArrested then
@@ -908,25 +985,31 @@ local buttonPressed = false
 local function moveMenu()
 	if ui.windowHovered() and ui.mouseDown() then buttonPressed = true end
 	if ui.mouseReleased() then buttonPressed = false end
-	if buttonPressed then SETTINGS.menuPos = SETTINGS.menuPos + ui.mouseDelta() end
+	if buttonPressed then settings.menuPos = settings.menuPos + ui.mouseDelta() end
 end
 
 ---------------------------------------------------------------------------------------------- updates ----------------------------------------------------------------------------------------------
 
+local firstload = true
+
 function script.drawUI()
-	if initialized then
+	if initialized and settings.policeSize then
+		if firstload then
+			firstload = false
+			initsettings()
+		end
 		radarUI()
 		showPursuitMsg()
 		if settingsOpen then
-			ui.toolWindow('Settings', SETTINGS.menuPos, menuSize[2], true, function ()
-				ui.childWindow('childSettings', menuSize[2], true, function () settings() moveMenu() end)
+			ui.toolWindow('settings', settings.menuPos, menuSize[2], true, function ()
+				ui.childWindow('childsettings', menuSize[2], true, function () settingsWindow() moveMenu() end)
 			end)
 		elseif arrestLogsOpen then
-			ui.toolWindow('ArrestLogs', SETTINGS.menuPos, menuSize[1], true, function ()
+			ui.toolWindow('ArrestLogs', settings.menuPos, menuSize[1], true, function ()
 				ui.childWindow('childArrestLogs', menuSize[1], true, function () arrestLogsUI() moveMenu() end)
 			end)
 		elseif camerasOpen then
-			ui.toolWindow('Cameras', SETTINGS.menuPos, menuSize[2], true, function ()
+			ui.toolWindow('Cameras', settings.menuPos, menuSize[2], true, function ()
 				ui.childWindow('childCameras', menuSize[2], true, function () camerasUI() moveMenu() end)
 			end)
 		end
@@ -936,16 +1019,15 @@ end
 function script.update(dt)
 	if carID ~= valideCar[1] and carID ~= valideCar[2] then return end
 	if not initialized then
-		initialized = true
-        initSettings()
+		loadsettings()
 		getFirebase()
+		initialized = true
 	else
 		if not pursuit.suspect then radarUpdate() end
 		chaseUpdate()
-		sharedDataSettings = SETTINGS
 	end
 end
 
 if carID == valideCar[1] or carID == valideCar[2] then
-	ui.registerOnlineExtra("Menu", "Menu", nil, function () settingsOpen = not settingsOpen end, nil, 0, 0, 0)
+	ui.registerOnlineExtra("Menu", "Menu", nil, settingsWindow, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
