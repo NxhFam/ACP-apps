@@ -430,6 +430,19 @@ local function initLines()
 	updatePos()
 end
 
+local function textWithBackground(text, sizeMult)
+	local textLenght = ui.measureDWriteText(text, SETTINGS.fontSizeMSG*sizeMult)
+	local rectPos1 = vec2(SETTINGS.msgOffsetX - textLenght.x/2, SETTINGS.msgOffsetY)
+	local rectPos2 = vec2(SETTINGS.msgOffsetX + textLenght.x/2, SETTINGS.msgOffsetY + SETTINGS.fontSizeMSG*sizeMult)
+	local rectOffset = vec2(10, 10)
+	if ui.time() % 1 < 0.5 then
+		ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, COLORSMSGBG, 10)
+	else
+		ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, rgbm(0,0,0,0.5), 10)
+	end
+	ui.dwriteDrawText(text, SETTINGS.fontSizeMSG*sizeMult, rectPos1, rgbm.colors.white)
+end
+
 ----------------------------------------------------------------------------------------------- Settings -----------------------------------------------------------------------------------------------
 
 
@@ -465,8 +478,6 @@ local function previewMSG()
 end
 
 local function uiTab()
-    if ui.checkbox('Send score in chat', SETTINGS.send) then SETTINGS.send = not SETTINGS.send end
-	ui.newLine()
 	ui.text('On Screen Message : ')
 	SETTINGS.timeMsg = ui.slider('##' .. 'Time Msg On Screen', SETTINGS.timeMsg, 1, 15, 'Time Msg On Screen' .. ': %.0fs')
 	SETTINGS.fontSizeMSG = ui.slider('##' .. 'Font Size MSG', SETTINGS.fontSizeMSG, 10, 50, 'Font Size' .. ': %.0f')
@@ -577,7 +588,6 @@ local function loadLeaderboardFromSheet()
 					if i > 1 then
 						if  times and j == 2 then line[j] = timeFormat(tonumber(line[j])) end
 					end
-					ac.log(line[j])
 					table.insert(entry, line[j])
 				end
 				table.insert(leaderboard, entry)
@@ -963,11 +973,21 @@ local function sectorUpdate()
 		if sectorInfo.finished then
 			if sectorInfo.finished and not sectorInfo.timePosted then
 				if sectors[sectorInfo.sectorIndex].name == "BOBs SCRAPYARD" then
-					if class == "C" and timeRequirement > sectorInfo.time then playerData.Theft = playerData.Theft + 1
-					elseif class == "B" and timeRequirement > sectorInfo.time then playerData.Theft = playerData.Theft + 1 end
+					if class == "C" and timeRequirement > sectorInfo.time then
+						playerData.Theft = playerData.Theft + 1
+						ac.sendChatMessage(" has successfully stolen a " .. string.gsub(ac.getCarName(0), "%W", " ") .. " and got away with it!")
+					elseif class == "B" and timeRequirement > sectorInfo.time then
+						playerData.Theft = playerData.Theft + 1
+						ac.sendChatMessage(" has successfully stolen a " .. string.gsub(ac.getCarName(0), "%W", " ") .. " and got away with it!")
+					else
+						ac.sendChatMessage(" has failed to steal a " .. string.gsub(ac.getCarName(0), "%W", " ") .. " under the time limit!")
+					end
 					updatefirebase()
-				elseif sectors[sectorInfo.sectorIndex].name == "H1" then updateSector('H1', sectorInfo.time)
-				elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" then updateSector('VV', sectorInfo.time) end
+				else
+					if sectors[sectorInfo.sectorIndex].name == "H1" then updateSector('H1', sectorInfo.time)
+					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" then updateSector('VV', sectorInfo.time) end
+					ac.sendChatMessage(" has finished " .. sectors[sectorInfo.sectorIndex].name .. " in " .. sectorInfo.timerText .. "!")
+				end
 				sectorInfo.timePosted = true
 			end
 			if sectorInfo.sectorIndex == 3 and duo.teammate ~= nil and sectorInfo.finishedTeammate or sectorInfo.sectorIndex ~= 3 then
@@ -1225,19 +1245,18 @@ local function raceUI()
 	ui.pushDWriteFont("Orbitron;Weight=Black")
 	local displayText = false
 	local text
-	local textLenght
 
 	if timeStartRace > 0 then
 		timeStartRace = timeStartRace - ui.deltaTime()
 		if raceState.opponent and timeStartRace - 5 > 0 then
 			text = "Align yourself with " .. ac.getDriverName(raceState.opponent.index) .. " to start the race!"
+			textWithBackground(text, 1)
 		else
 			local number = math.floor(timeStartRace - 1)
 			if number <= 0 then text = "GO!"
 			else text = number .. " ..." end
+			textWithBackground(text, 3)
 		end
-		displayText = true
-		textLenght = ui.measureDWriteText(text, 30)
 		if timeStartRace - 6 > 0 then showRaceLights() end
 		if timeStartRace < 0 then timeStartRace = 0 end
 	elseif raceState.inRace and raceState.inFront then
@@ -1262,18 +1281,7 @@ local function raceUI()
 		text = "Waiting for " ..  horn.opponentName .. " to accept the challenge"
 		displayText = true
 	end
-	if displayText then
-		textLenght = ui.measureDWriteText(text, SETTINGS.fontSizeMSG)
-		local rectPos1 = vec2(SETTINGS.msgOffsetX - textLenght.x/2, SETTINGS.msgOffsetY)
-		local rectPos2 = vec2(SETTINGS.msgOffsetX + textLenght.x/2, SETTINGS.msgOffsetY + SETTINGS.fontSizeMSG)
-		local rectOffset = vec2(10, 10)
-		if ui.time() % 1 < 0.5 then
-			ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, COLORSMSGBG, 10)
-		else
-			ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, rgbm(0,0,0,0.5), 10)
-		end
-		ui.dwriteDrawText(text, SETTINGS.fontSizeMSG, rectPos1, rgbm.colors.white)
-	end
+	if displayText then textWithBackground(text, 1) end
 	ui.popDWriteFont()
 end
 
@@ -1328,21 +1336,26 @@ local function showPoliceLights()
 	end
 end
 
+local function showArrestMSG()
+	ui.pushDWriteFont("Orbitron;Weight=Black")
+	local textArrest1 = "BUSTED!"
+	local textArrest2 = "GGs! Please Go Back To Pits."
+	local textArrestLenght1 = ui.measureDWriteText(textArrest1, SETTINGS.fontSizeMSG*3)
+	local textArrestLenght2 = ui.measureDWriteText(textArrest2, SETTINGS.fontSizeMSG*3)
+	ui.drawRectFilled(vec2(0,0), vec2(windowWidth,windowHeight), rgbm(0, 0, 0, 0.5))
+	ui.dwriteDrawText(textArrest1, SETTINGS.fontSizeMSG*3, vec2(windowWidth/2 - textArrestLenght1.x/2, windowHeight/4 - textArrestLenght1.y/2), rgbm(1, 0, 0, 1))
+	ui.dwriteDrawText(textArrest2, SETTINGS.fontSizeMSG*3, vec2(windowWidth/2 - textArrestLenght2.x/2, windowHeight/4 + textArrestLenght2.y/2), rgbm(1, 1, 1, 1))
+	ui.popDWriteFont()
+end
+
+
 local function onlineEventMessageUI()
 	if online.messageTimer > 0 then
 		online.messageTimer = online.messageTimer - ui.deltaTime()
 		local text = string.gsub(online.message,"*", "⭐")
-		local textLenght = ui.measureDWriteText(text, SETTINGS.fontSizeMSG)
-		local rectPos1 = vec2(SETTINGS.msgOffsetX - textLenght.x/2, SETTINGS.msgOffsetY)
-		local rectPos2 = vec2(SETTINGS.msgOffsetX + textLenght.x/2, SETTINGS.msgOffsetY + SETTINGS.fontSizeMSG)
-		local rectOffset = vec2(10, 10)
-		if ui.time() % 1 < 0.5 then
-			ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, COLORSMSGBG, 10)
-		else
-			ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, rgbm(0,0,0,0.5), 10)
-		end
-		ui.dwriteDrawText(text, SETTINGS.fontSizeMSG, rectPos1, rgbm.colors.white)
+		if online.message ~= "BUSTED!" then textWithBackground(text, 1) end
 		if online.type == 2 then
+			if online.message == "BUSTED!" then showArrestMSG() end
 			showPoliceLights()
 		end
 	elseif online.messageTimer < 0 then
@@ -1812,7 +1825,7 @@ function script.update(dt)
 		sectorUpdate()
 		raceUpdate(dt)
 		sharedDataSettings = SETTINGS
-		if sim.cpuOccupancy > 90 and not cpu99occupancy then cpu99occupancy = true end
+		if sim.cpuOccupancy > 100 and not cpu99occupancy then cpu99occupancy = true end
 	end
 end
 
@@ -1826,3 +1839,9 @@ end
 if ac.getCarID(0) ~= valideCar[1] and ac.getCarID(0) ~= valideCar[2] and cspVersion >= cspMinVersion then
 	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
+
+
+-- Countdown should be big numbers on both criminals screen   (videogame nfs style.  3 2  1  GO!   in big letters , center, top of screen)
+
+-- Give a warning when it's arrested, black screen or something  (pit button?)
+-- You can arrest only if both cars are completely stopped
