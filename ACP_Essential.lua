@@ -378,30 +378,29 @@ local function updatePos()
 	imgPos.rightPos2 = vec2(imageSize.x - imageSize.x/8, imageSize.y/4.3)
 end
 
-SETTINGS = ac.storage {
-	showStats = true,
-	racesWon = 0,
-	racesLost = 0,
-	busted = 0,
-	essentialSize = 20,
-	policeSize = 20,
-	statsOffsetX = 0,
-	statsOffsetY = 0,
-	statsFont = 20,
-	current = 1,
-	colorHud = rgbm(1,0,0,1),
-	send = false,
-	timeMsg = 10,
-	msgOffsetY = 10,
-	msgOffsetX = windowWidth/2,
-	fontSizeMSG = 30,
-	menuPos = vec2(0, 0),
-	unit = "km/h",
-	unitMult = 1,
-}
-
 local function initSettings()
 	settingsLoaded = false
+	SETTINGS = {
+		showStats = true,
+		racesWon = 0,
+		racesLost = 0,
+		busted = 0,
+		essentialSize = 20,
+		policeSize = 20,
+		statsOffsetX = 0,
+		statsOffsetY = 0,
+		statsFont = 20,
+		current = 1,
+		colorHud = rgbm(1,0,0,1),
+		send = false,
+		timeMsg = 10,
+		msgOffsetY = 10,
+		msgOffsetX = windowWidth/2,
+		fontSizeMSG = 30,
+		menuPos = vec2(0, 0),
+		unit = "km/h",
+		unitMult = 1,
+	}
 end
 
 
