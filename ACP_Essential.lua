@@ -1,3 +1,15 @@
+local class = 'C'
+local timeRequirement = 150
+local sim = ac.getSim()
+local car = ac.getCar(0)
+local windowWidth = sim.windowWidth/ac.getUI().uiScale
+local windowHeight = sim.windowHeight/ac.getUI().uiScale
+local menuOpen = false
+local leaderboardOpen = false
+local cspVersion = ac.getPatchVersionCode()
+local cspMinVersion = 2144
+local valideCar = {"chargerpolice_acpursuit", "crown_police"}
+local fontMultiplier = windowHeight/1440
 ------------------------------------------------------------------------- JSON Utils -------------------------------------------------------------------------
 
 local json = {}
@@ -147,6 +159,7 @@ end
 
 --------------firebase--------------
 local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/Players'
+local firebaseUrlsettings = 'https://acp-server-97674-default-rtdb.firebaseio.com/Settings'
 local sheetH1B = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1485964543&single=true&output=csv'
 local sheetH1C = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1055663571&single=true&output=csv'
 local sheetVV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=683938135&single=true&output=csv'
@@ -154,50 +167,49 @@ local sheetElo = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hk
 local sheetOverall = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=854722630&single=true&output=csv'
 local sheetTheft = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=746134609&single=true&output=csv'
 local sheetArrests = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=60814056&single=true&output=csv'
-local cspVersion = ac.getPatchVersionCode()
-local cspMinVersion = 2144
 local welcomeClosed = false
 
 local leaderboard = {}
 local leaderboardName = 'Class B - H1'
 local leaderboardNames = {'Class B - H1', 'Class C - H1', 'Velocity Vendetta', 'Street Racing', 'Car Thefts', 'Arrestations','OVERALL'}
 
-local class = 'C'
-local timeRequirement = 150
-local sim = ac.getSim()
-local car = ac.getCar(0)
-local windowWidth = sim.windowWidth/ac.getUI().uiScale
-local windowHeight = sim.windowHeight/ac.getUI().uiScale
-local menuOpen = false
-local leaderboardOpen = false
-local settingsLoaded = true
 
 local skyr34Valid
 
-local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 
-local sharedDataSettings = ac.connect({
-	ac.StructItem.key('ACP_essential_settings'),
-	showStats = ac.StructItem.boolean(),
-	racesWon = ac.StructItem.int16(),
-	racesLost = ac.StructItem.int16(),
-	busted = ac.StructItem.int16(),
-	essentialSize = ac.StructItem.int16(),
-	policeSize = ac.StructItem.int16(),
-	statsOffsetX = ac.StructItem.int16(),
-	statsOffsetY = ac.StructItem.int16(),
-	statsFont = ac.StructItem.int16(),
-	current = ac.StructItem.int16(),
-	colorHud = ac.StructItem.rgbm(),
-	send = ac.StructItem.boolean(),
-	timeMsg = ac.StructItem.int16(),
-	msgOffsetY = ac.StructItem.int16(),
-	msgOffsetX = ac.StructItem.int16(),
-	fontSizeMSG = ac.StructItem.int16(),
-	menuPos = ac.StructItem.vec2(),
-	unit = ac.StructItem.string(4),
-	unitMult = ac.StructItem.float(),
-}, true, ac.SharedNamespace.Shared)
+local settings = {
+	essentialSize = 20,
+	policeSize = 20,
+	hudOffsetX = 0,
+	hudOffsetY = 0,
+	fontSize = 20,
+	current = 1,
+	colorHud = rgbm(1,0,0,1),
+	timeMsg = 10,
+	msgOffsetY = 10,
+	msgOffsetX = windowWidth/2,
+	fontSizeMSG = 30,
+	menuPos = vec2(0, 0),
+	unit = "km/h",
+	unitMult = 1,
+}
+
+local settingsJSON = {
+	essentialSize = 20,
+	policeSize = 20,
+	hudOffsetX = 0,
+	hudOffsetY = 0,
+	fontSize = 20,
+	current = 1,
+	colorHud = "1,0,0,1",
+	timeMsg = 10,
+	msgOffsetY = 10,
+	msgOffsetX = "1280",
+	fontSizeMSG = 30,
+	menuPos = vec2(0, 0),
+	unit = "km/h",
+	unitMult = 1,
+}
 
 ui.setAsynchronousImagesLoading(true)
 local imageSize = vec2(0,0)
@@ -207,15 +219,14 @@ local imgPos = {}
 local cpu99occupancy = false
 local showCPUoccupancy = true
 
-local assetsFolder = ac.getFolder(ac.FolderID.ACApps) .. "/lua/ACP_essential/HUD/"
-local hudBase = assetsFolder .. "hudBase.png"
-local hudLeft = assetsFolder .. "hudLeft.png"
-local hudRight = assetsFolder .. "hudRight.png"
-local hudCenter = assetsFolder .. "hudCenter.png"
-local hudCountdown = assetsFolder .. "iconCountdown.png"
-local hudMenu = assetsFolder .. "iconMenu.png"
-local hudRanks = assetsFolder .. "iconRanks.png"
-local hudTheft = assetsFolder .. "iconTheft.png"
+local hudBase = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004776688553994/hudBase.png"
+local hudLeft = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004777229623306/hudLeft.png"
+local hudRight = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004777485471754/hudRight.png"
+local hudCenter = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004776944422952/hudCenter.png"
+local hudCountdown = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004777737146408/iconCountdown.png"
+local hudMenu = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004778026541116/iconMenu.png"
+local hudRanks = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004778315944017/iconRanks.png"
+local hudTheft = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004776399151144/iconTheft.png"
 
 local classC = {
 	["22b_acpursuit"]= "Impreza 22B STI",
@@ -232,7 +243,7 @@ local classC = {
 	["mustang_acp"]= "Mustang",
 	["nsx94_acp23"]= "NSX",
 }
-  
+
 local classB = {
 	["911gt3992_acpursuit"]= "911 GT3 (992)",
 	["f40_acp2023"]= "F40",
@@ -259,6 +270,7 @@ local function verifyClass()
 end
 
 local playerData = {}
+
 local sectors = {
     {
         name = 'H1',
@@ -300,10 +312,6 @@ local sectors = {
 		length = 5.55,
     }
 }
-
-
-
-
 
 local sector = nil
 
@@ -364,6 +372,7 @@ end
 -- Init
 
 local function updatePos()
+	imageSize = vec2(windowHeight/80 * settings.essentialSize, windowHeight/80 * settings.essentialSize)
 	imgPos.theftPos1 = vec2(imageSize.x - imageSize.x/1.56, imageSize.y/1.9)
 	imgPos.theftPos2 = vec2(imageSize.x/4.6, imageSize.y/2.65)
 	imgPos.ranksPos1 = vec2(imageSize.x/1.97, imageSize.y/1.9)
@@ -376,43 +385,14 @@ local function updatePos()
 	imgPos.leftPos2 = vec2(0, imageSize.y/4.3)
 	imgPos.rightPos1 = vec2(imageSize.x, imageSize.y/2.8)
 	imgPos.rightPos2 = vec2(imageSize.x - imageSize.x/8, imageSize.y/4.3)
+	settings.fontSize = settings.essentialSize * fontMultiplier
 end
-
-local function initSettings()
-	settingsLoaded = false
-	SETTINGS = {
-		showStats = true,
-		racesWon = 0,
-		racesLost = 0,
-		busted = 0,
-		essentialSize = 20,
-		policeSize = 20,
-		statsOffsetX = 0,
-		statsOffsetY = 0,
-		statsFont = 20,
-		current = 1,
-		colorHud = rgbm(1,0,0,1),
-		send = false,
-		timeMsg = 10,
-		msgOffsetY = 10,
-		msgOffsetX = windowWidth/2,
-		fontSizeMSG = 30,
-		menuPos = vec2(0, 0),
-		unit = "km/h",
-		unitMult = 1,
-	}
-end
-
 
 local function initLines()
 	skyr34Valid = ac.INIConfig.carData(0, 'brakes.ini'):get("DATA", "MAX_TORQUE", 0) == 4100 and ac.getCarID(0) == "skyr34_acp2"
-	ac.log(sharedDataSettings.showStats)
-	if not sharedDataSettings.showStats then initSettings()
-	else
-		SETTINGS = sharedDataSettings
-	end
-	SETTINGS.statsFont = SETTINGS.essentialSize * windowHeight/1440
-	imageSize = vec2(windowHeight/80 * SETTINGS.essentialSize, windowHeight/80 * SETTINGS.essentialSize)
+	settings.essentialSize = settings.essentialSize * windowHeight/1440
+	settings.fontSize = settings.essentialSize * windowHeight/1440
+	imageSize = vec2(windowHeight/80 * settings.essentialSize, windowHeight/80 * settings.essentialSize)
 	for i = 1, #sectors do
 		local lines = {}
 		for j = 1, #sectors[i].linesData do
@@ -431,107 +411,73 @@ local function initLines()
 end
 
 local function textWithBackground(text, sizeMult)
-	local textLenght = ui.measureDWriteText(text, SETTINGS.fontSizeMSG*sizeMult)
-	local rectPos1 = vec2(SETTINGS.msgOffsetX - textLenght.x/2, SETTINGS.msgOffsetY)
-	local rectPos2 = vec2(SETTINGS.msgOffsetX + textLenght.x/2, SETTINGS.msgOffsetY + SETTINGS.fontSizeMSG*sizeMult)
+	local textLenght = ui.measureDWriteText(text, settings.fontSizeMSG*sizeMult)
+	local rectPos1 = vec2(settings.msgOffsetX - textLenght.x/2, settings.msgOffsetY)
+	local rectPos2 = vec2(settings.msgOffsetX + textLenght.x/2, settings.msgOffsetY + settings.fontSizeMSG*sizeMult)
 	local rectOffset = vec2(10, 10)
 	if ui.time() % 1 < 0.5 then
 		ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, COLORSMSGBG, 10)
 	else
 		ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, rgbm(0,0,0,0.5), 10)
 	end
-	ui.dwriteDrawText(text, SETTINGS.fontSizeMSG*sizeMult, rectPos1, rgbm.colors.white)
-end
-
------------------------------------------------------------------------------------------------ Settings -----------------------------------------------------------------------------------------------
-
-
-local showPreviewMsg = false
-local showPreviewDistanceBar = false
-COLORSMSGBG = rgbm(0.5,0.5,0.5,0.5)
-
-local function distanceBarPreview()
-	ui.beginTransparentWindow("progressBar", vec2(0, 0), vec2(windowWidth, windowHeight))
-	local playerInFront = "You are in front"
-	local text = math.floor(50) .. "m"
-	local textLenght = ui.measureDWriteText(text, 30)
-	ui.newLine()
-	ui.dummy(vec2(windowWidth/3, windowHeight/40))
-	ui.sameLine()
-	ui.beginRotation()
-	ui.progressBar(125/250, vec2(windowWidth/3,windowHeight/60), playerInFront)
-	ui.endRotation(90,vec2(SETTINGS.msgOffsetX - windowWidth/2 - textLenght.x/2,SETTINGS.msgOffsetY + textLenght.y/3))
-	ui.dwriteDrawText(text, 30, vec2(SETTINGS.msgOffsetX - textLenght.x/2 , SETTINGS.msgOffsetY), rgbm.colors.white)
-	ui.endTransparentWindow()
-end
-
-local function previewMSG()
-	ui.beginTransparentWindow("previewMSG", vec2(0, 0), vec2(windowWidth, windowHeight))
-	ui.pushDWriteFont("Orbitron;Weight=Black")
-	local textSize = ui.measureDWriteText("Messages from Police when being chased", SETTINGS.fontSizeMSG)
-	local uiOffsetX = SETTINGS.msgOffsetX - textSize.x/2
-	local uiOffsetY = SETTINGS.msgOffsetY
-	ui.drawRectFilled(vec2(uiOffsetX - 5, uiOffsetY-5), vec2(uiOffsetX + textSize.x + 5, uiOffsetY + textSize.y + 5), COLORSMSGBG)
-	ui.dwriteDrawText("Messages from Police when being chased", SETTINGS.fontSizeMSG, vec2(uiOffsetX, uiOffsetY), SETTINGS.colorHud)
-	ui.popDWriteFont()
-	ui.endTransparentWindow()
-end
-
-local function uiTab()
-	ui.text('On Screen Message : ')
-	SETTINGS.timeMsg = ui.slider('##' .. 'Time Msg On Screen', SETTINGS.timeMsg, 1, 15, 'Time Msg On Screen' .. ': %.0fs')
-	SETTINGS.fontSizeMSG = ui.slider('##' .. 'Font Size MSG', SETTINGS.fontSizeMSG, 10, 50, 'Font Size' .. ': %.0f')
-	ui.newLine()
-	ui.text('Offset : ')
-	SETTINGS.msgOffsetY = ui.slider('##' .. 'Msg On Screen Offset Y', SETTINGS.msgOffsetY, 0, windowHeight, 'Msg On Screen Offset Y' .. ': %.0f')
-	SETTINGS.msgOffsetX = ui.slider('##' .. 'Msg On Screen Offset X', SETTINGS.msgOffsetX, 0, windowWidth, 'Msg On Screen Offset X' .. ': %.0f')
-    ui.newLine()
-	ui.text('Preview : ')
-    if ui.button('Message') then
-        showPreviewMsg = not showPreviewMsg
-        if showPreviewMsg then showPreviewDistanceBar = false end
-    end
-    ui.sameLine()
-    if ui.button('Distance Bar') then
-        showPreviewDistanceBar = not showPreviewDistanceBar
-        if showPreviewDistanceBar then showPreviewMsg = false end
-    end
-    if showPreviewMsg then previewMSG() end
-    if showPreviewDistanceBar then distanceBarPreview() end
-	ui.sameLine()
-	if ui.button('Offset X to center') then SETTINGS.msgOffsetX = windowWidth/2 end
-	ui.newLine()
-end
-
-
-local function settings()
-	imageSize = vec2(windowHeight/80 * SETTINGS.essentialSize, windowHeight/80 * SETTINGS.essentialSize)
-	ui.sameLine(10)
-	ui.beginGroup()
-	ui.newLine(15)
-	if ui.checkbox('Show HUD', SETTINGS.showStats) then SETTINGS.showStats = not SETTINGS.showStats end
-	ui.sameLine(windowWidth/6 - 120)
-	if ui.button('Close', vec2(100, windowHeight/50)) then menuOpen = false end
-	SETTINGS.statsOffsetX = ui.slider('##' .. 'HUD Offset X', SETTINGS.statsOffsetX, 0, windowWidth, 'HUD Offset X' .. ': %.0f')
-	SETTINGS.statsOffsetY = ui.slider('##' .. 'HUD Offset Y', SETTINGS.statsOffsetY, 0, windowHeight, 'HUD Offset Y' .. ': %.0f')
-	SETTINGS.essentialSize = ui.slider('##' .. 'HUD Size', SETTINGS.essentialSize, 10, 50, 'HUD Size' .. ': %.0f')
-	local fontMultiplier = windowHeight/1440
-	SETTINGS.statsFont = SETTINGS.essentialSize * fontMultiplier
-    ui.setNextItemWidth(300)
-	local colorHud = SETTINGS.colorHud
-    ui.colorPicker('Theme Color', colorHud, ui.ColorPickerFlags.AlphaBar)
-    ui.newLine()
-    uiTab()
-	ui.endGroup()
-	return 2
+	ui.dwriteDrawText(text, settings.fontSizeMSG*sizeMult, rectPos1, rgbm.colors.white)
 end
 
 ----------------------------------------------------------------------------------------------- Firebase -----------------------------------------------------------------------------------------------
+
+local function stringToVec2(str)
+	local x = string.match(str, "([^,]+)")
+	local y = string.match(str, "[^,]+,(.+)")
+	return vec2(tonumber(x), tonumber(y))
+end
+
+local function vec2ToString(vec)
+	return tostring(vec.x) .. ',' .. tostring(vec.y)
+end
+
+local function stringToRGBM(str)
+	local r = string.match(str, "([^,]+)")
+	local g = string.match(str, "[^,]+,([^,]+)")
+	local b = string.match(str, "[^,]+,[^,]+,([^,]+)")
+	local m = string.match(str, "[^,]+,[^,]+,[^,]+,(.+)")
+	return rgbm(tonumber(r), tonumber(g), tonumber(b), tonumber(m))
+end
+
+local function rgbmToString(rgbm)
+	return tostring(rgbm.r) .. ',' .. tostring(rgbm.g) .. ',' .. tostring(rgbm.b) .. ',' .. tostring(rgbm.mult)
+end
+
+local function parsesettings(table)
+	settings.essentialSize = table.essentialSize
+	settings.policeSize = table.policeSize
+	settings.hudOffsetX = table.hudOffsetX
+	settings.hudOffsetY = table.hudOffsetY
+	settings.fontSize = table.fontSize
+	settings.current = table.current
+	settings.colorHud = stringToRGBM(table.colorHud)
+	settings.timeMsg = table.timeMsg
+	settings.msgOffsetY = table.msgOffsetY
+	settings.msgOffsetX = table.msgOffsetX
+	settings.fontSizeMSG = table.fontSizeMSG
+	settings.menuPos = stringToVec2(table.menuPos)
+	settings.unit = table.unit
+	settings.unitMult = table.unitMult
+end
 
 local function addPlayerToDataBase(steamID)
 	local name = ac.getDriverName(0)
 	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","WR": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0,"Sectors": {"H1": {},"VV": {}}}}'
 	web.request('PATCH', firebaseUrl .. ".json", str, function(err, response)
+		if err then
+			print(err)
+			return
+		end
+	end)
+end
+
+local function addPlayersettingsToDataBase(steamID)
+	local str = '{"' .. steamID .. '": {"essentialSize":20,"policeSize":20,"hudOffsetX":0,"hudOffsetY":0,"fontSize":20,"current":1,"colorHud":"1,0,0,1","timeMsg":10,"msgOffsetY":10,"msgOffsetX":' .. windowWidth/2 .. ',"fontSizeMSG":30,"menuPos":"0,0","unit":"km/h","unitMult":1}}'
+	web.request('PATCH', firebaseUrlsettings .. ".json", str, function(err, response)
 		if err then
 			print(err)
 			return
@@ -612,8 +558,57 @@ local function getFirebase()
 				if playerData.Arrests == nil then playerData.Arrests = 0 end
 				if playerData.Theft == nil then playerData.Theft = 0 end
 			end
+			ac.log('Player data loaded')
 		end
 	end)
+end
+
+local function loadSettings()
+	local url = firebaseUrlsettings .. "/" .. ac.getUserSteamID() .. '.json'
+	web.get(url, function(err, response)
+		if err then
+			print(err)
+			return
+		else
+			if response.body == 'null' then
+				addPlayersettingsToDataBase(ac.getUserSteamID())
+			else
+				ac.log("settings loaded")
+				local jString = response.body
+				local table = json.parse(jString)
+				parsesettings(table)
+			end
+		end
+	end)
+end
+
+local function updateSettings()
+	local str = '{"' .. ac.getUserSteamID() .. '": ' .. json.stringify(settingsJSON) .. '}'
+	web.request('PATCH', firebaseUrlsettings .. ".json", str, function(err, response)
+		if err then
+			print(err)
+			return
+		end
+	end)
+	ac.log("Updated settings")
+end
+
+local function onSettingsChange()
+	settingsJSON.colorHud = rgbmToString(settings.colorHud)
+	settingsJSON.menuPos = vec2ToString(settings.menuPos)
+	settingsJSON.essentialSize = settings.essentialSize
+	settingsJSON.policeSize = settings.policeSize
+	settingsJSON.hudOffsetX = settings.hudOffsetX
+	settingsJSON.hudOffsetY = settings.hudOffsetY
+	settingsJSON.fontSize = settings.fontSize
+	settingsJSON.current = settings.current
+	settingsJSON.timeMsg = settings.timeMsg
+	settingsJSON.msgOffsetY  = settings.msgOffsetY
+	settingsJSON.msgOffsetX  = settings.msgOffsetX
+	settingsJSON.fontSizeMSG = settings.fontSizeMSG
+	settingsJSON.unit = settings.unit
+	settingsJSON.unitMult = settings.unitMult
+	updateSettings()
 end
 
 local function updateSheets()
@@ -701,11 +696,11 @@ local function displayInGrid()
 	local colWidth = (windowWidth/2 - windowWidth/32)/(nbCol)
 	ui.pushDWriteFont("Orbitron;Weight=Black")
 	ui.newLine()
-	ui.dwriteTextAligned("Pos", SETTINGS.statsFont/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, SETTINGS.colorHud)
+	ui.dwriteTextAligned("Pos", settings.fontSize/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, settings.colorHud)
 	for i = 1, nbCol do
-		local textLenght = ui.measureDWriteText(leaderboard[1][i], SETTINGS.statsFont/1.5).x
+		local textLenght = ui.measureDWriteText(leaderboard[1][i], settings.fontSize/1.5).x
 		ui.sameLine(box1.x + colWidth/2 + colWidth*(i-1) - textLenght/2)
-		ui.dwriteTextWrapped(leaderboard[1][i], SETTINGS.statsFont/1.5, SETTINGS.colorHud)
+		ui.dwriteTextWrapped(leaderboard[1][i], settings.fontSize/1.5, settings.colorHud)
 	end
 	ui.newLine()
 	ui.popDWriteFont()
@@ -716,11 +711,11 @@ local function displayInGrid()
 		if i == 2 then sufix = "st"
 		elseif i == 3 then sufix = "nd"
 		elseif i == 4 then sufix = "rd" end
-		ui.dwriteTextAligned(i-1 .. sufix, SETTINGS.statsFont/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
+		ui.dwriteTextAligned(i-1 .. sufix, settings.fontSize/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
 		for j = 1, #entry do
-			local textLenght = ui.measureDWriteText(entry[j], SETTINGS.statsFont/1.5).x
+			local textLenght = ui.measureDWriteText(entry[j], settings.fontSize/1.5).x
 			ui.sameLine(box1.x + colWidth/2 + colWidth*(j-1) - textLenght/2)
-			ui.dwriteTextWrapped(entry[j], SETTINGS.statsFont/1.5, rgbm.colors.white)
+			ui.dwriteTextWrapped(entry[j], settings.fontSize/1.5, rgbm.colors.white)
 		end
 	end
 	ui.popDWriteFont()
@@ -749,6 +744,96 @@ local function showLeaderboard()
 	ui.newLine()
 	displayInGrid()
 end
+
+----------------------------------------------------------------------------------------------- settings -----------------------------------------------------------------------------------------------
+
+
+local showPreviewMsg = false
+local showPreviewDistanceBar = false
+COLORSMSGBG = rgbm(0.5,0.5,0.5,0.5)
+
+local function distanceBarPreview()
+	ui.beginTransparentWindow("progressBar", vec2(0, 0), vec2(windowWidth, windowHeight))
+	local playerInFront = "You are in front"
+	local text = math.floor(50) .. "m"
+	local textLenght = ui.measureDWriteText(text, 30)
+	ui.newLine()
+	ui.dummy(vec2(windowWidth/3, windowHeight/40))
+	ui.sameLine()
+	ui.beginRotation()
+	ui.progressBar(125/250, vec2(windowWidth/3,windowHeight/60), playerInFront)
+	ui.endRotation(90,vec2(settings.msgOffsetX - windowWidth/2 - textLenght.x/2,settings.msgOffsetY + textLenght.y/3))
+	ui.dwriteDrawText(text, 30, vec2(settings.msgOffsetX - textLenght.x/2 , settings.msgOffsetY), rgbm.colors.white)
+	ui.endTransparentWindow()
+end
+
+local function previewMSG()
+	ui.beginTransparentWindow("previewMSG", vec2(0, 0), vec2(windowWidth, windowHeight))
+	ui.pushDWriteFont("Orbitron;Weight=Black")
+	local textSize = ui.measureDWriteText("Messages from Police when being chased", settings.fontSizeMSG)
+	local uiOffsetX = settings.msgOffsetX - textSize.x/2
+	local uiOffsetY = settings.msgOffsetY
+	ui.drawRectFilled(vec2(uiOffsetX - 5, uiOffsetY-5), vec2(uiOffsetX + textSize.x + 5, uiOffsetY + textSize.y + 5), COLORSMSGBG)
+	ui.dwriteDrawText("Messages from Police when being chased", settings.fontSizeMSG, vec2(uiOffsetX, uiOffsetY), settings.colorHud)
+	ui.popDWriteFont()
+	ui.endTransparentWindow()
+end
+
+local function uiTab()
+	ui.text('On Screen Message : ')
+	settings.timeMsg = ui.slider('##' .. 'Time Msg On Screen', settings.timeMsg, 1, 15, 'Time Msg On Screen' .. ': %.0fs')
+	settings.fontSizeMSG = ui.slider('##' .. 'Font Size MSG', settings.fontSizeMSG, 10, 50, 'Font Size' .. ': %.0f')
+	ui.newLine()
+	ui.text('Offset : ')
+	settings.msgOffsetY = ui.slider('##' .. 'Msg On Screen Offset Y', settings.msgOffsetY, 0, windowHeight, 'Msg On Screen Offset Y' .. ': %.0f')
+	settings.msgOffsetX = ui.slider('##' .. 'Msg On Screen Offset X', settings.msgOffsetX, 0, windowWidth, 'Msg On Screen Offset X' .. ': %.0f')
+    ui.newLine()
+	ui.text('Preview : ')
+    if ui.button('Message') then
+        showPreviewMsg = not showPreviewMsg
+        if showPreviewMsg then showPreviewDistanceBar = false end
+    end
+    ui.sameLine()
+    if ui.button('Distance Bar') then
+        showPreviewDistanceBar = not showPreviewDistanceBar
+        if showPreviewDistanceBar then showPreviewMsg = false end
+    end
+    if showPreviewMsg then previewMSG() end
+    if showPreviewDistanceBar then distanceBarPreview() end
+	ui.sameLine()
+	if ui.button('Offset X to center') then settings.msgOffsetX = windowWidth/2 end
+	ui.newLine()
+end
+
+
+local function settingsWindow()
+	imageSize = vec2(windowHeight/80 * settings.essentialSize, windowHeight/80 * settings.essentialSize)
+	ui.sameLine(10)
+	ui.beginGroup()
+	ui.newLine(15)
+	ui.sameLine(windowWidth/6 - 120)
+	if ui.button('Close', vec2(100, windowHeight/50)) then
+		menuOpen = false
+		onSettingsChange()
+	end
+	settings.hudOffsetX = ui.slider('##' .. 'HUD Offset X', settings.hudOffsetX, 0, windowWidth, 'HUD Offset X' .. ': %.0f')
+	settings.hudOffsetY = ui.slider('##' .. 'HUD Offset Y', settings.hudOffsetY, 0, windowHeight, 'HUD Offset Y' .. ': %.0f')
+	settings.essentialSize = ui.slider('##' .. 'HUD Size', settings.essentialSize, 10, 50, 'HUD Size' .. ': %.0f')
+	settings.fontSize = settings.essentialSize * fontMultiplier
+    ui.setNextItemWidth(300)
+	local colorHud = settings.colorHud
+	local colorHud2 = settings.colorHud2
+    ui.colorPicker('Theme Color', colorHud, ui.ColorPickerFlags.AlphaBar)
+	if colorHud ~= colorHud2 then
+		settingsJSON.colorHud = rgbmToString(colorHud)
+	end
+    ui.newLine()
+    uiTab()
+	ui.endGroup()
+	updatePos()
+	return 2
+end
+
 
 ----------------------------------------------------------------------------------------------- Sectors -----------------------------------------------------------------------------------------------
 -- Variables --
@@ -1056,8 +1141,8 @@ local timeStartRace = 0
 local function showRaceLights()
 	local timing = os.clock() % 1
 	if timing > 0.5 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), SETTINGS.colorHud, rgbm(),  rgbm(), SETTINGS.colorHud)
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(), SETTINGS.colorHud, SETTINGS.colorHud, rgbm())
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), settings.colorHud, rgbm(),  rgbm(), settings.colorHud)
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(), settings.colorHud, settings.colorHud, rgbm())
 	else
 		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), rgbm(), rgbm(),  rgbm(), rgbm())
 		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(), rgbm(), rgbm())
@@ -1237,8 +1322,8 @@ local function distanceBar()
 	ui.sameLine()
 	ui.beginRotation()
 	ui.progressBar(raceState.distance/250, vec2(windowWidth/3,windowHeight/60), playerInFront)
-	ui.endRotation(90,vec2(SETTINGS.msgOffsetX - windowWidth/2 - textLenght.x/2,SETTINGS.msgOffsetY))
-	ui.dwriteDrawText(text, 30, vec2(SETTINGS.msgOffsetX - textLenght.x/2 , SETTINGS.msgOffsetY), rgbm.colors.white)
+	ui.endRotation(90,vec2(settings.msgOffsetX - windowWidth/2 - textLenght.x/2,settings.msgOffsetY))
+	ui.dwriteDrawText(text, 30, vec2(settings.msgOffsetX - textLenght.x/2 , settings.msgOffsetY), rgbm.colors.white)
 end
 
 local function raceUI()
@@ -1301,13 +1386,13 @@ local acpPolice = ac.OnlineEvent({
 	online.type = data.messageType
 	if data.yourIndex == car.sessionID and data.messageType == 0 then
 		online.message = data.message
-		online.messageTimer = SETTINGS.timeMsg
+		online.messageTimer = settings.timeMsg
 	elseif data.yourIndex == car.sessionID and data.messageType == 1 then
 		online.message = data.message
-		online.messageTimer = SETTINGS.timeMsg
+		online.messageTimer = settings.timeMsg
 	elseif data.yourIndex == car.sessionID and data.messageType == 2 then
 		online.message = data.message
-		online.messageTimer = SETTINGS.timeMsg
+		online.messageTimer = settings.timeMsg
 		playerData.Busted = playerData.Busted + 1
 		updatefirebase()
 	end
@@ -1340,11 +1425,11 @@ local function showArrestMSG()
 	ui.pushDWriteFont("Orbitron;Weight=Black")
 	local textArrest1 = "BUSTED!"
 	local textArrest2 = "GGs! Please Go Back To Pits."
-	local textArrestLenght1 = ui.measureDWriteText(textArrest1, SETTINGS.fontSizeMSG*3)
-	local textArrestLenght2 = ui.measureDWriteText(textArrest2, SETTINGS.fontSizeMSG*3)
+	local textArrestLenght1 = ui.measureDWriteText(textArrest1, settings.fontSizeMSG*3)
+	local textArrestLenght2 = ui.measureDWriteText(textArrest2, settings.fontSizeMSG*3)
 	ui.drawRectFilled(vec2(0,0), vec2(windowWidth,windowHeight), rgbm(0, 0, 0, 0.5))
-	ui.dwriteDrawText(textArrest1, SETTINGS.fontSizeMSG*3, vec2(windowWidth/2 - textArrestLenght1.x/2, windowHeight/4 - textArrestLenght1.y/2), rgbm(1, 0, 0, 1))
-	ui.dwriteDrawText(textArrest2, SETTINGS.fontSizeMSG*3, vec2(windowWidth/2 - textArrestLenght2.x/2, windowHeight/4 + textArrestLenght2.y/2), rgbm(1, 1, 1, 1))
+	ui.dwriteDrawText(textArrest1, settings.fontSizeMSG*3, vec2(windowWidth/2 - textArrestLenght1.x/2, windowHeight/4 - textArrestLenght1.y/2), rgbm(1, 0, 0, 1))
+	ui.dwriteDrawText(textArrest2, settings.fontSizeMSG*3, vec2(windowWidth/2 - textArrestLenght2.x/2, windowHeight/4 + textArrestLenght2.y/2), rgbm(1, 1, 1, 1))
 	ui.popDWriteFont()
 end
 
@@ -1410,31 +1495,30 @@ local function countdown()
 	end
 end
 
-
 local function drawText()
 	ui.pushDWriteFont("Orbitron;Weight=BOLD")
     local textOffset = vec2(imageSize.x / 2, imageSize.y / 4.5)
-    local textSize = ui.measureDWriteText(statOn[SETTINGS.current], SETTINGS.statsFont)
-    if SETTINGS.current < 4 then ui.dwriteDrawText(statOn[SETTINGS.current], SETTINGS.statsFont, textOffset - vec2(textSize.x/2, 0), SETTINGS.colorHud) end
-    if SETTINGS.current == 1 then
+    local textSize = ui.measureDWriteText(statOn[settings.current], settings.fontSize)
+    if settings.current < 4 then ui.dwriteDrawText(statOn[settings.current], settings.fontSize, textOffset - vec2(textSize.x/2, 0), settings.colorHud) end
+    if settings.current == 1 then
         local drivenKm = car.distanceDrivenSessionKm
         if drivenKm < 0.01 then drivenKm = 0 end
-        textSize = ui.measureDWriteText(string.format("%.2f",drivenKm) .. " km", SETTINGS.statsFont)
-        ui.dwriteDrawText(string.format("%.2f",drivenKm) .. " km", SETTINGS.statsFont, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1,1,1,1))
-    elseif SETTINGS.current == 2 then
-        textSize = ui.measureDWriteText(playerData.Wins .. "Win  -  Lost" .. playerData.Losses, SETTINGS.statsFont/1.1)
-        ui.dwriteDrawText("Win " .. playerData.Wins .. " - Lost " .. playerData.Losses, SETTINGS.statsFont/1.1, textOffset - vec2(textSize.x/2, -imageSize.y/12.5), rgbm(1,1,1,1))
-    elseif SETTINGS.current == 3 then
-        textSize = ui.measureDWriteText(playerData.Busted, SETTINGS.statsFont)
-        ui.dwriteDrawText(playerData.Busted, SETTINGS.statsFont, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1,1,1,1))
-    elseif SETTINGS.current > 3 then
-        textSize = ui.measureDWriteText(sector.name, SETTINGS.statsFont)
-        ui.dwriteDrawText(sector.name, SETTINGS.statsFont, textOffset - vec2(textSize.x/2, 0), SETTINGS.colorHud)
-        textSize = ui.measureDWriteText("Time: 0:00:00", SETTINGS.statsFont)
+        textSize = ui.measureDWriteText(string.format("%.2f",drivenKm) .. " km", settings.fontSize)
+        ui.dwriteDrawText(string.format("%.2f",drivenKm) .. " km", settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1,1,1,1))
+    elseif settings.current == 2 then
+        textSize = ui.measureDWriteText(playerData.Wins .. "Win  -  Lost" .. playerData.Losses, settings.fontSize/1.1)
+        ui.dwriteDrawText("Win " .. playerData.Wins .. " - Lost " .. playerData.Losses, settings.fontSize/1.1, textOffset - vec2(textSize.x/2, -imageSize.y/12.5), rgbm(1,1,1,1))
+    elseif settings.current == 3 then
+        textSize = ui.measureDWriteText(playerData.Busted, settings.fontSize)
+        ui.dwriteDrawText(playerData.Busted, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1,1,1,1))
+    elseif settings.current > 3 then
+        textSize = ui.measureDWriteText(sector.name, settings.fontSize)
+        ui.dwriteDrawText(sector.name, settings.fontSize, textOffset - vec2(textSize.x/2, 0), settings.colorHud)
+        textSize = ui.measureDWriteText("Time: 0:00:00", settings.fontSize)
         if sectorInfo.finished then
-            ui.dwriteDrawText("Time: " .. sectorInfo.timerText, SETTINGS.statsFont, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(0, 1, 0, 1))
+            ui.dwriteDrawText("Time: " .. sectorInfo.timerText, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(0, 1, 0, 1))
         else
-            ui.dwriteDrawText("Time: " .. sectorInfo.timerText, SETTINGS.statsFont, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1,1,1,1))
+            ui.dwriteDrawText("Time: " .. sectorInfo.timerText, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1,1,1,1))
         end
     end
 	ui.popDWriteFont()
@@ -1452,17 +1536,17 @@ local function drawImage()
 
 	ui.drawImage(hudCenter, vec2(0,0), imageSize)
 	if ui.rectHovered(imgPos.leftPos2, imgPos.leftPos1) then
-		ui.image(hudLeft, imageSize, SETTINGS.colorHud)
+		ui.image(hudLeft, imageSize, settings.colorHud)
 		if uiStats.isMouseLeftKeyClicked then
-			if SETTINGS.current == 1 then SETTINGS.current = #statOn else SETTINGS.current = SETTINGS.current - 1 end
+			if settings.current == 1 then settings.current = #statOn else settings.current = settings.current - 1 end
 		end
 	elseif ui.rectHovered(imgPos.rightPos2, imgPos.rightPos1) then
-		ui.image(hudRight, imageSize, SETTINGS.colorHud)
+		ui.image(hudRight, imageSize, settings.colorHud)
 		if uiStats.isMouseLeftKeyClicked then
-			if SETTINGS.current == #statOn then SETTINGS.current = 1 else SETTINGS.current = SETTINGS.current + 1 end
+			if settings.current == #statOn then settings.current = 1 else settings.current = settings.current + 1 end
 		end
 	elseif ui.rectHovered(imgPos.theftPos2, imgPos.theftPos1) then
-		iconsColorOn[1] = SETTINGS.colorHud
+		iconsColorOn[1] = settings.colorHud
 		if uiStats.isMouseLeftKeyClicked then
 			if stealingTime == 0 then
 				stealingTime = 30
@@ -1472,22 +1556,25 @@ local function drawImage()
 					sectorInfo.sectorIndex = 2
                     sector = sectors[sectorInfo.sectorIndex]
                     resetSectors()
-					SETTINGS.current = 4
+					settings.current = 4
 				end
 			end
 		end
 	elseif ui.rectHovered(imgPos.ranksPos2, imgPos.ranksPos1) then
-		iconsColorOn[2] = SETTINGS.colorHud
+		iconsColorOn[2] = settings.colorHud
 		if uiStats.isMouseLeftKeyClicked then
 			if leaderboardOpen then leaderboardOpen = false
 			else
-				if menuOpen then menuOpen = false end
+				if menuOpen then
+					menuOpen = false
+					onSettingsChange()
+				end
 				leaderboardOpen = true
 				loadLeaderboardFromSheet()
 			end
 		end
 	elseif ui.rectHovered(imgPos.countdownPos2, imgPos.countdownPos1) then
-		iconsColorOn[3] = SETTINGS.colorHud
+		iconsColorOn[3] = settings.colorHud
 		if not countDownState.countdownOn and uiStats.isMouseLeftKeyClicked then
 			if cooldownTime == 0 then
 				countdownTime = 5
@@ -1497,19 +1584,21 @@ local function drawImage()
 				countDownState.set = true
 				countDownState.go = true
 			end
-			SETTINGS.current = 2
+			settings.current = 2
 		end
 	elseif ui.rectHovered(imgPos.menuPos2, imgPos.menuPos1) then
-		iconsColorOn[4] = SETTINGS.colorHud
+		iconsColorOn[4] = settings.colorHud
 		if uiStats.isMouseLeftKeyClicked then
-			if menuOpen then menuOpen = false
+			if menuOpen then
+				menuOpen = false
+				onSettingsChange()
 			else
 				if leaderboardOpen then leaderboardOpen = false end
 				menuOpen = true
 			end
 		end
 	end
-	ui.image(hudBase, imageSize, SETTINGS.colorHud)
+	ui.image(hudBase, imageSize, settings.colorHud)
 	ui.drawImage(hudTheft, vec2(0,0), imageSize, iconsColorOn[1])
 	ui.drawImage(hudRanks, vec2(0,0), imageSize, iconsColorOn[2])
 	ui.drawImage(hudCountdown, vec2(0,0), imageSize, iconsColorOn[3])
@@ -1521,16 +1610,7 @@ end
 
 local function showMsgSteal()
 	local text = "You have successfully stolen the " ..  string.gsub(string.gsub(ac.getCarName(0), "%W", " "), "  ", "") .. "! Hurry to the scrapyard!"
-	local textLenght = ui.measureDWriteText(text, SETTINGS.fontSizeMSG)
-	local rectPos1 = vec2(SETTINGS.msgOffsetX - textLenght.x/2, SETTINGS.msgOffsetY)
-	local rectPos2 = vec2(SETTINGS.msgOffsetX + textLenght.x/2, SETTINGS.msgOffsetY + SETTINGS.fontSizeMSG)
-	local rectOffset = vec2(10, 10)
-	if ui.time() % 1 < 0.5 then
-		ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, COLORSMSGBG, 10)
-	else
-		ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, rgbm(0,0,0,0.5), 10)
-	end
-	ui.dwriteDrawText(text, SETTINGS.fontSizeMSG, rectPos1, rgbm.colors.white)
+	textWithBackground(text, 1)
 end
 
 local function hudUI()
@@ -1538,63 +1618,13 @@ local function hudUI()
 		showMsgSteal()
 		stealMsgTime = stealMsgTime - ui.deltaTime()
 	elseif stealMsgTime < 0 then stealMsgTime = 0 end
-	if SETTINGS.showStats then
-		ui.beginTransparentWindow("Stats", vec2(SETTINGS.statsOffsetX, SETTINGS.statsOffsetY), imageSize, true)
-		drawImage()
-		drawText()
-		ui.endTransparentWindow()
-	end
+	ui.beginTransparentWindow("HUD", vec2(settings.hudOffsetX, settings.hudOffsetY), imageSize, true)
+	drawImage()
+	drawText()
+	ui.endTransparentWindow()
 end
 
 -------------------------------------------------------------------------------------------- Menu --------------------------------------------------------------------------------------------
-
-local function infoRace()
-	ui.sameLine(10)
-	ui.beginGroup()
-	ui.dwriteTextWrapped('\nIllegal street racing', 20, rgbm.colors.white)
-    ui.dwriteTextWrapped("Illegal street racing in a one-on-one format is surprisingly simple. Here's how it works:" ..
-    "\n\n- The race initiator honks their horn twice to indicate the desire to race." ..
-    "\n- The potential opponent responds with two horn honks to accept the invitation." ..
-    "\n- The race takes place between the two participants, the app will inform both with a status bar showing the distance from the opponent" ..
-    "\n\n- Optionally, If both participants agree, they can decide on a bet amount before the race." ..
-    "\n- After the race, the loser is responsible for settling their financial obligations." ..
-    "\n- The unsuccessful participant can use the '/pay' command in the dedicated STREET-RACING Discord channel to settle the bet." ..
-    "\n\nPlease be aware that illegal street racing is against the law and extremely dangerous.")
-    if ui.textHyperlink("Discord STREET-RACING") then
-        os.openURL("https://discord.com/channels/358562025032646659/1082294944162660454")
-    end
-	ui.endGroup()
-end
-
-local function infoServer()
-	ui.sameLine(10)
-	ui.beginGroup()
-    ui.dwriteTextWrapped('\nWelcome to ACP', 20, rgbm.colors.white)
-	ui.dwriteTextWrapped('ACP is a persistent Assetto Corsa server that allows you to forge your virtual street racer life with every passing day.\nUnlike servers that periodically reset, ACP ensures that your progress remains untouched, empowering you to continuously accumulate and enhance your achievements without any interruptions.\nPrepare for a truly immersive and enduring gaming experience as your street racing journey unfolds, maintaining its integrity throughout.' ..
-    '\n\nWhat sets ACP apart is the integration of a unique "POINTS SYSTEM" in conjunction with your driving experience.\nEarned Points serve as a valuable currency, mirroring the real-life racing world.\nUtilize these Points to purchase cars and customize them to your liking, enabling you to tailor your virtual garage to perfection.' ..
-    "\n\nBut that's not all! For the daring and fearless racers, ACP presents the opportunity to wager your hard-earned Points during exhilarating illegal races. Take risks, push your limits, and embrace the thrill of high-stakes competitions." ..
-    "\n\nJoin us on ACP and embark on a racing adventure where every race, every achievement, and every bet contribute to your ever-evolving street racing legacy!")
-    ui.newLine()
-    if ui.textHyperlink("ACP Discord") then
-        os.openURL("https://discord.gg/acpursuit")
-    end
-	ui.endGroup()
-end
-
-local function download()
-	ui.dwriteTextWrapped("Download the latest version of ACP Pursuit.", 30, rgbm.colors.white)
-	if ui.textHyperlink("ACP Patreon") then
-        os.openURL("https://www.patreon.com/posts/acp-download-51908849")
-    end
-end
-
-local function info()
-	ui.tabBar('InfoTabBar', ui.TabBarFlags.Reorderable, function ()
-		ui.tabItem('Illegal street racing', function () infoRace() end)
-		ui.tabItem('General Server Info', function () infoServer() end)
-	end)
-	return 3
-end
 
 local initialized = false
 local menuSize = {vec2(windowWidth/5, windowHeight/4), vec2(windowWidth/6, windowHeight*1.8/3), vec2(windowWidth/3, windowHeight/3)}
@@ -1604,19 +1634,18 @@ local buttonPressed = false
 local function menu()
 	ui.tabBar('MainTabBar', ui.TabBarFlags.Reorderable, function ()
 		ui.tabItem('Sectors', function () currentTab = sectorUI() end)
-		ui.tabItem('Settings', function () currentTab = settings() end)
-		ui.tabItem('Info', function () currentTab = info() end)
+		ui.tabItem('settings', function () currentTab = settingsWindow() end)
 	end)
 end
 
 local function moveMenu()
 	if ui.windowHovered() and ui.mouseDown() then buttonPressed = true end
 	if ui.mouseReleased() then buttonPressed = false end
-	if buttonPressed then SETTINGS.menuPos = SETTINGS.menuPos + ui.mouseDelta() end
+	if buttonPressed then settings.menuPos = settings.menuPos + ui.mouseDelta() end
 end
 
 local function leaderboardWindow()
-	ui.toolWindow('LeaderboardWindow', SETTINGS.menuPos, vec2(windowWidth/2, windowHeight/2), true, function ()
+	ui.toolWindow('LeaderboardWindow', settings.menuPos, vec2(windowWidth/2, windowHeight/2), true, function ()
 		ui.childWindow('childLeaderboard', vec2(windowWidth/2, windowHeight/2), true, function ()
 			showLeaderboard()
 			moveMenu()
@@ -1787,57 +1816,22 @@ local function cpuOccupancyWindow()
 		end)
 	end)
 end
--- ---Loads a ZIP file from a given URL, unpacks assets from it to a cache folder and returns
--- ---path to the folder in a callback. If files are already in cache storage, doesn’t do anything and
--- ---simply returns the path. After callback is called, you can use path to the folder to get full paths to those assets.
--- ---If assets are not accessed for a couple of weeks, they’ll be removed.
--- ---@param url string @URL to download.
--- ---@param callback fun(err: string, folder: string)
--- function web.loadRemoteAssets(url, callback) end
 
-local driveImagesURL = "https://drive.google.com/file/d/14hPVNHX5tDejVJC29bt5XJTT4ON-rDy-/view?usp=sharing"
-local hudImages = {}
--- local hudBase = assetsFolder .. "hudBase.png"
--- local hudLeft = assetsFolder .. "hudLeft.png"
--- local hudRight = assetsFolder .. "hudRight.png"
--- local hudCenter = assetsFolder .. "hudCenter.png"
--- local hudCountdown = assetsFolder .. "iconCountdown.png"
--- local hudMenu = assetsFolder .. "iconMenu.png"
--- local hudRanks = assetsFolder .. "iconRanks.png"
--- local hudTheft = assetsFolder .. "iconTheft.png"
-local hudImagesNames = {
-	"hudBase",
-	"hudLeft",
-	"hudRight",
-	"hudCenter",
-	"iconCountdown",
-	"iconMenu",
-	"iconRanks",
-	"iconTheft",
-}
-
-local function loadHUDimages()
-	web.loadRemoteAssets(driveImagesURL, function (err, folder)
-		if err then
-			print("Error loading HUD images: "..err)
-			return
-		end
-		ac.log(folder)
-		ac.log(io.dirExists(folder))
-		ac.log(io.dirExists(folder.."/hud"))
-	end)
-end
+local firstImageLoaded = false
 
 function script.drawUI()
 	if not welcomeClosed then welcomeWindow()
 	elseif cpu99occupancy and showCPUoccupancy then cpuOccupancyWindow()
 	elseif initialized then
 		if cspVersion < cspMinVersion then return end
+		if not firstImageLoaded then
+			updatePos()
+		end
 		hudUI()
 		onlineEventMessageUI()
 		raceUI()
 		if menuOpen then
-			ui.toolWindow('Menu', SETTINGS.menuPos, menuSize[currentTab], true, function ()
+			ui.toolWindow('Menu', settings.menuPos, menuSize[currentTab], true, function ()
 				ui.childWindow('childMenu', menuSize[currentTab], true, function ()
 					menu()
 					moveMenu()
@@ -1851,22 +1845,22 @@ end
 function script.update(dt)
 	if not initialized then
 		if ac.getCarID(0) == valideCar[1] or ac.getCarID(0) == valideCar[2] or cspVersion < cspMinVersion then return end
-		loadHUDimages()
+		loadSettings()
 		initLines()
 		verifyClass()
 		initialized = true
 		getFirebase()
 		loadLeaderboardFromSheet()
+		ac.disableQuickMenuPitstop(true)
 	else
 		sectorUpdate()
 		raceUpdate(dt)
-		sharedDataSettings = SETTINGS
 		if sim.cpuOccupancy > 100 and not cpu99occupancy then cpu99occupancy = true end
 	end
 end
 
 function script.draw3D()
-	if initialized and SETTINGS.current == 4 then
+	if initialized and settings.current == 4 then
 		local lineToRender = sector.pointsData[sectorInfo.checkpoints]
 		if sectorInfo.drawLine then render.debugLine(lineToRender[1], lineToRender[2], rgbm(0,100,0,1)) end
 	end
@@ -1875,9 +1869,3 @@ end
 if ac.getCarID(0) ~= valideCar[1] and ac.getCarID(0) ~= valideCar[2] and cspVersion >= cspMinVersion then
 	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
-
-
--- Countdown should be big numbers on both criminals screen   (videogame nfs style.  3 2  1  GO!   in big letters , center, top of screen)
-
--- Give a warning when it's arrested, black screen or something  (pit button?)
--- You can arrest only if both cars are completely stopped
