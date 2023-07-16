@@ -155,7 +155,6 @@ local camerasOpen = false
 local settingsLoaded = true
 local carID = ac.getCarID(0)
 local valideCar = {"chargerpolice_acpursuit", "crown_police"}
-local lastArrest = 0
 
 local sharedDataSettings = ac.connect({
 	ac.StructItem.key('ACP_essential_settings'),
@@ -591,7 +590,7 @@ local function drawImage()
 
 	if ui.rectHovered(iconPos.arrest2, iconPos.arrest1) then
 		iconsColorOn[2] = rgbm(1,0,0,1)
-		if pursuit.suspect and car.speedKmh < 20 and uiStats.isMouseLeftKeyClicked then
+		if pursuit.suspect and pursuit.suspect.speedKmh < 50 and car.speedKmh < 20 and uiStats.isMouseLeftKeyClicked then
 			pursuit.hasArrested = true
 		end
 	elseif ui.rectHovered(iconPos.cams2, iconPos.cams1) then
@@ -749,12 +748,8 @@ local function inRange()
 		resetChase()
 	else
 		if pursuit.suspect.rpm > 400 and pursuit.suspect.speedKmh > 20 then
-			if lastArrest == 0 then
 			local msgToSend = formatMessage(msgLost.msg[math.random(#msgLost.msg)])
 			ac.sendChatMessage(msgToSend)
-			else
-				ac.shutdownAssettoCorsa()
-			end
 		end
 		lostSuspect()
 	end
@@ -822,7 +817,7 @@ local function arrestSuspect()
 		if pursuit.timerArrest > 0 then
 			pursuit.timerArrest = pursuit.timerArrest - ui.deltaTime()
 		else
-			acpPolice{message = "Arrest", messageType = 2, yourIndex = pursuit.id}
+			acpPolice{message = "BUSTED!", messageType = 2, yourIndex = pursuit.id}
 			pursuit.timerArrest = 0
 			pursuit.suspect = nil
 			pursuit.id = -1
@@ -832,11 +827,6 @@ local function arrestSuspect()
 end
 
 local function chaseUpdate()
-	if lastArrest > 0 then
-		lastArrest = lastArrest - ui.deltaTime()
-	else
-		lastArrest = 0
-	end
 	if pursuit.suspect then
 		if pursuit.startedTime > 0 then
 			pursuit.startedTime = pursuit.startedTime - ui.deltaTime()
@@ -926,7 +916,7 @@ end
 function script.drawUI()
 	if initialized then
 		radarUI()
-		if pursuit.suspect then showPursuitMsg() end
+		showPursuitMsg()
 		if settingsOpen then
 			ui.toolWindow('Settings', SETTINGS.menuPos, menuSize[2], true, function ()
 				ui.childWindow('childSettings', menuSize[2], true, function () settings() moveMenu() end)
