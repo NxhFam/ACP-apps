@@ -1602,14 +1602,11 @@ local currentTab = 1
 local buttonPressed = false
 
 local function menu()
-	if not settingsLoaded then download()
-	else
-		ui.tabBar('MainTabBar', ui.TabBarFlags.Reorderable, function ()
-			ui.tabItem('Sectors', function () currentTab = sectorUI() end)
-			ui.tabItem('Settings', function () currentTab = settings() end)
-			ui.tabItem('Info', function () currentTab = info() end)
-		end)
-	end
+	ui.tabBar('MainTabBar', ui.TabBarFlags.Reorderable, function ()
+		ui.tabItem('Sectors', function () currentTab = sectorUI() end)
+		ui.tabItem('Settings', function () currentTab = settings() end)
+		ui.tabItem('Info', function () currentTab = info() end)
+	end)
 end
 
 local function moveMenu()
@@ -1790,11 +1787,51 @@ local function cpuOccupancyWindow()
 		end)
 	end)
 end
+-- ---Loads a ZIP file from a given URL, unpacks assets from it to a cache folder and returns
+-- ---path to the folder in a callback. If files are already in cache storage, doesn’t do anything and
+-- ---simply returns the path. After callback is called, you can use path to the folder to get full paths to those assets.
+-- ---If assets are not accessed for a couple of weeks, they’ll be removed.
+-- ---@param url string @URL to download.
+-- ---@param callback fun(err: string, folder: string)
+-- function web.loadRemoteAssets(url, callback) end
+
+local driveImagesURL = "https://drive.google.com/file/d/14hPVNHX5tDejVJC29bt5XJTT4ON-rDy-/view?usp=sharing"
+local hudImages = {}
+-- local hudBase = assetsFolder .. "hudBase.png"
+-- local hudLeft = assetsFolder .. "hudLeft.png"
+-- local hudRight = assetsFolder .. "hudRight.png"
+-- local hudCenter = assetsFolder .. "hudCenter.png"
+-- local hudCountdown = assetsFolder .. "iconCountdown.png"
+-- local hudMenu = assetsFolder .. "iconMenu.png"
+-- local hudRanks = assetsFolder .. "iconRanks.png"
+-- local hudTheft = assetsFolder .. "iconTheft.png"
+local hudImagesNames = {
+	"hudBase",
+	"hudLeft",
+	"hudRight",
+	"hudCenter",
+	"iconCountdown",
+	"iconMenu",
+	"iconRanks",
+	"iconTheft",
+}
+
+local function loadHUDimages()
+	web.loadRemoteAssets(driveImagesURL, function (err, folder)
+		if err then
+			print("Error loading HUD images: "..err)
+			return
+		end
+		ac.log(folder)
+		ac.log(io.dirExists(folder))
+		ac.log(io.dirExists(folder.."/hud"))
+	end)
+end
 
 function script.drawUI()
 	if not welcomeClosed then welcomeWindow()
 	elseif cpu99occupancy and showCPUoccupancy then cpuOccupancyWindow()
-	elseif settingsLoaded and initialized then
+	elseif initialized then
 		if cspVersion < cspMinVersion then return end
 		hudUI()
 		onlineEventMessageUI()
@@ -1814,12 +1851,11 @@ end
 function script.update(dt)
 	if not initialized then
 		if ac.getCarID(0) == valideCar[1] or ac.getCarID(0) == valideCar[2] or cspVersion < cspMinVersion then return end
+		loadHUDimages()
 		initLines()
 		verifyClass()
 		initialized = true
-		if settingsLoaded then
-			getFirebase()
-		end
+		getFirebase()
 		loadLeaderboardFromSheet()
 	else
 		sectorUpdate()
