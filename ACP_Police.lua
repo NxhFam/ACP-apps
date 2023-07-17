@@ -11,7 +11,8 @@ local cspVersion = ac.getPatchVersionCode()
 local cspMinVersion = 2144
 local fontMultiplier = windowHeight/1440
 
-if carID ~= valideCar[1] and carID ~= valideCar[2] or cspVersion < cspMinVersion then return end
+local firstload = true
+local cspAboveP218 = cspVersion >= 2363
 ------------------------------------------------------------------------- JSON Utils -------------------------------------------------------------------------
 
 local json = {}
@@ -344,6 +345,7 @@ local pursuit = {
 	timerArrest = 0,
 	hasArrested = false,
 	startedTime = 0,
+	hasJumped = false,
 }
 
 local arrestations = {}
@@ -639,6 +641,9 @@ end
 local function lostSuspect()
 	resetChase()
 	pursuit.suspect = nil
+	if cspAboveP218 then
+		ac.setExtraSwitch(0, false)
+	end
 end
 
 local iconsColorOn = {
@@ -728,6 +733,9 @@ local function playerSelected(player)
 		local msgToSend = "Officer " .. ac.getDriverName(0) .. " is chasing you. Run! "
 		pursuit.startedTime = settings.timeMsg
 		acpPolice{message = msgToSend, messageType = 2, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
+		if cspAboveP218 then
+			ac.setExtraSwitch(0, true)
+		end
 	end
 end
 
@@ -791,6 +799,7 @@ local function radarUI()
 end
 
 local function radarUpdate()
+	if firstload and not pursuit.suspect then return end
 	local radarRange = 250
 	local previousSize = #playersInRange
 
@@ -825,11 +834,11 @@ local function inRange()
 		pursuit.timeInPursuit = os.clock()
 		resetChase()
 	else
-		if pursuit.suspect.rpm > 400 and pursuit.suspect.speedKmh > 20 then
+		if not pursuit.hasJumped then
 			local msgToSend = formatMessage(msgLost.msg[math.random(#msgLost.msg)])
 			ac.sendChatMessage(msgToSend)
+			lostSuspect()
 		end
-		lostSuspect()
 	end
 end
 
@@ -886,11 +895,9 @@ local function arrestSuspect()
 		pursuit.id = pursuit.suspect.sessionID
 		playerData.Arrests = playerData.Arrests + 1
 		pursuit.startedTime = 0
-		updatefirebase()
 		pursuit.suspect = nil
 		pursuit.timerArrest = 1
-	end
-	if pursuit.hasArrested then
+	elseif pursuit.hasArrested then
 		if pursuit.timerArrest > 0 then
 			pursuit.timerArrest = pursuit.timerArrest - ui.deltaTime()
 		else
@@ -899,17 +906,21 @@ local function arrestSuspect()
 			pursuit.suspect = nil
 			pursuit.id = -1
 			pursuit.hasArrested = false
+			pursuit.startedTime = 0
+			pursuit.enable = false
+			pursuit.level = 1
+			pursuit.nextMessage = 20
+			pursuit.timeInPursuit = 0
+			pursuit.hasJumped = false
+			updatefirebase()
 		end
 	end
 end
 
 local function chaseUpdate()
+	if pursuit.startedTime > 0 then pursuit.startedTime = pursuit.startedTime - ui.deltaTime()
+	else pursuit.startedTime = 0 end
 	if pursuit.suspect then
-		if pursuit.startedTime > 0 then
-			pursuit.startedTime = pursuit.startedTime - ui.deltaTime()
-		else
-			pursuit.startedTime = 0
-		end
 		sendChatToSuspect()
 		inRange()
 	end
@@ -990,9 +1001,8 @@ end
 
 ---------------------------------------------------------------------------------------------- updates ----------------------------------------------------------------------------------------------
 
-local firstload = true
-
 function script.drawUI()
+	if carID ~= valideCar[1] and carID ~= valideCar[2] or cspVersion < cspMinVersion then return end
 	if initialized and settings.policeSize then
 		if firstload then
 			firstload = false
@@ -1016,18 +1026,25 @@ function script.drawUI()
 	end
 end
 
+if pursuit.suspect then
+	ac.onCarJumped(pursuit.suspect.index, function (carid)
+		pursuit.hasArrested = true
+		arrestSuspect()
+	end)
+end
+
 function script.update(dt)
-	if carID ~= valideCar[1] and carID ~= valideCar[2] then return end
+	if carID ~= valideCar[1] and carID ~= valideCar[2] or cspVersion < cspMinVersion then return end
 	if not initialized then
 		loadsettings()
 		getFirebase()
 		initialized = true
 	else
-		if firstload and not pursuit.suspect then radarUpdate() end
+		radarUpdate()
 		chaseUpdate()
 	end
 end
 
-if carID == valideCar[1] or carID == valideCar[2] then
+if carID == valideCar[1] or carID == valideCar[2] and cspVersion >= cspMinVersion then
 	ui.registerOnlineExtra("Menu", "Menu", nil, settingsWindow, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
