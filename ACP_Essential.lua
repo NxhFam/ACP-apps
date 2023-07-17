@@ -10,6 +10,9 @@ local cspVersion = ac.getPatchVersionCode()
 local cspMinVersion = 2144
 local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 local fontMultiplier = windowHeight/1440
+local carID = ac.getCarID(0)
+local cspAboveP218 = cspVersion >= 2363
+
 ------------------------------------------------------------------------- JSON Utils -------------------------------------------------------------------------
 
 local json = {}
@@ -257,7 +260,6 @@ local classB = {
 }
 
 local function verifyClass()
-	local carID = ac.getCarID(0)
 	if classC[carID] then
 		class = "C"
 		timeRequirement = 150
@@ -389,7 +391,7 @@ local function updatePos()
 end
 
 local function initLines()
-	skyr34Valid = ac.INIConfig.carData(0, 'brakes.ini'):get("DATA", "MAX_TORQUE", 0) == 4100 and ac.getCarID(0) == "skyr34_acp2"
+	skyr34Valid = ac.INIConfig.carData(0, 'brakes.ini'):get("DATA", "MAX_TORQUE", 0) == 4100 and carID == "skyr34_acp2"
 	settings.essentialSize = settings.essentialSize * windowHeight/1440
 	settings.fontSize = settings.essentialSize * windowHeight/1440
 	imageSize = vec2(windowHeight/80 * settings.essentialSize, windowHeight/80 * settings.essentialSize)
@@ -636,13 +638,11 @@ local function updatefirebase()
 end
 
 local function updateSector(sectorName, time)
-	local carName = ac.getCarID(0)
-
 	if sectorName == 'H1' then
 		if not playerData.Sectors then
 			playerData.Sectors = {
 				H1 = {
-					[carName] = {
+					[carID] = {
 						Time = time,
 					},
 				},
@@ -650,17 +650,17 @@ local function updateSector(sectorName, time)
 			}
 		end
 		if playerData.Sectors.H1 then
-			if not playerData.Sectors.H1[carName] then
-				playerData.Sectors.H1[carName] = {
+			if not playerData.Sectors.H1[carID] then
+				playerData.Sectors.H1[carID] = {
 					Time = time,
 				}
 			end
-			if time < playerData.Sectors.H1[carName].Time then
-				playerData.Sectors.H1[carName].Time = time
+			if time < playerData.Sectors.H1[carID].Time then
+				playerData.Sectors.H1[carID].Time = time
 			end
 		else
 			playerData.Sectors.H1 = {
-				[carName] = {
+				[carID] = {
 					Time = time,
 				},
 			}
@@ -982,7 +982,7 @@ local function sectorSelect()
 	end)
 	ui.sameLine(windowWidth/5 - 120)
 	if ui.button('Close', vec2(100, windowHeight/50)) then menuOpen = false end
-	if sector.name == "Velocity Vendetta" and not skyr34Valid and ac.getCarID(0) == "skyr34_acp2" then ui.dwriteTextWrapped("Skyline R34 is not rental, times won't be posted on leaderboard.", 30, rgbm.colors.white) end
+	if sector.name == "Velocity Vendetta" and not skyr34Valid and carID == "skyr34_acp2" then ui.dwriteTextWrapped("Skyline R34 is not rental, times won't be posted on leaderboard.", 30, rgbm.colors.white) end
 end
 
 local function sectorUI()
@@ -1012,7 +1012,7 @@ local function sectorUI()
 		end
 	end
 	discordLinks()
-	ui.text(sim.cpuOccupancy)
+	ui.text(sim.physicsLate)
 	ui.endGroup()
 	return 1
 end
@@ -1844,18 +1844,17 @@ end
 
 function script.update(dt)
 	if not initialized then
-		if ac.getCarID(0) == valideCar[1] or ac.getCarID(0) == valideCar[2] or cspVersion < cspMinVersion then return end
+		if carID == valideCar[1] or carID == valideCar[2] or cspVersion < cspMinVersion then return end
 		loadSettings()
 		initLines()
 		verifyClass()
 		initialized = true
 		getFirebase()
 		loadLeaderboardFromSheet()
-		ac.disableQuickMenuPitstop(true)
 	else
 		sectorUpdate()
 		raceUpdate(dt)
-		if sim.cpuOccupancy > 100 and not cpu99occupancy then cpu99occupancy = true end
+		if sim.physicsLate > 45 and not cpu99occupancy then cpu99occupancy = true end
 	end
 end
 
@@ -1866,6 +1865,6 @@ function script.draw3D()
 	end
 end
 
-if ac.getCarID(0) ~= valideCar[1] and ac.getCarID(0) ~= valideCar[2] and cspVersion >= cspMinVersion then
+if carID ~= valideCar[1] and carID ~= valideCar[2] and cspVersion >= cspMinVersion then
 	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
