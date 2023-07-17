@@ -927,13 +927,11 @@ local function chaseUpdate()
 		inRange()
 		if pursuit.timeLostSight > 0 then
 			pursuit.timeLostSight = pursuit.timeLostSight - ui.deltaTime()
-			ac.onCarJumped(-1, function (carid)
-				if pursuit.suspect and carid == pursuit.suspect.index then
-					pursuit.hasArrested = true
-					pursuit.hasJumped = true
-					ac.log("Suspect has jumped")
-					arrestSuspect()
-				end
+			ac.onCarJumped(pursuit.suspect.index, function (carid)
+				pursuit.hasArrested = true
+				pursuit.hasJumped = true
+				ac.log("Suspect has jumped")
+				arrestSuspect()
 				ac.log("Car jumped")
 			end)
 		else pursuit.timeLostSight = 0 end
