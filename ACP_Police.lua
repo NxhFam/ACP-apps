@@ -925,7 +925,17 @@ local function chaseUpdate()
 	if pursuit.suspect then
 		sendChatToSuspect()
 		inRange()
-		if pursuit.timeLostSight > 0 then pursuit.timeLostSight = pursuit.timeLostSight - ui.deltaTime()
+		if pursuit.timeLostSight > 0 then
+			pursuit.timeLostSight = pursuit.timeLostSight - ui.deltaTime()
+			ac.onCarJumped(-1, function (carid)
+				if pursuit.suspect and carid == pursuit.suspect.index then
+					pursuit.hasArrested = true
+					pursuit.hasJumped = true
+					ac.log("Suspect has jumped")
+					arrestSuspect()
+				end
+				ac.log("Car jumped")
+			end)
 		else pursuit.timeLostSight = 0 end
 		if pursuit.lostSight and pursuit.timeLostSight == 0 then
 			if not pursuit.hasJumped then lostSuspect() end
@@ -1044,16 +1054,6 @@ function script.update(dt)
 		chaseUpdate()
 	end
 end
-
-ac.onCarJumped(-1, function (carid)
-	if pursuit.suspect and carid == pursuit.suspect.index then
-		pursuit.hasArrested = true
-		pursuit.hasJumped = true
-		ac.log("Suspect has jumped")
-		arrestSuspect()
-	end
-	ac.log("Car jumped")
-end)
 
 if carID == valideCar[1] or carID == valideCar[2] and cspVersion >= cspMinVersion then
 	ui.registerOnlineExtra("Menu", "Menu", nil, settingsWindow, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
