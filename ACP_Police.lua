@@ -906,6 +906,7 @@ local function arrestSuspect()
 			pursuit.level = 1
 			pursuit.nextMessage = 20
 			pursuit.timeInPursuit = 0
+			pursuit.timeLostSight = 0
 			pursuit.hasJumped = false
 			updatefirebase()
 		end
@@ -919,6 +920,10 @@ local function chaseUpdate()
 		sendChatToSuspect()
 		if pursuit.timeLostSight >= 0 then
 			pursuit.timeLostSight = pursuit.timeLostSight - ui.deltaTime()
+			ac.onCarJumped(pursuit.suspect.index, function (carid)
+				pursuit.hasArrested = true
+				arrestSuspect()
+			end)
 			inRange()
 		elseif pursuit.timeLostSight < 0 then
 			pursuit.timeLostSight = 0
@@ -1025,13 +1030,6 @@ function script.drawUI()
 			end)
 		end
 	end
-end
-
-if pursuit.suspect then
-	ac.onCarJumped(pursuit.suspect.index, function (carid)
-		pursuit.hasArrested = true
-		arrestSuspect()
-	end)
 end
 
 function script.update(dt)
