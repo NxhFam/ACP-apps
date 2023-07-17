@@ -346,6 +346,7 @@ local pursuit = {
 	hasArrested = false,
 	startedTime = 0,
 	hasJumped = false,
+	timeLostSight = 0,
 }
 
 local arrestations = {}
@@ -644,6 +645,7 @@ local function lostSuspect()
 	if cspAboveP218 then
 		ac.setExtraSwitch(0, false)
 	end
+	ac.sendChatMessage(formatMessage(msgLost.msg[math.random(#msgLost.msg)]))
 end
 
 local iconsColorOn = {
@@ -685,10 +687,7 @@ local function drawImage()
 		end
 	elseif ui.rectHovered(iconPos.lost2, iconPos.lost1) then
 		iconsColorOn[4] = rgbm(1,0,0,1)
-		if pursuit.suspect and uiStats.isMouseLeftKeyClicked then
-			ac.sendChatMessage(formatMessage(msgLost.msg[math.random(#msgLost.msg)]))
-			lostSuspect()
-		end
+		if pursuit.suspect and uiStats.isMouseLeftKeyClicked then lostSuspect() end
 	elseif ui.rectHovered(iconPos.logs2, iconPos.logs1) then
 		iconsColorOn[5] = rgbm(1,0,0,1)
 		if uiStats.isMouseLeftKeyClicked then
@@ -833,12 +832,8 @@ local function inRange()
 	elseif (distanceSquared < pursuit.maxDistance) then
 		pursuit.timeInPursuit = os.clock()
 		resetChase()
-	else
-		if not pursuit.hasJumped then
-			local msgToSend = formatMessage(msgLost.msg[math.random(#msgLost.msg)])
-			ac.sendChatMessage(msgToSend)
-			lostSuspect()
-		end
+	elseif pursuit.timeLostSight == 0 then
+		pursuit.timeLostSight = 1
 	end
 end
 
@@ -922,7 +917,13 @@ local function chaseUpdate()
 	else pursuit.startedTime = 0 end
 	if pursuit.suspect then
 		sendChatToSuspect()
-		inRange()
+		if pursuit.timeLostSight >= 0 then
+			pursuit.timeLostSight = pursuit.timeLostSight - ui.deltaTime()
+			inRange()
+		elseif pursuit.timeLostSight < 0 then
+			pursuit.timeLostSight = 0
+			lostSuspect()
+		end
 	end
 	arrestSuspect()
 end
