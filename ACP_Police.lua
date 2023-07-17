@@ -347,6 +347,7 @@ local pursuit = {
 	startedTime = 0,
 	hasJumped = false,
 	timeLostSight = 0,
+	lostSight = false,
 }
 
 local arrestations = {}
@@ -835,8 +836,9 @@ local function inRange()
 	elseif (distanceSquared < pursuit.maxDistance) then
 		pursuit.timeInPursuit = os.clock()
 		resetChase()
-	else
-		if not pursuit.hasJumped then lostSuspect() end
+	elseif pursuit.timeLostSight == 0 then
+		pursuit.timeLostSight = 1
+		pursuit.lostSight = true
 	end
 end
 
@@ -910,6 +912,8 @@ local function arrestSuspect()
 			pursuit.nextMessage = 20
 			pursuit.timeInPursuit = 0
 			pursuit.hasJumped = false
+			pursuit.lostSight = false
+			pursuit.timeLostSight = 0
 			updatefirebase()
 		end
 	end
@@ -919,9 +923,13 @@ local function chaseUpdate()
 	if pursuit.startedTime > 0 then pursuit.startedTime = pursuit.startedTime - ui.deltaTime()
 	else pursuit.startedTime = 0 end
 	if pursuit.suspect then
-		ac.log("Chase Update")
 		sendChatToSuspect()
 		inRange()
+		if pursuit.timeLostSight > 0 then pursuit.timeLostSight = pursuit.timeLostSight - ui.deltaTime()
+		else pursuit.timeLostSight = 0 end
+		if pursuit.lostSight and pursuit.timeLostSight == 0 then
+			if not pursuit.hasJumped then lostSuspect() end
+		end
 	end
 	arrestSuspect()
 end
