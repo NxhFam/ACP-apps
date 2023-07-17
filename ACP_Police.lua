@@ -925,6 +925,8 @@ local function chaseUpdate()
 			ac.onCarJumped(pursuit.suspect.index, function (carid)
 				pursuit.hasArrested = true
 				arrestSuspect()
+				pursuit.timeLostSight = 1
+				pursuit.lostSight = false
 			end)
 		elseif pursuit.timeLostSight == 0 then
 			ac.log("Lost Suspect")
