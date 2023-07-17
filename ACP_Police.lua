@@ -916,6 +916,15 @@ local function arrestSuspect()
 end
 
 local function chaseUpdate()
+	if pursuit.suspect then
+		ac.log("Chase Update")
+		ac.onCarJumped(pursuit.suspect.index, function (carid)
+			pursuit.hasArrested = true
+			pursuit.hasJumped = true
+			ac.log("Suspect has jumped")
+			arrestSuspect()
+		end)
+	end
 	if pursuit.startedTime > 0 then pursuit.startedTime = pursuit.startedTime - ui.deltaTime()
 	else pursuit.startedTime = 0 end
 	if pursuit.suspect then
@@ -1022,13 +1031,6 @@ function script.drawUI()
 			end)
 		end
 	end
-end
-
-if pursuit.suspect then
-	ac.onCarJumped(pursuit.suspect.index, function (carid)
-		pursuit.hasArrested = true
-		arrestSuspect()
-	end)
 end
 
 function script.update(dt)
