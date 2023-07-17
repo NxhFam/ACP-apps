@@ -341,7 +341,7 @@ local sectors = {
 					vec4(923.4,2218.7,913,2224.9), 
 					vec4(1387.2,2669.2,1377.4,2665.3), 
 					vec4(-5774.2,10184,-5770.5,10166.8)},
-		length = 0,
+		length = 15,
 	}
 }
 
@@ -1887,6 +1887,10 @@ function script.update(dt)
 		if sim.physicsLate > 45 and not cpu99occupancy then cpu99occupancy = true end
 	end
 end
+
+ac.onCarJumped(0, function (carid)
+	resetSectors()
+end)
 
 function script.draw3D()
 	if initialized and settings.current == 4 then
