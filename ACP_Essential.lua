@@ -161,20 +161,20 @@ function json.parse(str, pos, end_delim)
 end
 
 --------------firebase--------------
-local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/Players'
-local firebaseUrlsettings = 'https://acp-server-97674-default-rtdb.firebaseio.com/Settings'
-local sheetH1B = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1485964543&single=true&output=csv'
-local sheetH1C = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1055663571&single=true&output=csv'
-local sheetVV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=683938135&single=true&output=csv'
-local sheetElo = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1426211490&single=true&output=csv'
-local sheetOverall = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=854722630&single=true&output=csv'
-local sheetTheft = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=746134609&single=true&output=csv'
-local sheetArrests = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=60814056&single=true&output=csv'
+local firebaseUrl = const('https://acp-server-97674-default-rtdb.firebaseio.com/Players')
+local firebaseUrlsettings = ('https://acp-server-97674-default-rtdb.firebaseio.com/Settings')
+local sheetH1B = const('https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1485964543&single=true&output=csv')
+local sheetH1C = const('https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1055663571&single=true&output=csv')
+local sheetVV = const('https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=683938135&single=true&output=csv')
+local sheetElo = const('https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1426211490&single=true&output=csv')
+local sheetOverall = const('https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=854722630&single=true&output=csv')
+local sheetTheft = const('https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=746134609&single=true&output=csv')
+local sheetArrests = const('https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=60814056&single=true&output=csv')
 local welcomeClosed = false
 
 local leaderboard = {}
 local leaderboardName = 'Class B - H1'
-local leaderboardNames = {'Class B - H1', 'Class C - H1', 'Velocity Vendetta', 'Street Racing', 'Car Thefts', 'Arrestations','OVERALL'}
+local leaderboardNames = const({'Class B - H1', 'Class C - H1', 'Velocity Vendetta', 'Street Racing', 'Car Thefts', 'Arrestations','OVERALL'})
 
 
 local skyr34Valid
@@ -222,16 +222,16 @@ local imgPos = {}
 local cpu99occupancy = false
 local showCPUoccupancy = true
 
-local hudBase = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004776688553994/hudBase.png"
-local hudLeft = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004777229623306/hudLeft.png"
-local hudRight = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004777485471754/hudRight.png"
-local hudCenter = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004776944422952/hudCenter.png"
-local hudCountdown = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004777737146408/iconCountdown.png"
-local hudMenu = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004778026541116/iconMenu.png"
-local hudRanks = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004778315944017/iconRanks.png"
-local hudTheft = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004776399151144/iconTheft.png"
+local hudBase = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004776688553994/hudBase.png")
+local hudLeft = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004777229623306/hudLeft.png")
+local hudRight = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004777485471754/hudRight.png")
+local hudCenter = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004776944422952/hudCenter.png")
+local hudCountdown = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004777737146408/iconCountdown.png")
+local hudMenu = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004778026541116/iconMenu.png")
+local hudRanks = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004778315944017/iconRanks.png")
+local hudTheft = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004776399151144/iconTheft.png")
 
-local classC = {
+local classC = const({
 	["22b_acpursuit"]= "Impreza 22B STI",
 	["370z_acp"]= "370Z",
 	["964turbo_acp23"]= "964 Turbo",
@@ -245,9 +245,9 @@ local classC = {
 	["supra93_acpursuit"]= "Supra Mk4",
 	["mustang_acp"]= "Mustang",
 	["nsx94_acp23"]= "NSX",
-}
+})
 
-local classB = {
+local classB = const({
 	["911gt3992_acpursuit"]= "911 GT3 (992)",
 	["f40_acp2023"]= "F40",
 	["gtam_acp"]= "Giulia GTA",
@@ -257,7 +257,7 @@ local classB = {
 	["murcielago_acp23"]= "Murcielago",
 	["rs6abt_acp"]= "RS6 ABT",
 	["amgtr_acp23"]= "AMG GT-R",
-}
+})
 
 local function verifyClass()
 	if classC[carID] then
@@ -273,7 +273,7 @@ end
 
 local playerData = {}
 
-local sectors = {
+local sectors  = const({
     {
         name = 'H1',
 		pointsData = {{vec3(-742.9, 138.9, 3558.7), vec3(-729.8, 138.9, 3542.8)},
@@ -343,7 +343,7 @@ local sectors = {
 					vec4(-5774.2,10184,-5770.5,10166.8)},
 		length = 15,
 	}
-}
+})
 
 local sector = nil
 
@@ -1685,7 +1685,7 @@ end
 
 -------------------------------------------------------------------------------------------- Main script --------------------------------------------------------------------------------------------
 
-local welcomeMessages = {"\nWELCOME TO ASSETTO CORSA PURSUIT SERVER!",
+local welcomeMessages = const({"\nWELCOME TO ASSETTO CORSA PURSUIT SERVER!",
 	"We're the first persistent Assetto Corsa server to combine a (Points System) with the driving experience. ",
 	"Earned points function like real-life currency, allowing you to buy and customize cars: ",
 	"► CRUSHING KILOMETERS ",
@@ -1707,7 +1707,7 @@ local welcomeMessages = {"\nWELCOME TO ASSETTO CORSA PURSUIT SERVER!",
 	"Being on the Horizon Leaderboard unlocks special prizes like cars. ",
 	"Find additional details in the: ",
 	"If you're experiencing a 99% CPU WARNING, try loading one of these presets: ",
-	"Visit our Official Discord and check out the Server FAQ for more information: "}
+	"Visit our Official Discord and check out the Server FAQ for more information: "})
 
 local function welcomeMessageUI()
 	ui.sameLine(windowWidth/10)
@@ -1847,15 +1847,16 @@ local function cpuOccupancyWindow()
 	end)
 end
 
-local firstImageLoaded = false
+local firstLoad = true
 
 function script.drawUI()
 	if not welcomeClosed then welcomeWindow()
 	elseif cpu99occupancy and showCPUoccupancy then cpuOccupancyWindow()
 	elseif initialized then
 		if cspVersion < cspMinVersion then return end
-		if not firstImageLoaded then
+		if firstLoad then
 			updatePos()
+			firstLoad = false
 		end
 		hudUI()
 		onlineEventMessageUI()
