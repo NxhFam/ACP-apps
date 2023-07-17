@@ -346,7 +346,8 @@ local pursuit = {
 	hasArrested = false,
 	startedTime = 0,
 	hasJumped = false,
-	timeLostSight = 0,
+	timeLostSight = 1,
+	lostSight = false,
 }
 
 local arrestations = {}
@@ -832,8 +833,8 @@ local function inRange()
 	elseif (distanceSquared < pursuit.maxDistance) then
 		pursuit.timeInPursuit = os.clock()
 		resetChase()
-	elseif pursuit.timeLostSight == 0 then
-		pursuit.timeLostSight = 1
+	elseif pursuit.timeLostSight == 1 then
+		pursuit.lostSight = true
 	end
 end
 
@@ -898,7 +899,6 @@ local function arrestSuspect()
 		else
 			acpPolice{message = "BUSTED!", messageType = 2, yourIndex = pursuit.id}
 			pursuit.timerArrest = 0
-			pursuit.suspect = nil
 			pursuit.id = -1
 			pursuit.hasArrested = false
 			pursuit.startedTime = 0
@@ -918,17 +918,21 @@ local function chaseUpdate()
 	else pursuit.startedTime = 0 end
 	if pursuit.suspect then
 		sendChatToSuspect()
-		if pursuit.timeLostSight >= 0 then
-			pursuit.timeLostSight = pursuit.timeLostSight - ui.deltaTime()
+		if pursuit.lostSight then
+			if pursuit.timeLostSight > 0 then pursuit.timeLostSight = pursuit.timeLostSight - ui.deltaTime()
+			else pursuit.timeLostSight = 0 end
+			ac.log("Lost Sight")
 			ac.onCarJumped(pursuit.suspect.index, function (carid)
 				pursuit.hasArrested = true
 				arrestSuspect()
 			end)
-			inRange()
-		elseif pursuit.timeLostSight < 0 then
-			pursuit.timeLostSight = 0
+		elseif pursuit.timeLostSight == 0 then
+			ac.log("Lost Suspect")
 			lostSuspect()
+			pursuit.timeLostSight = 1
+			pursuit.lostSight = false
 		end
+		inRange()
 	end
 	arrestSuspect()
 end
