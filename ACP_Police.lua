@@ -223,16 +223,16 @@ end
 ui.setAsynchronousImagesLoading(true)
 local imageSize = vec2(0,0)
 
-local hud = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004827322196040/hud.png"
-local iconCams = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004828039422102/iconCams.png"
-local iconLost = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004828668567662/iconLost.png"
-local iconLogs = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004828370776115/iconLogs.png"
-local iconMenu = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004829067038750/iconMenuPolice.png"
-local iconRadar = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004827020210246/iconRadar.png"
-local iconArrest = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004827624190052/iconArrest.png"
+local hud = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004827322196040/hud.png")
+local iconCams = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004828039422102/iconCams.png")
+local iconLost = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004828668567662/iconLost.png")
+local iconLogs = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004828370776115/iconLogs.png")
+local iconMenu = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004829067038750/iconMenuPolice.png")
+local iconRadar = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004827020210246/iconRadar.png")
+local iconArrest = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004827624190052/iconArrest.png")
 
 
-local msgChase = {
+local msgChase = const({
     {
         msg = {"This is the police! Please pull over to the side of the road!","You are requested to stop your `CAR` immediately, pull over now!","Attention driver, pull over and cooperate with the authorities.","Stop your `CAR` and comply with the police, this is a warning!","Stop the `CAR`! pull over to the side of the road, and follow our instructions."}
     },
@@ -257,9 +257,9 @@ local msgChase = {
     {
         msg = {"***** This is your final warning, stop your `CAR` or we will use total force!","***** The situation has escalated, you must stop your `CAR` immediately or face the consequences!","***** We have authorization to use all necessary means to stop your `CAR`, stop now!","***** This is your last warning, stop your `CAR` or we will use all necessary force!","***** Stop your `CAR` immediately, or you will be met with total force!",}
     }
-}
+})
 
-local msgLost = {
+local msgLost = const({
 		msg = {"We've lost sight of the suspect. The vehicle involved is described as a `CAR` driven by `NAME`.",
 		"Suspect is no longer in view. The vehicle in question is a `CAR` with `NAME` behind the wheel.",
 		"Attention all units, we have lost visual contact with the suspect. The vehicle involved is a `CAR` driven by `NAME`.",
@@ -270,13 +270,13 @@ local msgLost = {
 		"We have lost the suspect's visual trail. The vehicle in question is described as a `CAR` driven by `NAME`.",
 		"The suspect is no longer visible. The vehicle involved is a `CAR` with `NAME` behind the wheel.",
 		"Suspect have been lost, Vehicle Description:`CAR` driven by `NAME`",}
-}
+})
 
-local msgEngage = {
-    msg = {"Control! I am engaging on a `CAR` traveling at `SPEED`","Pursuit in progress! I am chasing a `CAR` exceeding `SPEED`","Control, be advised! Pursuit is active on a `CAR` driving over `SPEED`","Attention! Pursuit initiated! Im following a `CAR` going above `SPEED`","Pursuit engaged! `CAR` driving at a high rate of speed over `SPEED`","Attention all units, we have a pursuit in progress! Suspect driving a `CAR` exceeding `SPEED`","Attention units! We have a suspect fleeing in a `CAR` at high speed, pursuing now at `SPEED`","Engaging on a high-speed chase! Suspect driving a `CAR` exceeding `SPEED`!","Attention all units! we have a pursuit in progress! Suspect driving a `CAR` exceeding `SPEED`","High-speed chase underway, suspect driving `CAR` over `SPEED`","Control, `CAR` exceeding `SPEED`, pursuit active.","Engaging on a `CAR` exceeding `SPEED`, pursuit initiated."}
-}
+-- local msgEngage = {
+--     msg = {"Control! I am engaging on a `CAR` traveling at `SPEED`","Pursuit in progress! I am chasing a `CAR` exceeding `SPEED`","Control, be advised! Pursuit is active on a `CAR` driving over `SPEED`","Attention! Pursuit initiated! Im following a `CAR` going above `SPEED`","Pursuit engaged! `CAR` driving at a high rate of speed over `SPEED`","Attention all units, we have a pursuit in progress! Suspect driving a `CAR` exceeding `SPEED`","Attention units! We have a suspect fleeing in a `CAR` at high speed, pursuing now at `SPEED`","Engaging on a high-speed chase! Suspect driving a `CAR` exceeding `SPEED`!","Attention all units! we have a pursuit in progress! Suspect driving a `CAR` exceeding `SPEED`","High-speed chase underway, suspect driving `CAR` over `SPEED`","Control, `CAR` exceeding `SPEED`, pursuit active.","Engaging on a `CAR` exceeding `SPEED`, pursuit initiated."}
+-- }
 
-local msgArrest = {
+local msgArrest = const({
     msg = {"`NAME` has been arrested for Speeding. The individual was driving a `CAR`.",
 	"We have apprehended `NAME` for Speeding. The suspect was behind the wheel of a `CAR`.",
 	"The driver of a `CAR`, identified as `NAME`, has been arrested for Speeding.",
@@ -287,8 +287,8 @@ local msgArrest = {
 	"We have successfully detained `NAME` for Illegal Racing. The individual was driving a `CAR`.",
 	"`NAME` driving a `CAR` has been arrested for Speeding",
 	"`NAME` driving a `CAR` has been arrested for Illegal Racing."}
-}
-local cameras = {
+})
+local cameras = const({
 	{
 		name = "BOBs SCRAPYARD",
 		pos = vec3(-3564, 31.5, -103),
@@ -331,7 +331,7 @@ local cameras = {
 		dir = 102,
 		fov = 60,
 	},
-}
+})
 
 local pursuit = {
 	suspect = nil,
@@ -362,9 +362,9 @@ local playerData = {}
 
 ---------------------------------------------------------------------------------------------- Firebase ----------------------------------------------------------------------------------------------
 
-local firebaseUrlsettings = 'https://acp-server-97674-default-rtdb.firebaseio.com/Settings'
-local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/Players'
-local urlAppScript = 'https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec'
+local firebaseUrlsettings = const('https://acp-server-97674-default-rtdb.firebaseio.com/Settings')
+local firebaseUrl = const('https://acp-server-97674-default-rtdb.firebaseio.com/Players')
+local urlAppScript = const('https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec')
 
 local function updateSheets()
 	web.post(urlAppScript, function(err, response)
@@ -1040,6 +1040,10 @@ function script.drawUI()
 		end
 	end
 end
+
+ac.onCarJumped(-1, function (carid)
+	ac.log(ac.getDriverName(carid) .. " jumped")
+end)
 
 function script.update(dt)
 	if carID ~= valideCar[1] and carID ~= valideCar[2] or cspVersion < cspMinVersion then return end
