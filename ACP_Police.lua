@@ -232,7 +232,7 @@ local iconRadar = "https://cdn.discordapp.com/attachments/1130004696984203325/11
 local iconArrest = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004827624190052/iconArrest.png"
 
 
-local msgChase = const({
+local msgChase = {
     {
         msg = {"This is the police! Please pull over to the side of the road!","You are requested to stop your `CAR` immediately, pull over now!","Attention driver, pull over and cooperate with the authorities.","Stop your `CAR` and comply with the police, this is a warning!","Stop the `CAR`! pull over to the side of the road, and follow our instructions."}
     },
@@ -257,9 +257,9 @@ local msgChase = const({
     {
         msg = {"***** This is your final warning, stop your `CAR` or we will use total force!","***** The situation has escalated, you must stop your `CAR` immediately or face the consequences!","***** We have authorization to use all necessary means to stop your `CAR`, stop now!","***** This is your last warning, stop your `CAR` or we will use all necessary force!","***** Stop your `CAR` immediately, or you will be met with total force!",}
     }
-})
+}
 
-local msgLost = const({
+local msgLost = {
 		msg = {"We've lost sight of the suspect. The vehicle involved is described as a `CAR` driven by `NAME`.",
 		"Suspect is no longer in view. The vehicle in question is a `CAR` with `NAME` behind the wheel.",
 		"Attention all units, we have lost visual contact with the suspect. The vehicle involved is a `CAR` driven by `NAME`.",
@@ -270,13 +270,13 @@ local msgLost = const({
 		"We have lost the suspect's visual trail. The vehicle in question is described as a `CAR` driven by `NAME`.",
 		"The suspect is no longer visible. The vehicle involved is a `CAR` with `NAME` behind the wheel.",
 		"Suspect have been lost, Vehicle Description:`CAR` driven by `NAME`",}
-})
+}
 
 -- local msgEngage = {
 --     msg = {"Control! I am engaging on a `CAR` traveling at `SPEED`","Pursuit in progress! I am chasing a `CAR` exceeding `SPEED`","Control, be advised! Pursuit is active on a `CAR` driving over `SPEED`","Attention! Pursuit initiated! Im following a `CAR` going above `SPEED`","Pursuit engaged! `CAR` driving at a high rate of speed over `SPEED`","Attention all units, we have a pursuit in progress! Suspect driving a `CAR` exceeding `SPEED`","Attention units! We have a suspect fleeing in a `CAR` at high speed, pursuing now at `SPEED`","Engaging on a high-speed chase! Suspect driving a `CAR` exceeding `SPEED`!","Attention all units! we have a pursuit in progress! Suspect driving a `CAR` exceeding `SPEED`","High-speed chase underway, suspect driving `CAR` over `SPEED`","Control, `CAR` exceeding `SPEED`, pursuit active.","Engaging on a `CAR` exceeding `SPEED`, pursuit initiated."}
 -- }
 
-local msgArrest = const({
+local msgArrest = {
     msg = {"`NAME` has been arrested for Speeding. The individual was driving a `CAR`.",
 	"We have apprehended `NAME` for Speeding. The suspect was behind the wheel of a `CAR`.",
 	"The driver of a `CAR`, identified as `NAME`, has been arrested for Speeding.",
@@ -287,8 +287,8 @@ local msgArrest = const({
 	"We have successfully detained `NAME` for Illegal Racing. The individual was driving a `CAR`.",
 	"`NAME` driving a `CAR` has been arrested for Speeding",
 	"`NAME` driving a `CAR` has been arrested for Illegal Racing."}
-})
-local cameras = const({
+}
+local cameras = {
 	{
 		name = "BOBs SCRAPYARD",
 		pos = vec3(-3564, 31.5, -103),
@@ -331,7 +331,7 @@ local cameras = const({
 		dir = 102,
 		fov = 60,
 	},
-})
+}
 
 local pursuit = {
 	suspect = nil,
