@@ -166,6 +166,7 @@ local firebaseUrlsettings = 'https://acp-server-97674-default-rtdb.firebaseio.co
 local sheetH1B = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1485964543&single=true&output=csv'
 local sheetH1C ='https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1055663571&single=true&output=csv'
 local sheetVV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=683938135&single=true&output=csv'
+local sheetJDM = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=792930104&single=true&output=csv'
 local sheetElo ='https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1426211490&single=true&output=csv'
 local sheetOverall ='https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=854722630&single=true&output=csv'
 local sheetTheft ='https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=746134609&single=true&output=csv'
@@ -174,7 +175,7 @@ local welcomeClosed = false
 
 local leaderboard = {}
 local leaderboardName = 'Class B - H1'
-local leaderboardNames = {'Class B - H1', 'Class C - H1', 'Velocity Vendetta', 'Street Racing', 'Car Thefts', 'Arrestations','OVERALL'}
+local leaderboardNames = {'Class B - H1', 'Class C - H1', 'Velocity Vendetta', 'JDM LEGENDS', 'Street Racing', 'Car Thefts', 'Arrestations','OVERALL'}
 
 
 local skyr34Valid
@@ -498,7 +499,7 @@ end
 
 local function addPlayerToDataBase(steamID)
 	local name = ac.getDriverName(0)
-	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","WR": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0,"Sectors": {"H1": {},"VV": {}}}}'
+	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","WR": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0,"Sectors": {"H1": {},"VV": {},"BOB": {}}}}'
 	web.request('PATCH', firebaseUrl .. ".json", str, function(err, response)
 		if err then
 			print(err)
@@ -542,10 +543,11 @@ local function loadLeaderboardFromSheet()
 	local colStart = 2
 	if leaderboardName == leaderboardNames[2] then sheetUrl = sheetH1C
 	elseif leaderboardName == leaderboardNames[3] then sheetUrl = sheetVV
-	elseif leaderboardName == leaderboardNames[4] then sheetUrl = sheetElo times = false
-	elseif leaderboardName == leaderboardNames[5] then sheetUrl = sheetTheft times = false
-	elseif leaderboardName == leaderboardNames[6] then sheetUrl = sheetArrests times = false
-	elseif leaderboardName == leaderboardNames[7] then
+	elseif leaderboardName == leaderboardNames[4] then sheetUrl = sheetJDM
+	elseif leaderboardName == leaderboardNames[5] then sheetUrl = sheetElo times = false
+	elseif leaderboardName == leaderboardNames[6] then sheetUrl = sheetTheft times = false
+	elseif leaderboardName == leaderboardNames[7] then sheetUrl = sheetArrests times = false
+	elseif leaderboardName == leaderboardNames[8] then
 		sheetUrl = sheetOverall
 		times = false
 		colStart = 1
@@ -667,7 +669,7 @@ local function updatefirebase()
 	end)
 end
 
-local function updateSector(sectorName, time)
+local function updateSectorData(sectorName, time)
 	if sectorName == 'H1' then
 		if not playerData.Sectors then
 			playerData.Sectors = {
@@ -695,8 +697,7 @@ local function updateSector(sectorName, time)
 				},
 			}
 		end
-	end
-	if sectorName == 'VV' then
+	elseif sectorName == 'VV' then
 		if not playerData.Sectors then
 			playerData.Sectors = {
 				H1 = {},
@@ -712,6 +713,28 @@ local function updateSector(sectorName, time)
 		else
 			playerData.Sectors.VV = {
 				Time = time,
+			}
+		end
+	elseif sectorName == 'JDM' then
+		if not playerData.Sectors then
+			playerData.Sectors = {
+				H1 = {},
+				VV = {},
+				JDM = {
+					Time = time,
+					CarID = carID,
+				},
+			}
+		end
+		if playerData.Sectors.JDM then
+			if time < playerData.Sectors.JDM.Time then
+				playerData.Sectors.JDM.Time = time
+				playerData.Sectors.JDM.CarID = carID
+			end
+		else
+			playerData.Sectors.JDM = {
+				Time = time,
+				CarID = carID,
 			}
 		end
 	end
@@ -1099,8 +1122,9 @@ local function sectorUpdate()
 					end
 					updatefirebase()
 				else
-					if sectors[sectorInfo.sectorIndex].name == "H1" then updateSector('H1', sectorInfo.time)
-					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" then updateSector('VV', sectorInfo.time) end
+					if sectors[sectorInfo.sectorIndex].name == "H1" then updateSectorData('H1', sectorInfo.time)
+					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" then updateSectorData('VV', sectorInfo.time)
+					elseif sectors[sectorInfo.sectorIndex].name == "JDM LEGENDS" then updateSectorData('JDM', sectorInfo.time) end
 					ac.sendChatMessage(" has finished " .. sectors[sectorInfo.sectorIndex].name .. " in " .. sectorInfo.timerText .. "!")
 				end
 				sectorInfo.timePosted = true
