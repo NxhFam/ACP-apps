@@ -223,13 +223,13 @@ end
 ui.setAsynchronousImagesLoading(true)
 local imageSize = vec2(0,0)
 
-local hud = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004827322196040/hud.png")
-local iconCams = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004828039422102/iconCams.png")
-local iconLost = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004828668567662/iconLost.png")
-local iconLogs = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004828370776115/iconLogs.png")
-local iconMenu = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004829067038750/iconMenuPolice.png")
-local iconRadar = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004827020210246/iconRadar.png")
-local iconArrest = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004827624190052/iconArrest.png")
+local hud = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004827322196040/hud.png"
+local iconCams = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004828039422102/iconCams.png"
+local iconLost = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004828668567662/iconLost.png"
+local iconLogs = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004828370776115/iconLogs.png"
+local iconMenu = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004829067038750/iconMenuPolice.png"
+local iconRadar = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004827020210246/iconRadar.png"
+local iconArrest = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004827624190052/iconArrest.png"
 
 
 local msgChase = const({
@@ -362,9 +362,9 @@ local playerData = {}
 
 ---------------------------------------------------------------------------------------------- Firebase ----------------------------------------------------------------------------------------------
 
-local firebaseUrlsettings = const('https://acp-server-97674-default-rtdb.firebaseio.com/Settings')
-local firebaseUrl = const('https://acp-server-97674-default-rtdb.firebaseio.com/Players')
-local urlAppScript = const('https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec')
+local firebaseUrlsettings = 'https://acp-server-97674-default-rtdb.firebaseio.com/Settings'
+local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/Players'
+local urlAppScript = 'https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec'
 
 local function updateSheets()
 	web.post(urlAppScript, function(err, response)
@@ -1026,10 +1026,6 @@ function script.drawUI()
 		end
 	end
 end
-
-ac.onCarJumped(-1, function (carid)
-	ac.log(ac.getDriverName(carid) .. " jumped")
-end)
 
 function script.update(dt)
 	if carID ~= valideCar[1] and carID ~= valideCar[2] or cspVersion < cspMinVersion then return end
