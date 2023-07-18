@@ -836,9 +836,8 @@ local function inRange()
 	elseif (distanceSquared < pursuit.maxDistance) then
 		pursuit.timeInPursuit = os.clock()
 		resetChase()
-	elseif pursuit.timeLostSight == 0 then
-		pursuit.timeLostSight = 1
-		pursuit.lostSight = true
+	else
+		lostSuspect()
 	end
 end
 
@@ -925,19 +924,6 @@ local function chaseUpdate()
 	if pursuit.suspect then
 		sendChatToSuspect()
 		inRange()
-		if pursuit.timeLostSight > 0 then
-			pursuit.timeLostSight = pursuit.timeLostSight - ui.deltaTime()
-			ac.onCarJumped(pursuit.suspect.index, function (carid)
-				pursuit.hasArrested = true
-				pursuit.hasJumped = true
-				ac.log("Suspect has jumped")
-				arrestSuspect()
-				ac.log("Car jumped")
-			end)
-		else pursuit.timeLostSight = 0 end
-		if pursuit.lostSight and pursuit.timeLostSight == 0 then
-			if not pursuit.hasJumped then lostSuspect() end
-		end
 	end
 	arrestSuspect()
 end
