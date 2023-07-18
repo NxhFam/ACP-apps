@@ -174,7 +174,7 @@ local welcomeClosed = false
 
 local leaderboard = {}
 local leaderboardName = 'Class B - H1'
-local leaderboardNames = const({'Class B - H1', 'Class C - H1', 'Velocity Vendetta', 'Street Racing', 'Car Thefts', 'Arrestations','OVERALL'})
+local leaderboardNames = {'Class B - H1', 'Class C - H1', 'Velocity Vendetta', 'Street Racing', 'Car Thefts', 'Arrestations','OVERALL'}
 
 
 local skyr34Valid
@@ -231,7 +231,7 @@ local hudMenu = "https://cdn.discordapp.com/attachments/1130004696984203325/1130
 local hudRanks = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004778315944017/iconRanks.png"
 local hudTheft = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004776399151144/iconTheft.png"
 
-local classC = const({
+local classC = {
 	["22b_acpursuit"]= "Impreza 22B STI",
 	["370z_acp"]= "370Z",
 	["964turbo_acp23"]= "964 Turbo",
@@ -245,9 +245,9 @@ local classC = const({
 	["supra93_acpursuit"]= "Supra Mk4",
 	["mustang_acp"]= "Mustang",
 	["nsx94_acp23"]= "NSX",
-})
+}
 
-local classB = const({
+local classB = {
 	["911gt3992_acpursuit"]= "911 GT3 (992)",
 	["f40_acp2023"]= "F40",
 	["gtam_acp"]= "Giulia GTA",
@@ -257,7 +257,7 @@ local classB = const({
 	["murcielago_acp23"]= "Murcielago",
 	["rs6abt_acp"]= "RS6 ABT",
 	["amgtr_acp23"]= "AMG GT-R",
-})
+}
 
 local function verifyClass()
 	if classC[carID] then
@@ -273,7 +273,7 @@ end
 
 local playerData = {}
 
-local sectors  = const({
+local sectors  = {
     {
         name = 'H1',
 		pointsData = {{vec3(-742.9, 138.9, 3558.7), vec3(-729.8, 138.9, 3542.8)},
@@ -343,7 +343,7 @@ local sectors  = const({
 					vec4(-5774.2,10184,-5770.5,10166.8)},
 		length = 15,
 	}
-})
+}
 
 local sector = nil
 
@@ -1685,7 +1685,7 @@ end
 
 -------------------------------------------------------------------------------------------- Main script --------------------------------------------------------------------------------------------
 
-local welcomeMessages = const({"\nWELCOME TO ASSETTO CORSA PURSUIT SERVER!",
+local welcomeMessages = {"\nWELCOME TO ASSETTO CORSA PURSUIT SERVER!",
 	"We're the first persistent Assetto Corsa server to combine a (Points System) with the driving experience. ",
 	"Earned points function like real-life currency, allowing you to buy and customize cars: ",
 	"► CRUSHING KILOMETERS ",
@@ -1707,7 +1707,7 @@ local welcomeMessages = const({"\nWELCOME TO ASSETTO CORSA PURSUIT SERVER!",
 	"Being on the Horizon Leaderboard unlocks special prizes like cars. ",
 	"Find additional details in the: ",
 	"If you're experiencing a 99% CPU WARNING, try loading one of these presets: ",
-	"Visit our Official Discord and check out the Server FAQ for more information: "})
+	"Visit our Official Discord and check out the Server FAQ for more information: "}
 
 local function welcomeMessageUI()
 	ui.sameLine(windowWidth/10)
