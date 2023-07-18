@@ -222,14 +222,14 @@ local imgPos = {}
 local cpu99occupancy = false
 local showCPUoccupancy = true
 
-local hudBase = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004776688553994/hudBase.png")
-local hudLeft = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004777229623306/hudLeft.png")
-local hudRight = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004777485471754/hudRight.png")
-local hudCenter = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004776944422952/hudCenter.png")
-local hudCountdown = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004777737146408/iconCountdown.png")
-local hudMenu = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004778026541116/iconMenu.png")
-local hudRanks = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004778315944017/iconRanks.png")
-local hudTheft = const("https://cdn.discordapp.com/attachments/1130004696984203325/1130004776399151144/iconTheft.png")
+local hudBase = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004776688553994/hudBase.png"
+local hudLeft = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004777229623306/hudLeft.png"
+local hudRight = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004777485471754/hudRight.png"
+local hudCenter = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004776944422952/hudCenter.png"
+local hudCountdown = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004777737146408/iconCountdown.png"
+local hudMenu = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004778026541116/iconMenu.png"
+local hudRanks = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004778315944017/iconRanks.png"
+local hudTheft = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004776399151144/iconTheft.png"
 
 local classC = const({
 	["22b_acpursuit"]= "Impreza 22B STI",
