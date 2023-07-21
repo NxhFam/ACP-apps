@@ -1875,7 +1875,7 @@ local firstLoad = true
 
 function script.drawUI()
 	if not welcomeClosed then welcomeWindow()
-	elseif cpu99occupancy and showCPUoccupancy then cpuOccupancyWindow()
+	--elseif cpu99occupancy and showCPUoccupancy then cpuOccupancyWindow()
 	elseif initialized then
 		if cspVersion < cspMinVersion then return end
 		if firstLoad then
