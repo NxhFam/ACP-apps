@@ -161,21 +161,24 @@ function json.parse(str, pos, end_delim)
 end
 
 --------------firebase--------------
-local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/Players'
-local firebaseUrlsettings = 'https://acp-server-97674-default-rtdb.firebaseio.com/Settings'
-local sheetH1B = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1485964543&single=true&output=csv'
-local sheetH1C ='https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1055663571&single=true&output=csv'
-local sheetVV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=683938135&single=true&output=csv'
-local sheetJDM = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=792930104&single=true&output=csv'
-local sheetElo ='https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=1426211490&single=true&output=csv'
-local sheetOverall ='https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=854722630&single=true&output=csv'
-local sheetTheft ='https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=746134609&single=true&output=csv'
-local sheetArrests ='https://docs.google.com/spreadsheets/d/e/2PACX-1vQjvxf3hfas5hkZEsC0AtFZLfycrWSBypkHyIWGt_2eD-FOARKFcdp6Ib3J2C6h3DyRHd_FxKQfekko/pub?gid=60814056&single=true&output=csv'
+local urlAppScript = 'https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec'
+local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/'
+local nodes = {['Settings'] = 'Settings',
+				['Players'] = 'Players',
+				['Arrestations'] = 'Arrests',
+				['Class B - H1'] = 'H1B',
+				['Class C - H1'] = 'H1C',
+				['JDM LEGENDS'] = 'JDM',
+				['HORIZON'] = 'Leaderboard',
+				['Street Racing'] = 'STRace',
+				['Car Thefts'] = 'Theft',
+				['Velocity Vendetta'] = 'VV'}
+
 local welcomeClosed = false
 
 local leaderboard = {}
 local leaderboardName = 'Class B - H1'
-local leaderboardNames = {'Class B - H1', 'Class C - H1', 'Velocity Vendetta', 'JDM LEGENDS', 'Street Racing', 'Car Thefts', 'Arrestations','OVERALL'}
+local leaderboardNames = {'Class B - H1', 'Class C - H1', 'Velocity Vendetta', 'JDM LEGENDS', 'Street Racing', 'Car Thefts', 'Arrestations','HORIZON'}
 
 
 local skyr34Valid
@@ -346,6 +349,16 @@ local sectors  = {
 	}
 }
 
+local driftSectors = {
+	{
+		name = 'DRIFT',
+		pointsData = {{vec3(0,0,0), vec3(0,0,0)},
+					{vec3(0,0,0), vec3(0,0,0)}},
+		linesData = {vec4(0,0,0,0),
+					vec4(0,0,0,0)},
+	}
+}
+
 local sector = nil
 
 ----------------------------------------------------------------------------------------------- Math -----------------------------------------------------------------------------------------------
@@ -500,7 +513,7 @@ end
 local function addPlayerToDataBase(steamID)
 	local name = ac.getDriverName(0)
 	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","WR": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0,"Sectors": {"H1": {},"VV": {},"BOB": {}}}}'
-	web.request('PATCH', firebaseUrl .. ".json", str, function(err, response)
+	web.request('PATCH', firebaseUrl .. nodes["Players"] .. ".json", str, function(err, response)
 		if err then
 			print(err)
 			return
@@ -510,7 +523,7 @@ end
 
 local function addPlayersettingsToDataBase(steamID)
 	local str = '{"' .. steamID .. '": {"essentialSize":20,"policeSize":20,"hudOffsetX":0,"hudOffsetY":0,"fontSize":20,"current":1,"colorHud":"1,0,0,1","timeMsg":10,"msgOffsetY":10,"msgOffsetX":' .. windowWidth/2 .. ',"fontSizeMSG":30,"menuPos":"0,0","unit":"km/h","unitMult":1}}'
-	web.request('PATCH', firebaseUrlsettings .. ".json", str, function(err, response)
+	web.request('PATCH', firebaseUrl .. nodes["Settings"] .. ".json", str, function(err, response)
 		if err then
 			print(err)
 			return
@@ -536,48 +549,11 @@ end
 -- Retrieve data from Google Sheet in CSV format
 -- Headers
 -- Data...
-local urlAppScript = 'https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec'
-local function loadLeaderboardFromSheet()
-	local sheetUrl = sheetH1B
-	local times = true
-	local colStart = 2
-	if leaderboardName == leaderboardNames[2] then sheetUrl = sheetH1C
-	elseif leaderboardName == leaderboardNames[3] then sheetUrl = sheetVV
-	elseif leaderboardName == leaderboardNames[4] then sheetUrl = sheetJDM
-	elseif leaderboardName == leaderboardNames[5] then sheetUrl = sheetElo times = false
-	elseif leaderboardName == leaderboardNames[6] then sheetUrl = sheetTheft times = false
-	elseif leaderboardName == leaderboardNames[7] then sheetUrl = sheetArrests times = false
-	elseif leaderboardName == leaderboardNames[8] then
-		sheetUrl = sheetOverall
-		times = false
-		colStart = 1
-	end
 
-	web.get(sheetUrl, function(err, response)
-		if err then
-			print(err)
-			return
-		else
-			table.clear(leaderboard)
-			local csv = response.body
-			local lines = csv:split('\n')
-			for i=1, #lines do
-				local line = lines[i]:split(',')
-				local entry = {}
-				for j=colStart, #line do
-					if i > 1 then
-						if  times and j == 2 then line[j] = timeFormat(tonumber(line[j])) end
-					end
-					table.insert(entry, line[j])
-				end
-				table.insert(leaderboard, entry)
-			end
-		end
-	end)
-end
+
 
 local function getFirebase()
-	local url = firebaseUrl .. "/" .. ac.getUserSteamID() .. '.json'
+	local url = firebaseUrl .. nodes["Players"] .. "/" .. ac.getUserSteamID() .. '.json'
 	web.get(url, function(err, response)
 		if err then
 			print(err)
@@ -598,7 +574,7 @@ local function getFirebase()
 end
 
 local function loadSettings()
-	local url = firebaseUrlsettings .. "/" .. ac.getUserSteamID() .. '.json'
+	local url = firebaseUrl .. nodes["Settings"] .. "/" .. ac.getUserSteamID() .. '.json'
 	web.get(url, function(err, response)
 		if err then
 			print(err)
@@ -618,7 +594,7 @@ end
 
 local function updateSettings()
 	local str = '{"' .. ac.getUserSteamID() .. '": ' .. json.stringify(settingsJSON) .. '}'
-	web.request('PATCH', firebaseUrlsettings .. ".json", str, function(err, response)
+	web.request('PATCH', firebaseUrl .. nodes["Settings"] .. ".json", str, function(err, response)
 		if err then
 			print(err)
 			return
@@ -645,6 +621,65 @@ local function onSettingsChange()
 	updateSettings()
 end
 
+local function changeHeaderNames(name)
+	if name == 'carName' then
+		return 'Car'
+	elseif name == 'stRace' then
+		return 'Score'
+	elseif name == 'driver' then
+		return 'Driver'
+	elseif name == 'time' then
+		return 'Time'
+	elseif name == 'losses' then
+		return 'Losses'
+	elseif name == 'wins' then
+		return 'Wins'
+	elseif name == 'arrests' then
+		return 'Arrestations'
+	elseif name == 'theft' then
+		return 'Cars Stolen'
+	else 
+		return name
+	end
+end
+
+local function parse_leaderboard(lb)
+	local header = {}
+	local leaderboard = {}
+	for k,v in pairs(lb) do
+		local entry = {}
+		for k2,v2 in pairs(v) do
+			k2 = changeHeaderNames(k2)
+			if k == 1 then table.insert(header, k2) end
+			if k2 == 'time' then v2 = timeFormat(tonumber(v2)) end
+			entry[k2] = v2
+		end
+		table.insert(leaderboard, entry)
+	end
+	table.insert(leaderboard, 1, header)
+	return leaderboard
+end
+
+
+local function loadLeaderboard()
+	local url = firebaseUrl .. nodes[leaderboardName] .. '.json'
+
+	web.get(url, function(err, response)
+		if err then
+			print(err)
+			return
+		else
+			if response.body == 'null' then
+				ac.log("No leaderboard found")
+			else
+				local jString = response.body
+				leaderboard = json.parse(jString)
+				leaderboard = parse_leaderboard(leaderboard)
+			end
+		end
+	end)
+end
+
 local function updateSheets()
 	web.post(urlAppScript, function(err, response)
 		if err then
@@ -652,14 +687,13 @@ local function updateSheets()
 			return
 		else
 			print(response.body)
-			loadLeaderboardFromSheet()
 		end
 	end)
 end
 
 local function updatefirebase()
 	local str = '{"' .. ac.getUserSteamID() .. '": ' .. json.stringify(playerData) .. '}'
-	web.request('PATCH', firebaseUrl .. ".json", str, function(err, response)
+	web.request('PATCH', firebaseUrl  .. nodes["Players"] .. ".json", str, function(err, response)
 		if err then
 			print(err)
 			return
@@ -759,16 +793,15 @@ local function displayInGrid()
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=Regular")
 	for i = 2, #leaderboard do
-		local entry = leaderboard[i]
 		local sufix = "th"
 		if i == 2 then sufix = "st"
 		elseif i == 3 then sufix = "nd"
 		elseif i == 4 then sufix = "rd" end
 		ui.dwriteTextAligned(i-1 .. sufix, settings.fontSize/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
-		for j = 1, #entry do
-			local textLenght = ui.measureDWriteText(entry[j], settings.fontSize/1.5).x
+		for j = 1, #leaderboard[1] do
+			local textLenght = ui.measureDWriteText(leaderboard[i][leaderboard[1][j]], settings.fontSize/1.5).x
 			ui.sameLine(box1.x + colWidth/2 + colWidth*(j-1) - textLenght/2)
-			ui.dwriteTextWrapped(entry[j], settings.fontSize/1.5, rgbm.colors.white)
+			ui.dwriteTextWrapped(leaderboard[i][leaderboard[1][j]], settings.fontSize/1.5, rgbm.colors.white)
 		end
 	end
 	ui.popDWriteFont()
@@ -788,7 +821,7 @@ local function showLeaderboard()
 		for i = 1, #leaderboardNames do
 			if ui.selectable(leaderboardNames[i], leaderboardName == leaderboardNames[i]) then
 				leaderboardName = leaderboardNames[i]
-				loadLeaderboardFromSheet()
+				loadLeaderboard()
 			end
 		end
 	end)
@@ -1065,7 +1098,6 @@ local function sectorUI()
 		end
 	end
 	discordLinks()
-	ui.text(sim.physicsLate)
 	ui.endGroup()
 	return 1
 end
@@ -1447,7 +1479,9 @@ local acpPolice = ac.OnlineEvent({
 	elseif data.yourIndex == car.sessionID and data.messageType == 2 then
 		online.message = data.message
 		online.messageTimer = settings.timeMsg
-		playerData.Busted = playerData.Busted + 1
+		if data.message == "BUSTED!" then
+			playerData.Busted = playerData.Busted + 1
+		end
 	end
 end)
 
@@ -1623,7 +1657,7 @@ local function drawImage()
 					onSettingsChange()
 				end
 				leaderboardOpen = true
-				loadLeaderboardFromSheet()
+				loadLeaderboard()
 			end
 		end
 	elseif ui.rectHovered(imgPos.countdownPos2, imgPos.countdownPos1) then
@@ -1904,11 +1938,11 @@ function script.update(dt)
 		verifyClass()
 		initialized = true
 		getFirebase()
-		loadLeaderboardFromSheet()
+		loadLeaderboard()
 	else
 		sectorUpdate()
 		raceUpdate(dt)
-		if sim.physicsLate > 45 and not cpu99occupancy then cpu99occupancy = true end
+		--if sim.physicsLate > 45 and not cpu99occupancy then cpu99occupancy = true end
 	end
 end
 
