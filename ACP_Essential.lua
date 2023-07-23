@@ -1448,7 +1448,6 @@ local acpPolice = ac.OnlineEvent({
 		online.message = data.message
 		online.messageTimer = settings.timeMsg
 		playerData.Busted = playerData.Busted + 1
-		updatefirebase()
 	end
 end)
 
