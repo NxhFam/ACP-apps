@@ -651,7 +651,7 @@ local function parse_leaderboard(lb)
 		for k2,v2 in pairs(v) do
 			k2 = changeHeaderNames(k2)
 			if k == 1 then table.insert(header, k2) end
-			if k2 == 'time' then v2 = timeFormat(tonumber(v2)) end
+			if k2 == 'Time' then v2 = timeFormat(tonumber(v2)) end
 			entry[k2] = v2
 		end
 		table.insert(leaderboard, entry)
