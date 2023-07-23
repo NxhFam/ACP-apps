@@ -332,18 +332,18 @@ local sectors  = {
 						{vec3(923.4,91.3,2218.7), vec3(913,91.6,2224.9)},
 						{vec3(1377.4,67.5,2665.3), vec3(1387.2,67.3,2669.2)},
 						{vec3(-5774.2,-349.1,10184), vec3(-5770.5,-349.1,10166.8)}},
-		linesData = {vec4(786.6,1946.8,795.7,1941.6), 
-					vec4(437.1,1411.5,446.1,1405.8), 
-					vec4(-267.3,674,-266.3,684.6), 
+		linesData = {vec4(786.6,1946.8,795.7,1941.6),
+					vec4(437.1,1411.5,446.1,1405.8),
+					vec4(-267.3,674,-266.3,684.6),
 					vec4(-275.2,397.5,-265.6,394.7),
-					vec4(-217.2,-45.8,-205.4,-41), 
-					vec4(161.6,366.1,168.5,374.2), 
-					vec4(-772.4,-2260.6,-765.7,-2266.8), 
-					vec4(-668.3,-2317.3,-673.8,-2309.7), 
+					vec4(-217.2,-45.8,-205.4,-41),
+					vec4(161.6,366.1,168.5,374.2),
+					vec4(-772.4,-2260.6,-765.7,-2266.8),
+					vec4(-668.3,-2317.3,-673.8,-2309.7),
 					vec4(1687.4,640.5,1679.7,639.5),
-					vec4(901.9,2101.2,894.3,2106.9), 
-					vec4(923.4,2218.7,913,2224.9), 
-					vec4(1387.2,2669.2,1377.4,2665.3), 
+					vec4(901.9,2101.2,894.3,2106.9),
+					vec4(923.4,2218.7,913,2224.9),
+					vec4(1387.2,2669.2,1377.4,2665.3),
 					vec4(-5774.2,10184,-5770.5,10166.8)},
 		length = 15,
 	}
@@ -546,12 +546,6 @@ local function timeFormat(sec)
 	return timeFormated
 end
 
--- Retrieve data from Google Sheet in CSV format
--- Headers
--- Data...
-
-
-
 local function getFirebase()
 	local url = firebaseUrl .. nodes["Players"] .. "/" .. ac.getUserSteamID() .. '.json'
 	web.get(url, function(err, response)
@@ -567,6 +561,9 @@ local function getFirebase()
 				if playerData.WR == nil then playerData.WR = 0 end
 				if playerData.Arrests == nil then playerData.Arrests = 0 end
 				if playerData.Theft == nil then playerData.Theft = 0 end
+				if playerData.Name ~= ac.getDriverName(0) then
+					playerData.Name = ac.getDriverName(0)
+				end
 			end
 			ac.log('Player data loaded')
 		end
