@@ -402,7 +402,9 @@ local function getFirebase()
 				playerData = json.parse(jString)
 				if playerData.WR == nil then playerData.WR = 0 end
 				if playerData.Arrests == nil then playerData.Arrests = 0 end
-
+				if playerData.Name ~= ac.getDriverName(0) then
+					playerData.Name = ac.getDriverName(0)
+				end
 			end
 			ac.log('Player data loaded')
 		end
