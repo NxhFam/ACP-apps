@@ -379,7 +379,7 @@ end
 
 local function addPlayerToDataBase(steamID)
 	local name = ac.getDriverName(0)
-	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","WR": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0, "Sectors": {"H1": {},"VV": {}}}}'
+	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0, "Sectors": {"H1": {},"VV": {}}}}'
 	web.request('PATCH', firebaseUrl .. ".json", str, function(err, response)
 		if err then
 			print(err)
@@ -400,8 +400,6 @@ local function getFirebase()
 			else
 				local jString = response.body
 				playerData = json.parse(jString)
-				if playerData.WR == nil then playerData.WR = 0 end
-				if playerData.Arrests == nil then playerData.Arrests = 0 end
 				if playerData.Name ~= ac.getDriverName(0) then
 					playerData.Name = ac.getDriverName(0)
 				end
