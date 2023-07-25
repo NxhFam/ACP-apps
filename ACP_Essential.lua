@@ -299,24 +299,6 @@ local sectors  = {
         linesData = {vec4(-742.9, 3558.7, -729.8, 3542.8), vec4(-3537.4, -199.8, -3544.4, -212.2)},
         length = 6.35,
     },
-    {
-        name = 'Velocity Vendetta',
-		pointsData = {{vec3(426.4,-32.5,-1249.5),vec3(415.8,-32.5,-1247.6)},
-					{vec3(885.4,3.3,-613.4),vec3(895.9,4.1,-608.5)},
-					{vec3(691.6,43,-7.8),vec3(682,42.8,-3.3)},
-					{vec3(168.7,41.5,358.7),vec3(176.7,41.5,366.9)},
-					{vec3(133.4,39.9,326.7),vec3(145.2,39.8,319.7)},
-					{vec3(-172.4,19.5,-102.6),vec3(-177.4,19,-114.2)},
-					{vec3(-234.5,24.9,0),vec3(-225,25.1,3.7)},
-					{vec3(-278.1,35,395.9),vec3(-287.8,34.8,400.2)},
-					{vec3(-383.1,24,47.8),vec3(-373.2,23.6,52.2)},
-					{vec3(-198.5,25.1,-7.9),vec3(-194.4,24.8,-18.7)},
-					{vec3(-36.5,35.8,286.4),vec3(-51.4,35.8,282.3)},
-					{vec3(148.9,41,364.4),vec3(136,41,360.4)},
-					{vec3(277.8,34.8,53.7),vec3(285.6,35.1,60.3)}},
-		linesData = {vec4(426.4,-1249.5,415.8,-1247.6), vec4(895.9,-608.5,885.4,-613.4), vec4(691.6,-7.8,682,-3.3), vec4(176.7,366.9,168.7,358.7), vec4(133.4,326.7,145.2,319.7),vec4(-172.4,-102.6,-177.4,-114.2),vec4(-225,3.7,-234.5,0),vec4(-287.8,400.2,-278.1,395.9),vec4(-383.1,47.8,-373.2,52.2),vec4(-194.4,-18.7,-198.5,-7.9),vec4(-36.5,286.4,-51.4,282.3),vec4(136,360.4,148.9,364.4),vec4(277.8,53.7,285.6,60.3)},
-		length = 5.55,
-    },
 	{
 		name = 'JDM LEGENDS',
 		pointsData = {{vec3(786.6,99.5,1946.8), vec3(795.7,99.5,1941.6)},
@@ -512,7 +494,7 @@ end
 
 local function addPlayerToDataBase(steamID)
 	local name = ac.getDriverName(0)
-	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","WR": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0,"Sectors": {"H1": {},"VV": {},"BOB": {}}}}'
+	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0,"Sectors": {"H1": {},"VV": {},"BOB": {}}}}'
 	web.request('PATCH', firebaseUrl .. nodes["Players"] .. ".json", str, function(err, response)
 		if err then
 			print(err)
@@ -558,9 +540,6 @@ local function getFirebase()
 			else
 				local jString = response.body
 				playerData = json.parse(jString)
-				if playerData.WR == nil then playerData.WR = 0 end
-				if playerData.Arrests == nil then playerData.Arrests = 0 end
-				if playerData.Theft == nil then playerData.Theft = 0 end
 				if playerData.Name ~= ac.getDriverName(0) then
 					playerData.Name = ac.getDriverName(0)
 				end
