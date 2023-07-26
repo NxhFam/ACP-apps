@@ -180,10 +180,6 @@ local leaderboard = {}
 local leaderboardName = 'Class B - H1'
 local leaderboardNames = {'Class B - H1', 'Class C - H1', 'Velocity Vendetta', 'JDM LEGENDS', 'Street Racing', 'Car Thefts', 'Arrestations','HORIZON'}
 
-
-local skyr34Valid
-
-
 local settings = {
 	essentialSize = 20,
 	policeSize = 20,
@@ -465,7 +461,6 @@ local function updatePos()
 end
 
 local function initLines()
-	skyr34Valid = ac.INIConfig.carData(0, 'brakes.ini'):get("DATA", "MAX_TORQUE", 0) == 4100 and carID == "skyr34_acp2"
 	settings.essentialSize = settings.essentialSize * windowHeight/1440
 	settings.fontSize = settings.essentialSize * windowHeight/1440
 	imageSize = vec2(windowHeight/80 * settings.essentialSize, windowHeight/80 * settings.essentialSize)
@@ -1092,7 +1087,6 @@ local function sectorSelect()
 	end)
 	ui.sameLine(windowWidth/5 - 120)
 	if ui.button('Close', vec2(100, windowHeight/50)) then menuOpen = false end
-	if sector.name == "Velocity Vendetta" and not skyr34Valid and carID == "skyr34_acp2" then ui.dwriteTextWrapped("Skyline R34 is not rental, times won't be posted on leaderboard.", 30, rgbm.colors.white) end
 end
 
 local function sectorUI()
