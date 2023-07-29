@@ -488,6 +488,7 @@ local acpPolice = ac.OnlineEvent({
 }, function (sender, data)
 	if data.yourIndex == car.sessionID and data.messageType == 0 then
 		pursuit.hasArrested = true
+		ac.log("ACP Police: Police received")
 	end
 end)
 
