@@ -1488,7 +1488,6 @@ local function overtakeUpdate(dt)
 
             if otherCar.collidedWith == 0 then
                 state.collided = true
-
                 if totalScore > highestScore then
                     highestScore = math.floor(totalScore)
                     ac.sendChatMessage("scored " .. totalScore .. " points.")
@@ -1524,7 +1523,7 @@ local function overtakeUI(textOffset)
 	local colorCombo
 
 	if totalScore > 0 then
-		text = totalScore .. " pts - " .. comboMeter .. "x"
+		text = totalScore .. " pts - " .. string.format("%d",comboMeter) .. "x"
 		colorCombo = rgbm.new(hsv(comboColor, math.saturate(comboMeter / 10), 1):rgb(), math.saturate(comboMeter / 4))
 	else
 		text = "PB: " .. highestScore .. "pts"
@@ -2131,3 +2130,4 @@ end
 if carID ~= valideCar[1] and carID ~= valideCar[2] and cspVersion >= cspMinVersion then
 	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
+
