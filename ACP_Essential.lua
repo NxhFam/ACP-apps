@@ -1399,6 +1399,142 @@ local function raceUpdate(dt)
 	end
 end
 
+-------------------------------------------------------------------------------- overtake --------------------------------------------------------------------------------
+
+-- Event configuration:
+local requiredSpeed = 80
+
+-- This function is called before event activates. Once it returns true, it’ll run:
+function script.prepare(dt)
+    ac.debug("speed", car.speedKmh)
+    return car.speedKmh > 60
+end
+
+-- Event state:
+local timePassed = 0
+local totalScore = 0
+local comboMeter = 1
+local comboColor = 0
+local highestScore = 0
+local dangerouslySlowTimer = 0
+local carsState = {}
+local wheelsWarningTimeout = 0
+
+
+local function overtakeUpdate(dt)
+    if car.engineLifeLeft < 1 then
+        if totalScore > highestScore then
+            highestScore = math.floor(totalScore)
+            ac.sendChatMessage("scored " .. totalScore .. " points.")
+        end
+        totalScore = 0
+        comboMeter = 1
+        return
+    end
+
+    timePassed = timePassed + dt
+
+    local comboFadingRate = 0.5 * math.lerp(1, 0.1, math.lerpInvSat(car.speedKmh, 80, 200)) + car.wheelsOutside
+    comboMeter = math.max(1, comboMeter - dt * comboFadingRate)
+
+    local sim = ac.getSim()
+    while sim.carsCount > #carsState do
+        carsState[#carsState + 1] = {}
+    end
+
+    if wheelsWarningTimeout > 0 then
+        wheelsWarningTimeout = wheelsWarningTimeout - dt
+    elseif car.wheelsOutside > 0 then
+        if wheelsWarningTimeout == 0 then
+        end
+        wheelsWarningTimeout = 60
+    end
+
+    if car.speedKmh < requiredSpeed then
+        if dangerouslySlowTimer > 3 then
+            if totalScore > highestScore then
+                highestScore = math.floor(totalScore)
+                ac.sendChatMessage("scored " .. totalScore .. " points.")
+            end
+            totalScore = 0
+            comboMeter = 1
+        end
+        dangerouslySlowTimer = dangerouslySlowTimer + dt
+        comboMeter = 1
+        return
+    else
+        dangerouslySlowTimer = 0
+    end
+
+    for i = 1, ac.getSim().carsCount do
+        local state = carsState[i]
+		local otherCar = ac.getCar(i)
+
+        if otherCar.position:closerToThan(car.position, 10) then
+            local drivingAlong = math.dot(otherCar.look, car.look) > 0.2
+            if not drivingAlong then
+                state.drivingAlong = false
+
+                if not state.nearMiss and otherCar.position:closerToThan(car.position, 3) then
+                    state.nearMiss = true
+
+                    if otherCar.position:closerToThan(car.position, 2.5) then
+                        comboMeter = comboMeter + 3
+                    else
+                        comboMeter = comboMeter + 1
+                    end
+                end
+            end
+
+            if otherCar.collidedWith == 0 then
+                state.collided = true
+
+                if totalScore > highestScore then
+                    highestScore = math.floor(totalScore)
+                    ac.sendChatMessage("scored " .. totalScore .. " points.")
+                end
+                totalScore = 0
+                comboMeter = 1
+            end
+
+            if not state.overtaken and not state.collided and state.drivingAlong then
+                local posDir = (otherCar.position - car.position):normalize()
+                local posDot = math.dot(posDir, otherCar.look)
+                state.maxPosDot = math.max(state.maxPosDot, posDot)
+                if posDot < -0.5 and state.maxPosDot > 0.5 then
+                    totalScore = totalScore + math.ceil(10 * comboMeter)
+                    comboMeter = comboMeter + 1
+                    comboColor = comboColor + 90
+                    state.overtaken = true
+                end
+            end
+        else
+            state.maxPosDot = -1
+            state.overtaken = false
+            state.collided = false
+            state.drivingAlong = true
+            state.nearMiss = false
+        end
+    end
+end
+
+local speedWarning = 0
+local function overtakeUI(textOffset)
+	local text
+	local colorCombo
+
+	if totalScore > 0 then
+		text = totalScore .. " pts - " .. comboMeter .. "x"
+		colorCombo = rgbm.new(hsv(comboColor, math.saturate(comboMeter / 10), 1):rgb(), math.saturate(comboMeter / 4))
+	else
+		text = "PB: " .. highestScore .. "pts"
+		colorCombo = rgbm(1, 1, 1, 0.9)
+	end
+	local textSize = ui.measureDWriteText(text, settings.fontSize)
+	ui.dwriteDrawText(text, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), colorCombo)
+end
+
+
 -- UI Update
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -1568,6 +1704,7 @@ local statOn = {
 	[2] = "Races",
 	[3] = "Busted",
 	[4] = "Sector",
+	[5] = "Overtake",
 }
 
 local iconsColorOn = {
@@ -1611,27 +1748,29 @@ local function drawText()
 	ui.pushDWriteFont("Orbitron;Weight=BOLD")
     local textOffset = vec2(imageSize.x / 2, imageSize.y / 4.5)
     local textSize = ui.measureDWriteText(statOn[settings.current], settings.fontSize)
-    if settings.current < 4 then ui.dwriteDrawText(statOn[settings.current], settings.fontSize, textOffset - vec2(textSize.x/2, 0), settings.colorHud) end
+    if settings.current ~= 4 then ui.dwriteDrawText(statOn[settings.current], settings.fontSize, textOffset - vec2(textSize.x/2, 0), settings.colorHud) end
     if settings.current == 1 then
         local drivenKm = car.distanceDrivenSessionKm
         if drivenKm < 0.01 then drivenKm = 0 end
         textSize = ui.measureDWriteText(string.format("%.2f",drivenKm) .. " km", settings.fontSize)
-        ui.dwriteDrawText(string.format("%.2f",drivenKm) .. " km", settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1,1,1,1))
+        ui.dwriteDrawText(string.format("%.2f",drivenKm) .. " km", settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1, 1, 1, 0.9))
     elseif settings.current == 2 then
         textSize = ui.measureDWriteText(playerData.Wins .. "Win  -  Lost" .. playerData.Losses, settings.fontSize/1.1)
-        ui.dwriteDrawText("Win " .. playerData.Wins .. " - Lost " .. playerData.Losses, settings.fontSize/1.1, textOffset - vec2(textSize.x/2, -imageSize.y/12.5), rgbm(1,1,1,1))
+        ui.dwriteDrawText("Win " .. playerData.Wins .. " - Lost " .. playerData.Losses, settings.fontSize/1.1, textOffset - vec2(textSize.x/2, -imageSize.y/12.5), rgbm(1, 1, 1, 0.9))
     elseif settings.current == 3 then
         textSize = ui.measureDWriteText(playerData.Busted, settings.fontSize)
-        ui.dwriteDrawText(playerData.Busted, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1,1,1,1))
-    elseif settings.current > 3 then
+        ui.dwriteDrawText(playerData.Busted, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1, 1, 1, 0.9))
+    elseif settings.current == 4 then
         textSize = ui.measureDWriteText(sector.name, settings.fontSize)
         ui.dwriteDrawText(sector.name, settings.fontSize, textOffset - vec2(textSize.x/2, 0), settings.colorHud)
         textSize = ui.measureDWriteText("Time: 0:00:00", settings.fontSize)
         if sectorInfo.finished then
             ui.dwriteDrawText("Time: " .. sectorInfo.timerText, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(0, 1, 0, 1))
         else
-            ui.dwriteDrawText("Time: " .. sectorInfo.timerText, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1,1,1,1))
+            ui.dwriteDrawText("Time: " .. sectorInfo.timerText, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1, 1, 1, 0.9))
         end
+	elseif settings.current == 5 then
+		overtakeUI(textOffset)
     end
 	ui.popDWriteFont()
 end
@@ -1929,279 +2068,6 @@ local function cpuOccupancyWindow()
 	end)
 end
 
-
--------------------------------------------------------------------------------- overtake --------------------------------------------------------------------------------
-
--- Event configuration:
-local requiredSpeed = 80
-
--- This function is called before event activates. Once it returns true, it’ll run:
-function script.prepare(dt)
-    ac.debug("speed", car.speedKmh)
-    return car.speedKmh > 60
-end
-
--- Event state:
-local timePassed = 0
-local totalScore = 0
-local comboMeter = 1
-local comboColor = 0
-local highestScore = 0
-local dangerouslySlowTimer = 0
-local carsState = {}
-local wheelsWarningTimeout = 0
-
--- For various reasons, this is the most questionable part, some UI. I don’t really like
--- this way though. So, yeah, still thinking about the best way to do it.
-local messages = {}
-local glitter = {}
-local glitterCount = 0
-
-local function addMessage(text, mood)
-    for i = math.min(#messages + 1, 4), 2, -1 do
-        messages[i] = messages[i - 1]
-        messages[i].targetPos = i
-    end
-    messages[1] = {text = text, age = 0, targetPos = 1, currentPos = 1, mood = mood}
-    if mood == 1 then
-        for i = 1, 60 do
-            local dir = vec2(math.random() - 0.5, math.random() - 0.5)
-            glitterCount = glitterCount + 1
-            glitter[glitterCount] = {
-                color = rgbm.new(hsv(math.random() * 360, 1, 1):rgb(), 1),
-                pos = vec2(80, 140) + dir * vec2(40, 20),
-                velocity = dir:normalize():scale(0.2 + math.random()),
-                life = 0.5 + 0.5 * math.random()
-            }
-        end
-    end
-end
-
-local function overtakeUpdate(dt)
-    if timePassed == 0 then
-        addMessage("Let’s go!", 0)
-    end
-
-    if car.engineLifeLeft < 1 then
-        if totalScore > highestScore then
-            highestScore = math.floor(totalScore)
-            ac.sendChatMessage("scored " .. totalScore .. " points.")
-        end
-        totalScore = 0
-        comboMeter = 1
-        return
-    end
-
-    timePassed = timePassed + dt
-
-    local comboFadingRate = 0.5 * math.lerp(1, 0.1, math.lerpInvSat(car.speedKmh, 80, 200)) + car.wheelsOutside
-    comboMeter = math.max(1, comboMeter - dt * comboFadingRate)
-
-    local sim = ac.getSim()
-    while sim.carsCount > #carsState do
-        carsState[#carsState + 1] = {}
-    end
-
-    if wheelsWarningTimeout > 0 then
-        wheelsWarningTimeout = wheelsWarningTimeout - dt
-    elseif car.wheelsOutside > 0 then
-        if wheelsWarningTimeout == 0 then
-        end
-        addMessage("Car is outside", -1)
-        wheelsWarningTimeout = 60
-    end
-
-    if car.speedKmh < requiredSpeed then
-        if dangerouslySlowTimer > 3 then
-            if totalScore > highestScore then
-                highestScore = math.floor(totalScore)
-                ac.sendChatMessage("scored " .. totalScore .. " points.")
-            end
-            totalScore = 0
-            comboMeter = 1
-        else
-            if dangerouslySlowTimer == 0 then
-                addMessage("Too slow!", -1)
-            end
-        end
-        dangerouslySlowTimer = dangerouslySlowTimer + dt
-        comboMeter = 1
-        return
-    else
-        dangerouslySlowTimer = 0
-    end
-
-    for i = 1, ac.getSim().carsCount do
-        local state = carsState[i]
-		local otherCar = ac.getCar(i)
-
-        if otherCar.position:closerToThan(car.position, 10) then
-            local drivingAlong = math.dot(otherCar.look, car.look) > 0.2
-            if not drivingAlong then
-                state.drivingAlong = false
-
-                if not state.nearMiss and otherCar.position:closerToThan(car.position, 3) then
-                    state.nearMiss = true
-
-                    if otherCar.position:closerToThan(car.position, 2.5) then
-                        comboMeter = comboMeter + 3
-                        addMessage("Very close near miss!", 1)
-                    else
-                        comboMeter = comboMeter + 1
-                        addMessage("Near miss: bonus combo", 0)
-                    end
-                end
-            end
-
-            if otherCar.collidedWith == 0 then
-                addMessage("Collision", -1)
-                state.collided = true
-
-                if totalScore > highestScore then
-                    highestScore = math.floor(totalScore)
-                    ac.sendChatMessage("scored " .. totalScore .. " points.")
-                end
-                totalScore = 0
-                comboMeter = 1
-            end
-
-            if not state.overtaken and not state.collided and state.drivingAlong then
-                local posDir = (otherCar.position - car.position):normalize()
-                local posDot = math.dot(posDir, otherCar.look)
-                state.maxPosDot = math.max(state.maxPosDot, posDot)
-                if posDot < -0.5 and state.maxPosDot > 0.5 then
-                    totalScore = totalScore + math.ceil(10 * comboMeter)
-                    comboMeter = comboMeter + 1
-                    comboColor = comboColor + 90
-                    addMessage("Overtake", comboMeter > 20 and 1 or 0)
-                    state.overtaken = true
-                end
-            end
-        else
-            state.maxPosDot = -1
-            state.overtaken = false
-            state.collided = false
-            state.drivingAlong = true
-            state.nearMiss = false
-        end
-    end
-end
-
-local function updateMessages(dt)
-    comboColor = comboColor + dt * 10 * comboMeter
-    if comboColor > 360 then
-        comboColor = comboColor - 360
-    end
-    for i = 1, #messages do
-        local m = messages[i]
-        m.age = m.age + dt
-        m.currentPos = math.applyLag(m.currentPos, m.targetPos, 0.8, dt)
-    end
-    for i = glitterCount, 1, -1 do
-        local g = glitter[i]
-        g.pos:add(g.velocity)
-        g.velocity.y = g.velocity.y + 0.02
-        g.life = g.life - dt
-        g.color.mult = math.saturate(g.life * 4)
-        if g.life < 0 then
-            if i < glitterCount then
-                glitter[i] = glitter[glitterCount]
-            end
-            glitterCount = glitterCount - 1
-        end
-    end
-    if comboMeter > 10 and math.random() > 0.98 then
-        for i = 1, math.floor(comboMeter) do
-            local dir = vec2(math.random() - 0.5, math.random() - 0.5)
-            glitterCount = glitterCount + 1
-            glitter[glitterCount] = {
-                color = rgbm.new(hsv(math.random() * 360, 1, 1):rgb(), 1),
-                pos = vec2(195, 75) + dir * vec2(40, 20),
-                velocity = dir:normalize():scale(0.2 + math.random()),
-                life = 0.5 + 0.5 * math.random()
-            }
-        end
-    end
-end
-
-local speedWarning = 0
-local function overtakeUI()
-	local uiState = ac.getUI()
-	updateMessages(uiState.dt)
-	
-	local speedRelative = math.saturate(math.floor(car.speedKmh) / requiredSpeed)
-	speedWarning = math.applyLag(speedWarning, speedRelative < 1 and 1 or 0, 0.5, uiState.dt)
-
-	local colorDark = rgbm(0.4, 0.4, 0.4, 1)
-	local colorGrey = rgbm(0.7, 0.7, 0.7, 1)
-	local colorAccent = rgbm.new(hsv(speedRelative * 120, 1, 1):rgb(), 1)
-	local colorCombo =
-		rgbm.new(hsv(comboColor, math.saturate(comboMeter / 10), 1):rgb(), math.saturate(comboMeter / 4))
-
-	local function speedMeter(ref)
-		ui.drawRectFilled(ref + vec2(0, -4), ref + vec2(180, 5), colorDark, 1)
-		ui.drawLine(ref + vec2(0, -4), ref + vec2(0, 4), colorGrey, 1)
-		ui.drawLine(ref + vec2(requiredSpeed, -4), ref + vec2(requiredSpeed, 4), colorGrey, 1)
-
-		local speed = math.min(car.speedKmh, 180)
-		if speed > 1 then
-			ui.drawLine(ref + vec2(0, 0), ref + vec2(speed, 0), colorAccent, 4)
-		end
-	end
-
-	ui.beginTransparentWindow("overtakeScore", vec2(100, 100), vec2(400 * 0.5, 400 * 0.5))
-	ui.beginOutline()
-
-	ui.pushStyleVar(ui.StyleVar.Alpha, 1 - speedWarning)
-	ui.pushFont(ui.Font.Main)
-	ui.text("Highest Score: " .. highestScore .. " pts")
-	ui.popFont()
-	ui.popStyleVar()
-
-	ui.pushFont(ui.Font.Title)
-	ui.text(totalScore .. " pts")
-	ui.sameLine(0, 20)
-	ui.beginRotation()
-	ui.textColored(math.ceil(comboMeter * 10) / 10 .. "x", colorCombo)
-	if comboMeter > 20 then
-		ui.endRotation(math.sin(comboMeter / 180 * 3141.5) * 3 * math.lerpInvSat(comboMeter, 20, 30) + 90)
-	end
-	ui.popFont()
-	ui.endOutline(rgbm(0, 0, 0, 0.3))
-
-	ui.offsetCursorY(20)
-	ui.pushFont(ui.Font.Main)
-	local startPos = ui.getCursor()
-	for i = 1, #messages do
-		local m = messages[i]
-		local f = math.saturate(4 - m.currentPos) * math.saturate(8 - m.age)
-		ui.setCursor(startPos + vec2(20 * 0.5 + math.saturate(1 - m.age * 10) ^ 2 * 50, (m.currentPos - 1) * 15))
-		ui.textColored(
-			m.text,
-			m.mood == 1 and rgbm(0, 1, 0, f) or m.mood == -1 and rgbm(1, 0, 0, f) or rgbm(1, 1, 1, f)
-		)
-	end
-	for i = 1, glitterCount do
-		local g = glitter[i]
-		if g ~= nil then
-			ui.drawLine(g.pos, g.pos + g.velocity * 4, g.color, 2)
-		end
-	end
-	ui.popFont()
-	ui.setCursor(startPos + vec2(0, 4 * 30))
-
-	ui.pushStyleVar(ui.StyleVar.Alpha, speedWarning)
-	ui.setCursorY(0)
-	ui.pushFont(ui.Font.Main)
-	ui.textColored("Keep speed above " .. requiredSpeed .. " km/h:", colorAccent)
-	speedMeter(ui.getCursor() + vec2(-9 * 0.5, 4 * 0.2))
-
-	ui.popFont()
-	ui.popStyleVar()
-
-	ui.endTransparentWindow()
-end
-
 -------------------------------------------------------------------------------- UPDATE --------------------------------------------------------------------------------
 
 local firstLoad = true
@@ -2215,7 +2081,7 @@ function script.drawUI()
 			updatePos()
 			firstLoad = false
 		end
-		if emile then overtakeUI() end
+
 		hudUI()
 		onlineEventMessageUI()
 		raceUI()
@@ -2243,7 +2109,7 @@ function script.update(dt)
 	else
 		sectorUpdate()
 		raceUpdate(dt)
-		if emile then overtakeUpdate(dt) end
+		overtakeUpdate(dt)
 		--if sim.physicsLate > 45 and not cpu99occupancy then cpu99occupancy = true end
 	end
 end
