@@ -2126,7 +2126,7 @@ end
 
 local speedWarning = 0
 local function overtakeUI()
-	local uiState = ac.getUi()
+	local uiState = ac.getUI()
 	updateMessages(uiState.dt)
 	
 	local speedRelative = math.saturate(math.floor(car.speedKmh) / requiredSpeed)
