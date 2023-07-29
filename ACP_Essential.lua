@@ -1020,9 +1020,9 @@ local acpEvent = ac.OnlineEvent({
 	elseif data.yourIndex == car.sessionID and data.messageType == 5 and data.message == "Accept" then
 		duo.teammate = sender
 		duo.request = false
-	elseif data.yourIndex == car.sessionID and sender.index == duo.teammate.index and data.messageType == 5 and data.message == "Finished" then
+	elseif duo.teammate and data.yourIndex == car.sessionID and sender.index == duo.teammate.index and data.messageType == 5 and data.message == "Finished" then
 		duo.teammateHasFinished = true
-	elseif data.yourIndex == car.sessionID and sender.index == duo.teammate.index and data.messageType == 5 and data.message == "Cancel" then
+	elseif duo.teammate and data.yourIndex == car.sessionID and sender.index == duo.teammate.index and data.messageType == 5 and data.message == "Cancel" then
 		duo.teammate = nil
 		duo.request = false
 		sector = sectors[sectorInfo.sectorIndex]
@@ -1974,7 +1974,6 @@ ac.onCarJumped(0, function (carid)
 	resetSectors()
 	if online.chased and online.officer then
 		acpPolice{message = "TP", messageType = 0, yourIndex = online.officer.sessionID}
-		ac.log("ACP Essential: Police send")
 	end
 end)
 
