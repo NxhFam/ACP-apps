@@ -345,7 +345,6 @@ local pursuit = {
 	timerArrest = 0,
 	hasArrested = false,
 	startedTime = 0,
-	hasJumped = false,
 	timeLostSight = 0,
 	lostSight = false,
 }
@@ -485,7 +484,11 @@ local acpPolice = ac.OnlineEvent({
     message = ac.StructItem.string(110),
 	messageType = ac.StructItem.int16(),
 	yourIndex = ac.StructItem.int16(),
-}, function (sender, data) end)
+}, function (sender, data)
+	if data.yourIndex == car.sessionID and data.messageType == 0 then
+		pursuit.hasArrested = true
+	end
+end)
 
 local function updatePos()
 	imageSize = vec2(windowHeight/80 * settings.policeSize, windowHeight/80 * settings.policeSize)
@@ -642,6 +645,8 @@ end
 
 local function lostSuspect()
 	resetChase()
+	pursuit.lostSight = false
+	pursuit.timeLostSight = 0
 	ac.sendChatMessage(formatMessage(msgLost.msg[math.random(#msgLost.msg)]))
 	pursuit.suspect = nil
 	if cspAboveP218 then
@@ -735,7 +740,7 @@ local function playerSelected(player)
 		pursuit.level = 1
 		local msgToSend = "Officer " .. ac.getDriverName(0) .. " is chasing you. Run! "
 		pursuit.startedTime = settings.timeMsg
-		acpPolice{message = msgToSend, messageType = 2, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
+		acpPolice{message = msgToSend, messageType = 0, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
 		if cspAboveP218 then
 			ac.setExtraSwitch(0, true)
 		end
@@ -837,7 +842,15 @@ local function inRange()
 		pursuit.timeInPursuit = os.clock()
 		resetChase()
 	else
-		lostSuspect()
+		if !pursuit.lostSight then
+			pursuit.lostSight = true
+			pursuit.timeLostSight = 2
+		else
+			pursuit.timeLostSight = pursuit.timeLostSight - ui.deltaTime()
+			if pursuit.timeLostSight < 0 then
+				lostSuspect()
+			end
+		end
 	end
 end
 
@@ -910,7 +923,6 @@ local function arrestSuspect()
 			pursuit.level = 1
 			pursuit.nextMessage = 20
 			pursuit.timeInPursuit = 0
-			pursuit.hasJumped = false
 			pursuit.lostSight = false
 			pursuit.timeLostSight = 0
 			updatefirebase()
