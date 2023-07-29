@@ -1974,6 +1974,7 @@ ac.onCarJumped(0, function (carid)
 	resetSectors()
 	if online.chased and online.officer then
 		acpPolice{message = "TP", messageType = 0, yourIndex = online.officer}
+		ac.log("ACP Essential: Police send")
 	end
 end)
 
