@@ -1982,8 +1982,7 @@ local function overtakeUpdate(dt)
         addMessage("Let’s go!", 0)
     end
 
-    local player = car
-    if player.engineLifeLeft < 1 then
+    if car.engineLifeLeft < 1 then
         if totalScore > highestScore then
             highestScore = math.floor(totalScore)
             ac.sendChatMessage("scored " .. totalScore .. " points.")
@@ -1995,24 +1994,24 @@ local function overtakeUpdate(dt)
 
     timePassed = timePassed + dt
 
-    local comboFadingRate = 0.5 * math.lerp(1, 0.1, math.lerpInvSat(player.speedKmh, 80, 200)) + player.wheelsOutside
+    local comboFadingRate = 0.5 * math.lerp(1, 0.1, math.lerpInvSat(car.speedKmh, 80, 200)) + car.wheelsOutside
     comboMeter = math.max(1, comboMeter - dt * comboFadingRate)
 
-    local sim = ac.getSimState()
+    local sim = ac.getSim()
     while sim.carsCount > #carsState do
         carsState[#carsState + 1] = {}
     end
 
     if wheelsWarningTimeout > 0 then
         wheelsWarningTimeout = wheelsWarningTimeout - dt
-    elseif player.wheelsOutside > 0 then
+    elseif car.wheelsOutside > 0 then
         if wheelsWarningTimeout == 0 then
         end
         addMessage("Car is outside", -1)
         wheelsWarningTimeout = 60
     end
 
-    if player.speedKmh < requiredSpeed then
+    if car.speedKmh < requiredSpeed then
         if dangerouslySlowTimer > 3 then
             if totalScore > highestScore then
                 highestScore = math.floor(totalScore)
@@ -2032,18 +2031,19 @@ local function overtakeUpdate(dt)
         dangerouslySlowTimer = 0
     end
 
-    for i = 1, ac.getSimState().carsCount do
+    for i = 1, ac.getSim().carsCount do
         local state = carsState[i]
+		local otherCar = ac.getCar(i)
 
-        if car.pos:closerToThan(player.pos, 10) then
-            local drivingAlong = math.dot(car.look, player.look) > 0.2
+        if otherCar.position:closerToThan(car.position, 10) then
+            local drivingAlong = math.dot(otherCar.look, car.look) > 0.2
             if not drivingAlong then
                 state.drivingAlong = false
 
-                if not state.nearMiss and car.pos:closerToThan(player.pos, 3) then
+                if not state.nearMiss and otherCar.position:closerToThan(car.position, 3) then
                     state.nearMiss = true
 
-                    if car.pos:closerToThan(player.pos, 2.5) then
+                    if otherCar.position:closerToThan(car.position, 2.5) then
                         comboMeter = comboMeter + 3
                         addMessage("Very close near miss!", 1)
                     else
@@ -2053,7 +2053,7 @@ local function overtakeUpdate(dt)
                 end
             end
 
-            if car.collidedWith == 0 then
+            if otherCar.collidedWith == 0 then
                 addMessage("Collision", -1)
                 state.collided = true
 
@@ -2066,8 +2066,8 @@ local function overtakeUpdate(dt)
             end
 
             if not state.overtaken and not state.collided and state.drivingAlong then
-                local posDir = (car.pos - player.pos):normalize()
-                local posDot = math.dot(posDir, car.look)
+                local posDir = (otherCar.position - car.position):normalize()
+                local posDot = math.dot(posDir, otherCar.look)
                 state.maxPosDot = math.max(state.maxPosDot, posDot)
                 if posDot < -0.5 and state.maxPosDot > 0.5 then
                     totalScore = totalScore + math.ceil(10 * comboMeter)
@@ -2126,7 +2126,7 @@ end
 
 local speedWarning = 0
 local function overtakeUI()
-	local uiState = ac.getUiState()
+	local uiState = ac.getUi()
 	updateMessages(uiState.dt)
 	
 	local speedRelative = math.saturate(math.floor(car.speedKmh) / requiredSpeed)
