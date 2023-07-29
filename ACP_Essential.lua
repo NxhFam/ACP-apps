@@ -1480,6 +1480,8 @@ local online = {
 	message = "",
 	messageTimer = 0,
 	type = nil,
+	chased = false,
+	officer = nil,
 }
 
 local acpPolice = ac.OnlineEvent({
@@ -1491,6 +1493,8 @@ local acpPolice = ac.OnlineEvent({
 	if data.yourIndex == car.sessionID and data.messageType == 0 then
 		online.message = data.message
 		online.messageTimer = settings.timeMsg
+		online.chased = true
+		online.officer = sender
 	elseif data.yourIndex == car.sessionID and data.messageType == 1 then
 		online.message = data.message
 		online.messageTimer = settings.timeMsg
@@ -1500,6 +1504,8 @@ local acpPolice = ac.OnlineEvent({
 		if data.message == "BUSTED!" then
 			playerData.Busted = playerData.Busted + 1
 		end
+		online.chased = false
+		online.officer = nil
 	end
 end)
 
@@ -1966,6 +1972,9 @@ end
 
 ac.onCarJumped(0, function (carid)
 	resetSectors()
+	if online.chased and online.officer then
+		acpPolice{message = "TP", messageType = 0, yourIndex = online.officer}
+	end
 end)
 
 function script.draw3D()
@@ -1978,4 +1987,3 @@ end
 if carID ~= valideCar[1] and carID ~= valideCar[2] and cspVersion >= cspMinVersion then
 	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
-
