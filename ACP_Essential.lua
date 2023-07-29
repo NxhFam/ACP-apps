@@ -1466,11 +1466,10 @@ local function overtakeUpdate(dt)
         dangerouslySlowTimer = 0
     end
 
-    for i = 1, ac.getSim().carsCount do
+    for i = 1, ac.getSim().carsCount - 1 do	
         local state = carsState[i]
 		local otherCar = ac.getCar(i)
-
-        if otherCar.position:closerToThan(car.position, 10) then
+        if otherCar.isConnected and otherCar.position:closerToThan(car.position, 10) then
             local drivingAlong = math.dot(otherCar.look, car.look) > 0.2
             if not drivingAlong then
                 state.drivingAlong = false
