@@ -14,6 +14,12 @@ local carID = ac.getCarID(0)
 local cspAboveP218 = cspVersion >= 2363
 local emile = ac.getUserSteamID() == "76561199125972202"
 
+local highestScore = 0
+local driftState = {
+	bestScore = 0,
+	lastScore = 0,
+}
+
 ------------------------------------------------------------------------- JSON Utils -------------------------------------------------------------------------
 
 local json = {}
@@ -538,7 +544,7 @@ end
 
 local function addPlayerToDataBase(steamID)
 	local name = ac.getDriverName(0)
-	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0,"Sectors": {"H1": {},"VV": {},"BOB": {}}}}'
+	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","Drift": 0,"Overtake": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0,"Sectors": {"H1": {},"VV": {},"BOB": {}}}}'
 	web.request('PATCH', firebaseUrl .. nodes["Players"] .. ".json", str, function(err, response)
 		if err then
 			print(err)
@@ -586,6 +592,12 @@ local function getFirebase()
 				playerData = json.parse(jString)
 				if playerData.Name ~= ac.getDriverName(0) then
 					playerData.Name = ac.getDriverName(0)
+				end
+				if not playerData.Drift then
+					playerData.Drift = 0
+				end
+				if not playerData.Overtake then
+					playerData.Overtake = 0
 				end
 			end
 			ac.log('Player data loaded')
@@ -713,6 +725,7 @@ end
 
 local function updatefirebase()
 	local str = '{"' .. ac.getUserSteamID() .. '": ' .. json.stringify(playerData) .. '}'
+	ac.log(str)
 	web.request('PATCH', firebaseUrl  .. nodes["Players"] .. ".json", str, function(err, response)
 		if err then
 			print(err)
@@ -1415,7 +1428,6 @@ local timePassed = 0
 local totalScore = 0
 local comboMeter = 1
 local comboColor = 0
-local highestScore = 0
 local dangerouslySlowTimer = 0
 local carsState = {}
 local wheelsWarningTimeout = 0
@@ -1425,7 +1437,9 @@ local function overtakeUpdate(dt)
     if car.engineLifeLeft < 1 then
         if totalScore > highestScore then
             highestScore = math.floor(totalScore)
-            ac.sendChatMessage("scored " .. totalScore .. " points.")
+            ac.sendChatMessage("New highest Overtake score: " .. highestScore .. " pts !")
+			playerData.Overtake = highestScore
+			updatefirebase()
         end
         totalScore = 0
         comboMeter = 1
@@ -1454,7 +1468,9 @@ local function overtakeUpdate(dt)
         if dangerouslySlowTimer > 3 then
             if totalScore > highestScore then
                 highestScore = math.floor(totalScore)
-                ac.sendChatMessage("scored " .. totalScore .. " points.")
+				ac.sendChatMessage("New highest Overtake score: " .. highestScore .. " pts !")
+				playerData.Overtake = highestScore
+				updatefirebase()
             end
             totalScore = 0
             comboMeter = 1
@@ -1489,7 +1505,9 @@ local function overtakeUpdate(dt)
                 state.collided = true
                 if totalScore > highestScore then
                     highestScore = math.floor(totalScore)
-                    ac.sendChatMessage("scored " .. totalScore .. " points.")
+					ac.sendChatMessage("New highest Overtake score: " .. highestScore .. " pts !")
+					playerData.Overtake = highestScore
+					updatefirebase()
                 end
                 totalScore = 0
                 comboMeter = 1
@@ -1532,6 +1550,34 @@ local function overtakeUI(textOffset)
 	ui.dwriteDrawText(text, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), colorCombo)
 end
 
+--------------------------------------------------------------------------------- Drift -----------------------------------------------------------------------------------
+
+local function driftUpdate(dt)
+	if driftState.lastScore ~= car.driftPoints then
+		if car.driftPoints - driftState.lastScore > driftState.bestScore then
+			driftState.bestScore = car.driftPoints - driftState.lastScore
+			playerData.Drift = driftState.bestScore
+			if driftState.bestScore > 100 then
+				ac.sendChatMessage("New Drift PB: " .. string.format("%.2f",driftState.bestScore) .. " pts !")
+				updatefirebase()
+			end	
+		end
+		driftState.lastScore = car.driftPoints
+	end
+end
+
+local function driftUI(textOffset)
+	local text
+
+	if car.driftInstantPoints > 0 then
+		text = string.format("%.2f",car.driftInstantPoints) .. " pts"
+	else
+		text = "PB: " .. string.format("%.2f",driftState.bestScore) .. " pts"
+	end
+	local textSize = ui.measureDWriteText(text, settings.fontSize)
+	ui.dwriteDrawText(text, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13),  rgbm(0, 1, 0, 1))
+	ui.dwriteDrawText(text, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1, 1, 1, 0.9))
+end
 
 -- UI Update
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1703,6 +1749,7 @@ local statOn = {
 	[3] = "Busted",
 	[4] = "Sector",
 	[5] = "Overtake",
+	[6] = "Drift"
 }
 
 local iconsColorOn = {
@@ -1769,6 +1816,8 @@ local function drawText()
         end
 	elseif settings.current == 5 then
 		overtakeUI(textOffset)
+	elseif settings.current == 6 then
+		driftUI(textOffset)
     end
 	ui.popDWriteFont()
 end
@@ -2108,14 +2157,17 @@ function script.update(dt)
 		sectorUpdate()
 		raceUpdate(dt)
 		overtakeUpdate(dt)
+		driftUpdate(dt)
 		--if sim.physicsLate > 45 and not cpu99occupancy then cpu99occupancy = true end
 	end
 end
 
 ac.onCarJumped(0, function (carid)
-	resetSectors()
-	if online.chased and online.officer then
-		acpPolice{message = "TP", messageType = 0, yourIndex = online.officer.sessionID}
+	if carID ~= valideCar[1] and carID ~= valideCar[2] then
+		resetSectors()
+		if online.chased and online.officer then
+			acpPolice{message = "TP", messageType = 0, yourIndex = online.officer.sessionID}
+		end
 	end
 end)
 
