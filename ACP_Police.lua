@@ -1041,6 +1041,12 @@ function script.drawUI()
 	end
 end
 
+ac.onCarJumped(0, function (carid)
+	if carID == valideCar[1] or carID == valideCar[2] then
+		lostSuspect()
+	end
+end)
+
 function script.update(dt)
 	if carID ~= valideCar[1] and carID ~= valideCar[2] or cspVersion < cspMinVersion then return end
 	if not initialized then
