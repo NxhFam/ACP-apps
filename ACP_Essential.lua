@@ -540,6 +540,8 @@ local function parsesettings(table)
 	settings.menuPos = stringToVec2(table.menuPos)
 	settings.unit = table.unit
 	settings.unitMult = table.unitMult
+
+	
 end
 
 local function addPlayerToDataBase(steamID)
@@ -595,9 +597,13 @@ local function getFirebase()
 				end
 				if not playerData.Drift then
 					playerData.Drift = 0
+				else
+					driftState.bestScore = playerData.Drift
 				end
 				if not playerData.Overtake then
 					playerData.Overtake = 0
+				else
+					highestScore = playerData.Overtake
 				end
 			end
 			ac.log('Player data loaded')
