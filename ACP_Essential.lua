@@ -1260,8 +1260,6 @@ end
 
 local timeStartRace = 0
 
--- Functions --
-
 local function showRaceLights()
 	local timing = os.clock() % 1
 	if timing > 0.5 then
@@ -1440,7 +1438,7 @@ local wheelsWarningTimeout = 0
 
 
 local function overtakeUpdate(dt)
-    if car.engineLifeLeft < 1 then
+    if car.engineLifeLeft < 1 or car.collidedWith == 0 then
         if totalScore > highestScore then
             highestScore = math.floor(totalScore)
             ac.sendChatMessage("New highest Overtake score: " .. highestScore .. " pts !")
@@ -1558,17 +1556,21 @@ end
 
 --------------------------------------------------------------------------------- Drift -----------------------------------------------------------------------------------
 
+-- Disable drift event if car is in arena area
 local function driftUpdate(dt)
-	if driftState.lastScore ~= car.driftPoints then
-		if car.driftPoints - driftState.lastScore > driftState.bestScore then
-			driftState.bestScore = car.driftPoints - driftState.lastScore
-			playerData.Drift = driftState.bestScore
-			if driftState.bestScore > 100 then
-				ac.sendChatMessage("New Drift PB: " .. string.format("%.2f",driftState.bestScore) .. " pts !")
-				updatefirebase()
-			end	
+	if not (car.position.x > -2320 and car.position.x < -3030 and car.position.z > 3595.5 and car.position.z < 3159.1)
+	and not (car.position.x > 800 and car.position.x < 1050 and car.position.z > 2000 and car.position.z < 2250) then
+		if driftState.lastScore ~= car.driftPoints then
+			if car.driftPoints - driftState.lastScore > driftState.bestScore then
+				driftState.bestScore = car.driftPoints - driftState.lastScore
+				playerData.Drift = driftState.bestScore
+				if driftState.bestScore > 100 then
+					ac.sendChatMessage("New Drift PB: " .. string.format("%.2f",driftState.bestScore) .. " pts !")
+					updatefirebase()
+				end	
+			end
+			driftState.lastScore = car.driftPoints
 		end
-		driftState.lastScore = car.driftPoints
 	end
 end
 
@@ -1576,7 +1578,8 @@ local function driftUI(textOffset)
 	local text
 	local colorCombo
 
-	if car.driftInstantPoints > 0 then
+	if car.driftInstantPoints > 0 and (not (car.position.x > 800 and car.position.x < 1050 and car.position.z > 2000 and car.position.z < 2250)
+	and not (car.position.x < -2320 and car.position.x > -3030 and car.position.z < 3595.5 and car.position.z > 3159.1)) then
 		text = string.format("%.2f",car.driftInstantPoints) .. " pts"
 		colorCombo = rgbm(0, 1, 0, 0.9)
 	else
@@ -2190,4 +2193,3 @@ end
 if carID ~= valideCar[1] and carID ~= valideCar[2] and cspVersion >= cspMinVersion then
 	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
-
