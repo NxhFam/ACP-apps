@@ -1547,7 +1547,7 @@ local function overtakeUI(textOffset)
 
 	if totalScore > 0 then
 		text = totalScore .. " pts - " .. string.format("%d",comboMeter) .. "x"
-		colorCombo = rgbm.new(hsv(comboColor, math.saturate(comboMeter / 10), 1):rgb(), math.saturate(comboMeter / 4))
+		colorCombo = rgbm(0, 1, 0, 0.9) --rgbm.new(hsv(comboColor, math.saturate(comboMeter / 10), 1):rgb(), math.saturate(comboMeter / 4))
 	else
 		text = "PB: " .. highestScore .. "pts"
 		colorCombo = rgbm(1, 1, 1, 0.9)
@@ -1574,15 +1574,18 @@ end
 
 local function driftUI(textOffset)
 	local text
+	local colorCombo
 
 	if car.driftInstantPoints > 0 then
 		text = string.format("%.2f",car.driftInstantPoints) .. " pts"
+		colorCombo = rgbm(0, 1, 0, 0.9)
 	else
 		text = "PB: " .. string.format("%.2f",driftState.bestScore) .. " pts"
+		colorCombo = rgbm(1, 1, 1, 0.9)
 	end
 	local textSize = ui.measureDWriteText(text, settings.fontSize)
-	ui.dwriteDrawText(text, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13),  rgbm(0, 1, 0, 1))
-	ui.dwriteDrawText(text, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1, 1, 1, 0.9))
+	ui.dwriteDrawText(text, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13),  colorCombo)
+
 end
 
 -- UI Update
