@@ -1171,7 +1171,7 @@ local function sectorUpdate()
 		sectorInfo.sectorIndex = 1
 		resetSectors()
 	end
-	if car.collidedWith == 0 and car.speedKmh > 60 and sectorInfo.sectorIndex == 4 then resetSectors() end
+	--if car.collidedWith == 0 and car.speedKmh > 60 and sectorInfo.sectorIndex == 4 then resetSectors() end
 	if distanceSquared(vec2(car.position.x, car.position.z), vec2(sector.lines[sectorInfo.checkpoints].midPoint.x, sector.lines[sectorInfo.checkpoints].midPoint.z)) < 30000 then sectorInfo.drawLine = true else sectorInfo.drawLine = false end
 	if hasCrossedLine(sector.lines[sectorInfo.checkpoints]) then
 		if sectorInfo.checkpoints == 1 then
