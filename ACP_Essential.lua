@@ -173,19 +173,20 @@ local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/'
 local nodes = {['Settings'] = 'Settings',
 				['Players'] = 'Players',
 				['Arrestations'] = 'Arrests',
-				['Class B - H1'] = 'H1B',
 				['Class C - H1'] = 'H1C',
 				['JDM LEGENDS'] = 'JDM',
 				['HORIZON'] = 'Leaderboard',
 				['Street Racing'] = 'STRace',
 				['Car Thefts'] = 'Theft',
-				['Velocity Vendetta'] = 'VV'}
+				['Velocity Vendetta'] = 'VV',
+				['Drift'] = 'Drift',
+				['Overtake'] = 'Overtake'}
 
 local welcomeClosed = false
 
 local leaderboard = {}
-local leaderboardName = 'Class B - H1'
-local leaderboardNames = {'Class B - H1', 'Class C - H1', 'Velocity Vendetta', 'JDM LEGENDS', 'Street Racing', 'Car Thefts', 'Arrestations','HORIZON'}
+local leaderboardName = 'Class C - H1'
+local leaderboardNames = {'Class C - H1', 'Velocity Vendetta', 'JDM LEGENDS', 'Street Racing', 'Car Thefts', 'Arrestations','HORIZON', 'Drift', 'Overtake'}
 
 local settings = {
 	essentialSize = 20,
@@ -1563,11 +1564,11 @@ local function driftUpdate(dt)
 		if driftState.lastScore ~= car.driftPoints then
 			if car.driftPoints - driftState.lastScore > driftState.bestScore then
 				driftState.bestScore = car.driftPoints - driftState.lastScore
-				playerData.Drift = driftState.bestScore
+				playerData.Drift = math.floor(driftState.bestScore)
 				if driftState.bestScore > 100 then
-					ac.sendChatMessage("New Drift PB: " .. string.format("%.2f",driftState.bestScore) .. " pts !")
+					ac.sendChatMessage("New Drift PB: " .. string.format("%d",driftState.bestScore) .. " pts !")
 					updatefirebase()
-				end	
+				end
 			end
 			driftState.lastScore = car.driftPoints
 		end
