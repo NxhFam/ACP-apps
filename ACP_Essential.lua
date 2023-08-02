@@ -1560,7 +1560,8 @@ end
 -- Disable drift event if car is in arena area
 local function driftUpdate(dt)
 	if not (car.position.x > -2320 and car.position.x < -3030 and car.position.z > 3595.5 and car.position.z < 3159.1)
-	and not (car.position.x > 800 and car.position.x < 1050 and car.position.z > 2000 and car.position.z < 2250) then
+	and not (car.position.x > 800 and car.position.x < 1050 and car.position.z > 2000 and car.position.z < 2250) 
+	and not (car.position.x > -1006 and car.position.x < -79 and car.position.z > 1264 and car.position.z < 1431) then
 		if driftState.lastScore ~= car.driftPoints then
 			if car.driftPoints - driftState.lastScore > driftState.bestScore then
 				driftState.bestScore = car.driftPoints - driftState.lastScore
@@ -1580,11 +1581,12 @@ local function driftUI(textOffset)
 	local colorCombo
 
 	if car.driftInstantPoints > 0 and (not (car.position.x > 800 and car.position.x < 1050 and car.position.z > 2000 and car.position.z < 2250)
-	and not (car.position.x < -2320 and car.position.x > -3030 and car.position.z < 3595.5 and car.position.z > 3159.1)) then
-		text = string.format("%.2f",car.driftInstantPoints) .. " pts"
+	and not (car.position.x < -2320 and car.position.x > -3030 and car.position.z < 3595.5 and car.position.z > 3159.1)
+	and not (car.position.x > -1006 and car.position.x < -79 and car.position.z > 1264 and car.position.z < 1431) ) then
+		text = string.format("%d",car.driftInstantPoints) .. " pts"
 		colorCombo = rgbm(0, 1, 0, 0.9)
 	else
-		text = "PB: " .. string.format("%.2f",driftState.bestScore) .. " pts"
+		text = "PB: " .. string.format("%d",driftState.bestScore) .. " pts"
 		colorCombo = rgbm(1, 1, 1, 0.9)
 	end
 	local textSize = ui.measureDWriteText(text, settings.fontSize)
