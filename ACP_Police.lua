@@ -840,8 +840,12 @@ local function inRange()
 	local distanceSquared = distance_x * distance_x + distance_z * distance_z
 	if(distanceSquared < pursuit.minDistance) then
 		pursuit.enable = true
+		pursuit.lostSight = false
+		pursuit.timeLostSight = 2
 	elseif (distanceSquared < pursuit.maxDistance) then
 		pursuit.timeInPursuit = os.clock()
+		pursuit.lostSight = false
+		pursuit.timeLostSight = 2
 		resetChase()
 	else
 		if not pursuit.lostSight then
