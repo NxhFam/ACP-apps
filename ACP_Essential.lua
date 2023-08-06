@@ -2218,7 +2218,7 @@ ac.onCarJumped(0, function (carid)
 end)
 
 ac.onChatMessage(function (message, senderCarIndex, senderSessionID)
-	if carID ~= valideCar[1] and carID ~= valideCar[2] then
+	if carID ~= valideCar[1] and carID ~= valideCar[2] and online.chased and online.officer then
 		if (senderSessionID == online.officer.sessionID and string.find(message, 'lost')) then
 			online.chased = false
 			online.officer = nil
