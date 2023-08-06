@@ -182,14 +182,14 @@ local nodes = {['Settings'] = 'Settings',
 				['Car Thefts'] = 'Theft',
 				['Velocity Vendetta'] = 'VV',
 				['Drift'] = 'Drift',
-				['Overtake'] = 'Overtake',}
-				--['Most Wanted'] = 'MostWanted'
+				['Overtake'] = 'Overtake',
+				['Most Wanted'] = 'MostWanted'}
 
 local welcomeClosed = false
 
 local leaderboard = {}
 local leaderboardName = 'Class C - H1'
-local leaderboardNames = {'Class C - H1', 'Velocity Vendetta', 'JDM LEGENDS', 'Street Racing', 'Car Thefts', 'Arrestations','HORIZON', 'Drift', 'Overtake'}--, 'Most Wanted'
+local leaderboardNames = {'Class C - H1', 'Velocity Vendetta', 'JDM LEGENDS', 'Street Racing', 'Car Thefts', 'Arrestations','HORIZON', 'Drift', 'Overtake', 'Most Wanted'}
 
 local settings = {
 	essentialSize = 20,
@@ -2070,9 +2070,7 @@ local function welcomeWindow()
 				ui.dwriteTextWrapped("You are using an old version of CSP. Please update CSP to the latest version to use the ACP Essential APP.", 25, rgbm.colors.white)
 				ui.newLine()
 				ui.sameLine(windowWidth/20)
-				if ui.button('Close', vec2(windowWidth/2, windowHeight/20)) then 
-					welcomeClosed = true
-				end
+				if ui.button('Close', vec2(windowWidth/2, windowHeight/20)) then welcomeClosed = true end
 			end
 		end)
 	end)
@@ -2168,9 +2166,9 @@ end)
 ac.onChatMessage(function (message, senderCarIndex, senderSessionID)
 	if carID ~= valideCar[1] and carID ~= valideCar[2] and online.chased and online.officer then
 		if (senderSessionID == online.officer.sessionID and string.find(message, 'lost')) then
+			playerData.Getaway = playerData.Getaway + 1
 			online.chased = false
 			online.officer = nil
-			playerData.Getaway = playerData.Getaway + 1
 			updatefirebase()
 		end
 	end
