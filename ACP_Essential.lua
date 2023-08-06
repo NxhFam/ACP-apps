@@ -14,6 +14,8 @@ local carID = ac.getCarID(0)
 local cspAboveP218 = cspVersion >= 2363
 local emile = ac.getUserSteamID() == "76561199125972202"
 
+if carID == valideCar[1] or carID == valideCar[2] or cspVersion < cspMinVersion then return end
+
 local highestScore = 0
 local driftState = {
 	bestScore = 0,
@@ -203,6 +205,7 @@ local settings = {
 	menuPos = vec2(0, 0),
 	unit = "km/h",
 	unitMult = 1,
+	starsSize = 20
 }
 
 local settingsJSON = {
@@ -220,6 +223,7 @@ local settingsJSON = {
 	menuPos = vec2(0, 0),
 	unit = "km/h",
 	unitMult = 1,
+	starsSize = 20
 }
 
 ui.setAsynchronousImagesLoading(true)
@@ -541,8 +545,7 @@ local function parsesettings(table)
 	settings.menuPos = stringToVec2(table.menuPos)
 	settings.unit = table.unit
 	settings.unitMult = table.unitMult
-
-	
+	settings.starsSize = table.starsSize or 20
 end
 
 local function addPlayerToDataBase(steamID)
@@ -557,7 +560,7 @@ local function addPlayerToDataBase(steamID)
 end
 
 local function addPlayersettingsToDataBase(steamID)
-	local str = '{"' .. steamID .. '": {"essentialSize":20,"policeSize":20,"hudOffsetX":0,"hudOffsetY":0,"fontSize":20,"current":1,"colorHud":"1,0,0,1","timeMsg":10,"msgOffsetY":10,"msgOffsetX":' .. windowWidth/2 .. ',"fontSizeMSG":30,"menuPos":"0,0","unit":"km/h","unitMult":1}}'
+	local str = '{"' .. steamID .. '": {"essentialSize":20,"policeSize":20,"hudOffsetX":0,"hudOffsetY":0,"fontSize":20,"current":1,"colorHud":"1,0,0,1","timeMsg":10,"msgOffsetY":10,"msgOffsetX":' .. windowWidth/2 .. ',"fontSizeMSG":30,"menuPos":"0,0","unit":"km/h","unitMult":1,"starsSize":20}}'
 	web.request('PATCH', firebaseUrl .. nodes["Settings"] .. ".json", str, function(err, response)
 		if err then
 			print(err)
@@ -657,6 +660,7 @@ local function onSettingsChange()
 	settingsJSON.fontSizeMSG = settings.fontSizeMSG
 	settingsJSON.unit = settings.unit
 	settingsJSON.unitMult = settings.unitMult
+	settingsJSON.starsSize = settings.starsSize
 	updateSettings()
 end
 
@@ -909,6 +913,7 @@ local function uiTab()
 	ui.text('On Screen Message : ')
 	settings.timeMsg = ui.slider('##' .. 'Time Msg On Screen', settings.timeMsg, 1, 15, 'Time Msg On Screen' .. ': %.0fs')
 	settings.fontSizeMSG = ui.slider('##' .. 'Font Size MSG', settings.fontSizeMSG, 10, 50, 'Font Size' .. ': %.0f')
+	settings.starsSize = ui.slider('##' .. 'Stars Size', settings.starsSize, 10, 50, 'Stars Size' .. ': %.0f')
 	ui.newLine()
 	ui.text('Offset : ')
 	settings.msgOffsetY = ui.slider('##' .. 'Msg On Screen Offset Y', settings.msgOffsetY, 0, windowHeight, 'Msg On Screen Offset Y' .. ': %.0f')
@@ -937,11 +942,7 @@ local function settingsWindow()
 	ui.sameLine(10)
 	ui.beginGroup()
 	ui.newLine(15)
-	ui.sameLine(windowWidth/6 - 120)
-	if ui.button('Close', vec2(100, windowHeight/50)) then
-		menuOpen = false
-		onSettingsChange()
-	end
+	ui.text('HUD :')
 	settings.hudOffsetX = ui.slider('##' .. 'HUD Offset X', settings.hudOffsetX, 0, windowWidth, 'HUD Offset X' .. ': %.0f')
 	settings.hudOffsetY = ui.slider('##' .. 'HUD Offset Y', settings.hudOffsetY, 0, windowHeight, 'HUD Offset Y' .. ': %.0f')
 	settings.essentialSize = ui.slider('##' .. 'HUD Size', settings.essentialSize, 10, 50, 'HUD Size' .. ': %.0f')
@@ -955,6 +956,10 @@ local function settingsWindow()
 	end
     ui.newLine()
     uiTab()
+	if ui.button('Close', vec2(100, windowHeight/50)) then
+		menuOpen = false
+		onSettingsChange()
+	end
 	ui.endGroup()
 	updatePos()
 	return 2
@@ -1107,7 +1112,10 @@ local function sectorSelect()
 		end
 	end)
 	ui.sameLine(windowWidth/5 - 120)
-	if ui.button('Close', vec2(100, windowHeight/50)) then menuOpen = false end
+	if ui.button('Close', vec2(100, windowHeight/50)) then 
+		menuOpen = false
+		onSettingsChange()
+	end
 end
 
 local function sectorUI()
@@ -1264,11 +1272,11 @@ local timeStartRace = 0
 local function showRaceLights()
 	local timing = os.clock() % 1
 	if timing > 0.5 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), settings.colorHud, rgbm(),  rgbm(), settings.colorHud)
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(), settings.colorHud, settings.colorHud, rgbm())
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), settings.colorHud, rgbm(0,0,0,0),  rgbm(0,0,0,0), settings.colorHud)
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(0,0,0,0), settings.colorHud, settings.colorHud, rgbm(0,0,0,0))
 	else
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), rgbm(), rgbm(),  rgbm(), rgbm())
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(), rgbm(), rgbm())
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), rgbm(0,0,0,0), rgbm(0,0,0,0),  rgbm(0,0,0,0), rgbm(0,0,0,0))
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(0,0,0,0), rgbm(0,0,0,0), rgbm(0,0,0,0), rgbm(0,0,0,0))
 	end
 end
 
@@ -1600,11 +1608,11 @@ end
 local function flashingAlert(intensity)
 	local timing = os.clock() % 1
 	if timing > 0.5 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/intensity,windowHeight), rgbm(1, 0, 0, 0.5), rgbm(),  rgbm(), rgbm(1, 0, 0, 0.5))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/intensity,0), vec2(windowWidth,windowHeight), rgbm(), rgbm(1, 0, 0, 0.5), rgbm(1, 0, 0, 0.5), rgbm())
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/intensity,windowHeight), rgbm(1, 0, 0, 0.5), rgbm(0,0,0,0),  rgbm(0,0,0,0), rgbm(1, 0, 0, 0.5))
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/intensity,0), vec2(windowWidth,windowHeight), rgbm(0,0,0,0), rgbm(1, 0, 0, 0.5), rgbm(1, 0, 0, 0.5), rgbm(0,0,0,0))
 	else
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/intensity,windowHeight), rgbm(), rgbm(),  rgbm(), rgbm())
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/intensity,0), vec2(windowWidth,windowHeight), rgbm(), rgbm(),  rgbm(), rgbm())
+		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/intensity,windowHeight), rgbm(0,0,0,0), rgbm(0,0,0,0),  rgbm(0,0,0,0), rgbm(0,0,0,0))
+		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/intensity,0), vec2(windowWidth,windowHeight), rgbm(0,0,0,0), rgbm(0,0,0,0),  rgbm(0,0,0,0), rgbm(0,0,0,0))
 	end
 end
 
@@ -1675,9 +1683,17 @@ end
 local online = {
 	message = "",
 	messageTimer = 0,
-	type = nil,
+	type = 1,
 	chased = false,
 	officer = nil,
+	level = 0,
+}
+
+local policeLightsPos = {
+	vec2(0,0), 
+	vec2(windowWidth/15,windowHeight),
+	vec2(windowWidth-windowWidth/15,0),
+	vec2(windowWidth,windowHeight)
 }
 
 local acpPolice = ac.OnlineEvent({
@@ -1688,12 +1704,14 @@ local acpPolice = ac.OnlineEvent({
 	online.type = data.messageType
 	if data.yourIndex == car.sessionID and data.messageType == 0 then
 		online.message = data.message
-		online.messageTimer = settings.timeMsg
 		online.chased = true
 		online.officer = sender
-	elseif data.yourIndex == car.sessionID and data.messageType == 1 then
-		online.message = data.message
 		online.messageTimer = settings.timeMsg
+		policeLightsPos[2] = vec2(windowWidth/10,windowHeight)
+		policeLightsPos[3] = vec2(windowWidth-windowWidth/10,0)
+	elseif data.yourIndex == car.sessionID and data.messageType == 1 then
+		online.level = tonumber(data.message)
+		online.messageTimer = 3
 	elseif data.yourIndex == car.sessionID and data.messageType == 2 then
 		online.message = data.message
 		online.messageTimer = settings.timeMsg
@@ -1702,29 +1720,36 @@ local acpPolice = ac.OnlineEvent({
 		end
 		online.chased = false
 		online.officer = nil
+		online.level = 0
+		policeLightsPos[2] = vec2(windowWidth/6,windowHeight)
+		policeLightsPos[3] = vec2(windowWidth-windowWidth/6,0)
 	end
 end)
 
 local function showPoliceLights()
-	local timing = os.clock() % 2
-	if timing > 1.66 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), rgbm(1, 0, 0, 0.5), rgbm(),  rgbm(), rgbm(1, 0, 0, 0.5))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(0, 0, 1, 0.5), rgbm(0, 0, 1, 0.5), rgbm())
-	elseif timing > 1.33 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), rgbm(0, 0, 1, 0.5), rgbm(), rgbm(), rgbm(0, 0, 1, 0.5))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(1, 0, 0, 0.5), rgbm(1, 0, 0, 0.5), rgbm())
-	elseif timing > 1 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), rgbm(1, 0, 0, 0.5), rgbm(),  rgbm(), rgbm(1, 0, 0, 0.5))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(0, 0, 1, 0.5), rgbm(0, 0, 1, 0.5), rgbm())
-	elseif timing > 0.66 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), rgbm(0, 0, 1, 0.5), rgbm(), rgbm(), rgbm(0, 0, 1, 0.5))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(1, 0, 0, 0.5), rgbm(1, 0, 0, 0.5), rgbm())
-	elseif timing > 0.33 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), rgbm(1, 0, 0, 0.5), rgbm(),  rgbm(), rgbm(1, 0, 0, 0.5))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(0, 0, 1, 0.5), rgbm(0, 0, 1, 0.5), rgbm())
+	local timing = math.floor(os.clock()*2 % 2)
+	if timing == 0 then
+		ui.drawRectFilledMultiColor(policeLightsPos[1], policeLightsPos[2], rgbm(1,0,0,0.5), rgbm(0,0,0,0), rgbm(0,0,0,0), rgbm(1,0,0,0.5))
+		ui.drawRectFilledMultiColor(policeLightsPos[3], policeLightsPos[4], rgbm(0,0,0,0), rgbm(0,0,1,0.5), rgbm(0,0,1,0.5), rgbm(0,0,0,0))
 	else
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/6,windowHeight), rgbm(0, 0, 1, 0.5), rgbm(), rgbm(), rgbm(0, 0, 1, 0.5))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/6,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(1, 0, 0, 0.5), rgbm(1, 0, 0, 0.5), rgbm())
+		ui.drawRectFilledMultiColor(policeLightsPos[1], policeLightsPos[2], rgbm(0,0,1,0.5), rgbm(0,0,0,0), rgbm(0,0,0,0), rgbm(0,0,1,0.5))
+		ui.drawRectFilledMultiColor(policeLightsPos[3], policeLightsPos[4], rgbm(0,0,0,0), rgbm(1,0,0,0.5), rgbm(1,0,0,0.5), rgbm(0,0,0,0))
+	end
+end
+
+local function showStarsPursuit()
+	local starsPos = vec2(windowWidth - settings.starsSize, settings.starsSize)
+	local starsSize = vec2(starsPos.x - settings.starsSize*2, starsPos.y + settings.starsSize*2)
+	local startSpace = settings.starsSize/4
+	local starsColor = rgbm(1, 1, 1, os.clock()%2 + 0.3)
+	for i = 1, 5 do
+		if i > online.level/2 then
+			ui.drawIcon(ui.Icons.StarEmpty, starsPos, starsSize, rgbm(1, 1, 1, 0.2))
+		else
+			ui.drawIcon(ui.Icons.StarEmpty, starsPos, starsSize, starsColor)
+		end
+		starsPos.x = starsPos.x - settings.starsSize*2 - startSpace
+		starsSize.x = starsSize.x - settings.starsSize*2 - startSpace
 	end
 end
 
@@ -1744,10 +1769,14 @@ end
 local function onlineEventMessageUI()
 	if online.messageTimer > 0 then
 		online.messageTimer = online.messageTimer - ui.deltaTime()
-		local text = string.gsub(online.message,"*", "⭐")
-		if online.message ~= "BUSTED!" then textWithBackground(text, 1) end
-		if online.type == 2 then
-			if online.message == "BUSTED!" then showArrestMSG() end
+		if online.type == 0 or online.type == 2 then
+			local text = online.message
+			if online.message ~= "BUSTED!" then textWithBackground(text, 1) end
+			if online.type == 2 then
+				if online.message == "BUSTED!" then showArrestMSG() end
+				showPoliceLights()
+			end
+		elseif online.type == 1 then
 			showPoliceLights()
 		end
 	elseif online.messageTimer < 0 then
@@ -2136,14 +2165,14 @@ local firstLoad = true
 
 function script.drawUI()
 	if not welcomeClosed then welcomeWindow()
-	--elseif cpu99occupancy and showCPUoccupancy then cpuOccupancyWindow()
+	elseif cpu99occupancy and showCPUoccupancy then cpuOccupancyWindow()
 	elseif initialized then
 		if cspVersion < cspMinVersion then return end
 		if firstLoad then
 			updatePos()
 			firstLoad = false
 		end
-
+		if online.chased then showStarsPursuit() end	
 		hudUI()
 		onlineEventMessageUI()
 		raceUI()
@@ -2152,6 +2181,7 @@ function script.drawUI()
 				ui.childWindow('childMenu', menuSize[currentTab], true, function ()
 					menu()
 					moveMenu()
+					
 				end)
 			end)
 		end
@@ -2179,6 +2209,7 @@ end
 
 ac.onCarJumped(0, function (carid)
 	if carID ~= valideCar[1] and carID ~= valideCar[2] then
+		ac.log("Car Jumped")
 		resetSectors()
 		if online.chased and online.officer then
 			acpPolice{message = "TP", messageType = 0, yourIndex = online.officer.sessionID}
