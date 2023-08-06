@@ -1,18 +1,49 @@
 local sim = ac.getSim()
 local car = ac.getCar(0)
+local valideCar = {"chargerpolice_acpursuit", "crown_police"}
+local carID = ac.getCarID(0)
+
 local windowWidth = sim.windowWidth
 local windowHeight = sim.windowHeight
 local settingsOpen = false
 local arrestLogsOpen = false
 local camerasOpen = false
-local carID = ac.getCarID(0)
-local valideCar = {"chargerpolice_acpursuit", "crown_police"}
+
 local cspVersion = ac.getPatchVersionCode()
 local cspMinVersion = 2144
 local fontMultiplier = windowHeight/1440
 
 local firstload = true
 local cspAboveP218 = cspVersion >= 2363
+
+if not(carID == valideCar[1] or carID == valideCar[2]) or cspVersion < cspMinVersion then return end
+
+local msgArrest = {
+    msg = {"`NAME` has been arrested for Speeding. The individual was driving a `CAR`.",
+	"We have apprehended `NAME` for Speeding. The suspect was behind the wheel of a `CAR`.",
+	"The driver of a `CAR`, identified as `NAME`, has been arrested for Speeding.",
+	"`NAME` has been taken into custody for Illegal Racing. The suspect was driving a `CAR`.",
+	"We have successfully apprehended `NAME` for Illegal Racing. The individual was operating a `CAR`.",
+	"The driver of a `CAR`, identified as `NAME`, has been arrested for Illegal Racing.",
+	"`NAME` has been apprehended for Speeding. The suspect was operating a `CAR` at the time of the arrest.",
+	"We have successfully detained `NAME` for Illegal Racing. The individual was driving a `CAR`.",
+	"`NAME` driving a `CAR` has been arrested for Speeding",
+	"`NAME` driving a `CAR` has been arrested for Illegal Racing."}
+}
+
+local msgLost = {
+	msg = {"We've lost sight of the suspect. The vehicle involved is described as a `CAR` driven by `NAME`.",
+	"Suspect is no longer in view. The vehicle in question is a `CAR` with `NAME` behind the wheel.",
+	"Attention all units, we have lost visual contact with the suspect. The vehicle involved is a `CAR` driven by `NAME`.",
+	"We have temporarily lost track of the suspect. The vehicle description is a `CAR` with `NAME` as the driver.",
+	"Suspect has evaded our pursuit. The vehicle in question is a `CAR` with `NAME` at the helm.",
+	"Visual contact with the suspect has been lost. The suspect is driving a `CAR` and identified as `NAME`.",
+	"Attention, suspect is no longer in our line of sight. The vehicle involved is a `CAR` with `NAME` as the driver.",
+	"We have lost the suspect's visual trail. The vehicle in question is described as a `CAR` driven by `NAME`.",
+	"The suspect is no longer visible. The vehicle involved is a `CAR` with `NAME` behind the wheel.",
+	"Suspect have been lost, Vehicle Description:`CAR` driven by `NAME`",}
+}
+
 ------------------------------------------------------------------------- JSON Utils -------------------------------------------------------------------------
 
 local json = {}
@@ -178,7 +209,9 @@ local settingsJSON = {
 	menuPos = vec2(0, 0),
 	unit = "km/h",
 	unitMult = 1,
+	starsSize = 20
 }
+
 
 local function stringToVec2(str)
 	local x = string.match(str, "([^,]+)")
@@ -217,6 +250,7 @@ local function parsesettings(table)
 	settings.menuPos = stringToVec2(table.menuPos)
 	settings.unit = table.unit
 	settings.unitMult = table.unitMult
+	settings.starsSize = table.starsSize or 20
 end
 
 
@@ -232,62 +266,6 @@ local iconRadar = "https://cdn.discordapp.com/attachments/1130004696984203325/11
 local iconArrest = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004827624190052/iconArrest.png"
 
 
-local msgChase = {
-    {
-        msg = {"This is the police! Please pull over to the side of the road!","You are requested to stop your `CAR` immediately, pull over now!","Attention driver, pull over and cooperate with the authorities.","Stop your `CAR` and comply with the police, this is a warning!","Stop the `CAR`! pull over to the side of the road, and follow our instructions."}
-    },
-    {
-        msg = {"** Pull over now, failure to comply may result in consequences.","** We have reason to believe that you are evading the police in your `CAR`, pull over immediately.","** Stop your `CAR`, this is your last warning before we take action.","** You have been warned, failure to stop will result in the use of force.","** Pull over now or face the consequences, you have been warned."}
-    },
-    {
-        msg = {"** This is your final warning, pull over and comply with the police!","** Stop your `CAR`, any attempt to evade the police will result in immediate action!","** You are endangering the public, pull over now and cooperate!","** Failure to comply with police orders will result in the use of force!","** Stop the `CAR` immediately, you are putting yourself and others in danger!",}
-    },
-    {
-        msg = {"*** The use of force may be necessary if you do not comply, pull over now!!","*** You are putting the lives of others in danger, pull over and face the consequences!!","*** Pull over and surrender now, resistance will not be tolerated!!","*** This is the last warning, pull over and face the consequences of your actions!!","*** Stop the `CAR` immediately, you are putting yourself and others in danger!!",}
-    },
-    {
-        msg = {"*** We are taking control of the situation, pull over and surrender now!","*** You have left us no choice, pull over or we will be forced to act!","*** Stop the `CAR` immediately, you are risking the lives of others!","*** This is your final warning, pull over or face the consequences!","*** Stop the vehicle and surrender now, the use of force is authorized!",}
-    },
-    {
-        msg = {"**** The situation is escalating, pull over and surrender yourself to the authorities!","**** Your actions have consequences, pull over and face them now!","**** This is your last chance to comply, stop the `CAR` immediately!","**** We have authorization to use force, pull over and surrender!","**** You are putting yourself and others in danger, pull over now and cooperate!",}
-    },
-    {
-        msg = {"**** You are risking the lives of innocent people, pull over and surrender now!","**** The use of force is imminent, pull over and surrender yourself to the police!","**** This is your final warning, pull over or face the full force of the law!","**** We will use any means necessary to stop your `CAR`, pull over now!","**** You have been warned, pull over and face the consequences of your actions!",}
-    },
-    {
-        msg = {"***** This is your final warning, stop your `CAR` or we will use total force!","***** The situation has escalated, you must stop your `CAR` immediately or face the consequences!","***** We have authorization to use all necessary means to stop your `CAR`, stop now!","***** This is your last warning, stop your `CAR` or we will use all necessary force!","***** Stop your `CAR` immediately, or you will be met with total force!",}
-    }
-}
-
-local msgLost = {
-		msg = {"We've lost sight of the suspect. The vehicle involved is described as a `CAR` driven by `NAME`.",
-		"Suspect is no longer in view. The vehicle in question is a `CAR` with `NAME` behind the wheel.",
-		"Attention all units, we have lost visual contact with the suspect. The vehicle involved is a `CAR` driven by `NAME`.",
-		"We have temporarily lost track of the suspect. The vehicle description is a `CAR` with `NAME` as the driver.",
-		"Suspect has evaded our pursuit. The vehicle in question is a `CAR` with `NAME` at the helm.",
-		"Visual contact with the suspect has been lost. The suspect is driving a `CAR` and identified as `NAME`.",
-		"Attention, suspect is no longer in our line of sight. The vehicle involved is a `CAR` with `NAME` as the driver.",
-		"We have lost the suspect's visual trail. The vehicle in question is described as a `CAR` driven by `NAME`.",
-		"The suspect is no longer visible. The vehicle involved is a `CAR` with `NAME` behind the wheel.",
-		"Suspect have been lost, Vehicle Description:`CAR` driven by `NAME`",}
-}
-
--- local msgEngage = {
---     msg = {"Control! I am engaging on a `CAR` traveling at `SPEED`","Pursuit in progress! I am chasing a `CAR` exceeding `SPEED`","Control, be advised! Pursuit is active on a `CAR` driving over `SPEED`","Attention! Pursuit initiated! Im following a `CAR` going above `SPEED`","Pursuit engaged! `CAR` driving at a high rate of speed over `SPEED`","Attention all units, we have a pursuit in progress! Suspect driving a `CAR` exceeding `SPEED`","Attention units! We have a suspect fleeing in a `CAR` at high speed, pursuing now at `SPEED`","Engaging on a high-speed chase! Suspect driving a `CAR` exceeding `SPEED`!","Attention all units! we have a pursuit in progress! Suspect driving a `CAR` exceeding `SPEED`","High-speed chase underway, suspect driving `CAR` over `SPEED`","Control, `CAR` exceeding `SPEED`, pursuit active.","Engaging on a `CAR` exceeding `SPEED`, pursuit initiated."}
--- }
-
-local msgArrest = {
-    msg = {"`NAME` has been arrested for Speeding. The individual was driving a `CAR`.",
-	"We have apprehended `NAME` for Speeding. The suspect was behind the wheel of a `CAR`.",
-	"The driver of a `CAR`, identified as `NAME`, has been arrested for Speeding.",
-	"`NAME` has been taken into custody for Illegal Racing. The suspect was driving a `CAR`.",
-	"We have successfully apprehended `NAME` for Illegal Racing. The individual was operating a `CAR`.",
-	"The driver of a `CAR`, identified as `NAME`, has been arrested for Illegal Racing.",
-	"`NAME` has been apprehended for Speeding. The suspect was operating a `CAR` at the time of the arrest.",
-	"We have successfully detained `NAME` for Illegal Racing. The individual was driving a `CAR`.",
-	"`NAME` driving a `CAR` has been arrested for Speeding",
-	"`NAME` driving a `CAR` has been arrested for Illegal Racing."}
-}
 local cameras = {
 	{
 		name = "BOBs SCRAPYARD",
@@ -338,14 +316,12 @@ local pursuit = {
 	enable = false,
 	maxDistance = 250000,
 	minDistance = 40000,
-	timeInPursuit = 0,
 	nextMessage = 20,
 	level = 1,
 	id = -1,
 	timerArrest = 0,
 	hasArrested = false,
 	startedTime = 0,
-	hasJumped = false,
 	timeLostSight = 0,
 	lostSight = false,
 }
@@ -475,7 +451,7 @@ local function onsettingsChange()
 	settingsJSON.fontSizeMSG = settings.fontSizeMSG
 	settingsJSON.unit = settings.unit
 	settingsJSON.unitMult = settings.unitMult
-	ac.log("Updated settings")
+	settingsJSON.starsSize = settings.starsSize
 	updatesettings()
 end
 
@@ -546,6 +522,7 @@ local function uiTab()
 	ui.text('On Screen Message : ')
 	settings.timeMsg = ui.slider('##' .. 'Time Msg On Screen', settings.timeMsg, 1, 15, 'Time Msg On Screen' .. ': %.0fs')
 	settings.fontSizeMSG = ui.slider('##' .. 'Font Size MSG', settings.fontSizeMSG, 10, 50, 'Font Size' .. ': %.0f')
+	settings.starsSize = ui.slider('##' .. 'Stars Size', settings.starsSize, 10, 50, 'Stars Size' .. ': %.0f')
 	ui.newLine()
 	ui.text('Offset : ')
 	settings.msgOffsetY = ui.slider('##' .. 'Msg On Screen Offset Y', settings.msgOffsetY, 0, windowHeight, 'Msg On Screen Offset Y' .. ': %.0f')
@@ -611,26 +588,21 @@ end
 
 ---------------------------------------------------------------------------------------------- HUD ----------------------------------------------------------------------------------------------
 
+local policeLightsPos = {
+	vec2(0,0),
+	vec2(windowWidth/10,windowHeight),
+	vec2(windowWidth-windowWidth/10,0),
+	vec2(windowWidth,windowHeight)
+}
+
 local function showPoliceLights()
-	local timing = os.clock() % 2
-	if timing > 1.66 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), rgbm(1, 0, 0, 0.5), rgbm(),  rgbm(), rgbm(1, 0, 0, 0.5))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(0, 0, 1, 0.5), rgbm(0, 0, 1, 0.5), rgbm())
-	elseif timing > 1.33 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), rgbm(0, 0, 1, 0.5), rgbm(), rgbm(), rgbm(0, 0, 1, 0.5))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(1, 0, 0, 0.5), rgbm(1, 0, 0, 0.5), rgbm())
-	elseif timing > 1 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), rgbm(1, 0, 0, 0.5), rgbm(),  rgbm(), rgbm(1, 0, 0, 0.5))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(0, 0, 1, 0.5), rgbm(0, 0, 1, 0.5), rgbm())
-	elseif timing > 0.66 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), rgbm(0, 0, 1, 0.5), rgbm(), rgbm(), rgbm(0, 0, 1, 0.5))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(1, 0, 0, 0.5), rgbm(1, 0, 0, 0.5), rgbm())
-	elseif timing > 0.33 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), rgbm(1, 0, 0, 0.5), rgbm(),  rgbm(), rgbm(1, 0, 0, 0.5))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(0, 0, 1, 0.5), rgbm(0, 0, 1, 0.5), rgbm())
+	local timing = math.floor(os.clock()*2 % 2)
+	if timing == 0 then
+		ui.drawRectFilledMultiColor(policeLightsPos[1], policeLightsPos[2], rgbm(1,0,0,0.5), rgbm(0,0,0,0), rgbm(0,0,0,0), rgbm(1,0,0,0.5))
+		ui.drawRectFilledMultiColor(policeLightsPos[3], policeLightsPos[4], rgbm(0,0,0,0), rgbm(0,0,1,0.5), rgbm(0,0,1,0.5), rgbm(0,0,0,0))
 	else
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), rgbm(0, 0, 1, 0.5), rgbm(), rgbm(), rgbm(0, 0, 1, 0.5))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(), rgbm(1, 0, 0, 0.5), rgbm(1, 0, 0, 0.5), rgbm())
+		ui.drawRectFilledMultiColor(policeLightsPos[1], policeLightsPos[2], rgbm(0,0,1,0.5), rgbm(0,0,0,0), rgbm(0,0,0,0), rgbm(0,0,1,0.5))
+		ui.drawRectFilledMultiColor(policeLightsPos[3], policeLightsPos[4], rgbm(0,0,0,0), rgbm(1,0,0,0.5), rgbm(1,0,0,0.5), rgbm(0,0,0,0))
 	end
 end
 
@@ -642,13 +614,15 @@ local chaseLVL = {
 local function resetChase()
 	pursuit.enable = false
 	pursuit.nextMessage = 20
-	pursuit.level = 1
+	pursuit.lostSight = false
+	pursuit.timeLostSight = 2
 end
 
 local function lostSuspect()
 	resetChase()
 	pursuit.lostSight = false
 	pursuit.timeLostSight = 0
+	pursuit.level = 1
 	ac.sendChatMessage(formatMessage(msgLost.msg[math.random(#msgLost.msg)]))
 	pursuit.suspect = nil
 	if cspAboveP218 then
@@ -696,7 +670,6 @@ local function drawImage()
 	elseif ui.rectHovered(iconPos.lost2, iconPos.lost1) then
 		iconsColorOn[4] = rgbm(1,0,0,1)
 		if pursuit.suspect and uiStats.isMouseLeftKeyClicked then
-			ac.sendChatMessage(formatMessage(msgLost.msg[math.random(#msgLost.msg)]))
 			lostSuspect()
 		end
 	elseif ui.rectHovered(iconPos.logs2, iconPos.logs1) then
@@ -737,7 +710,6 @@ end
 local function playerSelected(player)
 	if player.speedKmh > 50 then
 		pursuit.suspect = player
-		pursuit.timeInPursuit = os.clock()
 		pursuit.nextMessage = 20
 		pursuit.level = 1
 		local msgToSend = "Officer " .. ac.getDriverName(0) .. " is chasing you. Run! "
@@ -749,12 +721,28 @@ local function playerSelected(player)
 	end
 end
 
+local function showStarsPursuit()
+	local starsPos = vec2(windowWidth - settings.fontSizeMSG, settings.fontSizeMSG)
+	local starsSize = vec2(starsPos.x - settings.fontSizeMSG*2, starsPos.y + settings.fontSizeMSG*2)
+	local startSpace = settings.fontSizeMSG/4
+	local starsColor = rgbm(1, 1, 1, os.clock()%2 + 0.5)
+	for i = 1, 5 do
+		if i > pursuit.level/2 then
+			ui.drawIcon(ui.Icons.StarEmpty, starsPos, starsSize, rgbm(1, 1, 1, 0.2))
+		else
+			ui.drawIcon(ui.Icons.StarEmpty, starsPos, starsSize, starsColor)
+		end
+		starsPos.x = starsPos.x - settings.fontSizeMSG*2 - startSpace
+		starsSize.x = starsSize.x - settings.fontSizeMSG*2 - startSpace
+	end
+end
+
 local function hudInChase()
 	ui.pushDWriteFont("Orbitron;Weight=Black")
 	ui.sameLine(20)
 	ui.beginGroup()
 	ui.newLine(1)
-	local textPursuit = "LVL : " .. pursuit.level - 1
+	local textPursuit = "LVL : " .. math.floor(pursuit.level/2)
 	ui.dwriteTextWrapped(ac.getDriverName(pursuit.suspect.index) .. '\n'
 						.. string.gsub(string.gsub(ac.getCarName(pursuit.suspect.index), "%W", " "), "  ", "")
 						.. '\n' .. string.format("Speed: %d ", pursuit.suspect.speedKmh * settings.unitMult) .. settings.unit
@@ -767,6 +755,7 @@ local function hudInChase()
 	end
 	ui.endGroup()
 	ui.popDWriteFont()
+	showStarsPursuit()
 end
 
 local function drawText()
@@ -842,39 +831,28 @@ local function inRange()
 		pursuit.enable = true
 		pursuit.lostSight = false
 		pursuit.timeLostSight = 2
-	elseif (distanceSquared < pursuit.maxDistance) then
-		pursuit.timeInPursuit = os.clock()
-		pursuit.lostSight = false
-		pursuit.timeLostSight = 2
-		resetChase()
+	elseif (distanceSquared < pursuit.maxDistance) then resetChase()
 	else
 		if not pursuit.lostSight then
 			pursuit.lostSight = true
 			pursuit.timeLostSight = 2
 		else
 			pursuit.timeLostSight = pursuit.timeLostSight - ui.deltaTime()
-			if pursuit.timeLostSight < 0 then
-				lostSuspect()
-			end
+			if pursuit.timeLostSight < 0 then lostSuspect() end
 		end
 	end
 end
 
 local function sendChatToSuspect()
 	if pursuit.enable then
-		if os.clock() - pursuit.timeInPursuit > pursuit.nextMessage then
-			local msgToSend = formatMessage(msgChase[pursuit.level].msg[math.random(#msgChase[pursuit.level].msg)])
-			chaseLVL.message = string.format("Level %d⭐", pursuit.level)
-			chaseLVL.messageTimer = settings.timeMsg
-			if pursuit.level < 5 then
-				acpPolice{message = msgToSend, messageType = 1, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
-			else
-				ac.sendChatMessage(msgToSend)
-			end
-			pursuit.nextMessage = pursuit.nextMessage + 20
-			if pursuit.level < 8 then
+		if 0 < pursuit.nextMessage then
+			pursuit.nextMessage = pursuit.nextMessage - ui.deltaTime()
+		elseif pursuit.nextMessage < 0 then
+			acpPolice{message = pursuit.level, messageType = 1, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
+			if pursuit.level < 10 then
 				pursuit.level = pursuit.level + 1
 			end
+			pursuit.nextMessage = 20
 		end
 	end
 end
@@ -928,7 +906,6 @@ local function arrestSuspect()
 			pursuit.enable = false
 			pursuit.level = 1
 			pursuit.nextMessage = 20
-			pursuit.timeInPursuit = 0
 			pursuit.lostSight = false
 			pursuit.timeLostSight = 0
 			updatefirebase()
@@ -1047,7 +1024,7 @@ end
 
 ac.onCarJumped(0, function (carid)
 	if carID == valideCar[1] or carID == valideCar[2] then
-		lostSuspect()
+		if pursuit.suspect then lostSuspect() end
 	end
 end)
 
