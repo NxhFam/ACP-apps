@@ -848,7 +848,7 @@ local function sendChatToSuspect()
 		if 0 < pursuit.nextMessage then
 			pursuit.nextMessage = pursuit.nextMessage - ui.deltaTime()
 		elseif pursuit.nextMessage < 0 then
-			acpPolice{message = pursuit.level, messageType = 1, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
+			acpPolice{message = tostring(pursuit.level), messageType = 1, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
 			if pursuit.level < 10 then
 				pursuit.level = pursuit.level + 1
 			end
