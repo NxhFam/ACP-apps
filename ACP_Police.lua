@@ -33,15 +33,13 @@ local msgArrest = {
 
 local msgLost = {
 	msg = {"We've lost sight of the suspect. The vehicle involved is described as a `CAR` driven by `NAME`.",
-	"Suspect is no longer in view. The vehicle in question is a `CAR` with `NAME` behind the wheel.",
 	"Attention all units, we have lost visual contact with the suspect. The vehicle involved is a `CAR` driven by `NAME`.",
 	"We have temporarily lost track of the suspect. The vehicle description is a `CAR` with `NAME` as the driver.",
-	"Suspect has evaded our pursuit. The vehicle in question is a `CAR` with `NAME` at the helm.",
 	"Visual contact with the suspect has been lost. The suspect is driving a `CAR` and identified as `NAME`.",
-	"Attention, suspect is no longer in our line of sight. The vehicle involved is a `CAR` with `NAME` as the driver.",
 	"We have lost the suspect's visual trail. The vehicle in question is described as a `CAR` driven by `NAME`.",
-	"The suspect is no longer visible. The vehicle involved is a `CAR` with `NAME` behind the wheel.",
-	"Suspect have been lost, Vehicle Description:`CAR` driven by `NAME`",}
+	"Suspect have been lost, Vehicle Description:`CAR` driven by `NAME`",
+	"Visual contact with the suspect has been lost. The suspect is driving a `CAR` and identified as `NAME`.",
+	"We have lost the suspect's visual trail. The vehicle in question is described as a `CAR` driven by `NAME`.",}
 }
 
 ------------------------------------------------------------------------- JSON Utils -------------------------------------------------------------------------
@@ -848,7 +846,8 @@ local function sendChatToSuspect()
 		if 0 < pursuit.nextMessage then
 			pursuit.nextMessage = pursuit.nextMessage - ui.deltaTime()
 		elseif pursuit.nextMessage < 0 then
-			acpPolice{message = tostring(pursuit.level), messageType = 1, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
+			local nb = tostring(pursuit.level)
+			acpPolice{message = nb, messageType = 1, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
 			if pursuit.level < 10 then
 				pursuit.level = pursuit.level + 1
 			end
