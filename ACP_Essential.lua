@@ -183,7 +183,7 @@ local nodes = {['Settings'] = 'Settings',
 				['Velocity Vendetta'] = 'VV',
 				['Drift'] = 'Drift',
 				['Overtake'] = 'Overtake',
-				['Most Wanted'] = 'MostWanted'}
+				['Most Wanted'] = 'Most Wanted'}
 
 local welcomeClosed = false
 
