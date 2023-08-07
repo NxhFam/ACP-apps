@@ -189,8 +189,24 @@ function json.parse(str, pos, end_delim)
   end
 end
 
-
-local settings = {}
+local settings = {
+	essentialSize = 20,
+	policeSize = 20,
+	hudOffsetX = 0,
+	hudOffsetY = 0,
+	fontSize = 20,
+	current = 1,
+	colorHud = rgbm(1,0,0,1),
+	timeMsg = 10,
+	msgOffsetY = 10,
+	msgOffsetX = windowWidth/2,
+	fontSizeMSG = 30,
+	menuPos = vec2(0, 0),
+	unit = "km/h",
+	unitMult = 1,
+	starsSize = 20,
+	starsPos = vec2(windowWidth, 0),
+}
 
 local settingsJSON = {
 	essentialSize = 20,
@@ -208,7 +224,7 @@ local settingsJSON = {
 	unit = "km/h",
 	unitMult = 1,
 	starsSize = 20,
-	starsPos = vec2(windowWidth - (settings.starsSize or 20), settings.starsSize or 20)
+	starsPos = vec2(windowWidth, 0),
 }
 
 
@@ -251,7 +267,11 @@ local function parsesettings(table)
 	settings.unit = table.unit
 	settings.unitMult = table.unitMult
 	settings.starsSize = table.starsSize or 20
-	settings.starsPos = stringToVec2(table.starsPos)
+	if table.starsPos == nil then
+		settings.starsPos = vec2(windowWidth, 0)
+	else
+		settings.starsPos = stringToVec2(table.starsPos)
+	end
 end
 
 
@@ -471,7 +491,7 @@ local acpPolice = ac.OnlineEvent({
 end)
 
 local starsUI = {
-	starsPos = vec2(windowWidth - (settings.starsSize or 20), settings.starsSize or 20),
+	starsPos = vec2(windowWidth - (settings.starsSize or 20)/2, settings.starsSize or 20)/2,
 	starsSize = vec2(windowWidth - (settings.starsSize or 20)*2, (settings.starsSize or 20)*2),
 	startSpace = (settings.starsSize or 20)/4,
 }
@@ -483,11 +503,9 @@ local function resetStarsUI()
 	if settings.starsSize == nil then
 		settings.starsSize = 20
 	end
-	ac.log(settings.starsSize)
-	starsUI.starsPos = vec2(settings.starsPos.x - settings.starsSize, settings.starsPos.y + settings.starsSize)
-	ac.log(starsUI.starsPos)
+	starsUI.starsPos = vec2(settings.starsPos.x - settings.starsSize/2, settings.starsPos.y + settings.starsSize/2)
 	starsUI.starsSize = vec2(settings.starsPos.x - settings.starsSize*2, settings.starsPos.y + settings.starsSize*2)
-	ac.log(starsUI.starsSize)
+	starsUI.startSpace = settings.starsSize/1.5
 end
 
 local function updatePos()
@@ -525,10 +543,9 @@ local function showStarsPursuit()
 		else
 			ui.drawIcon(ui.Icons.StarFull, starsUI.starsPos, starsUI.starsSize, starsColor)
 		end
-		starsUI.starsPos.x = starsUI.starsPos.x - settings.starsSize*2 - starsUI.startSpace
-		starsUI.starsSize.x = starsUI.starsSize.x - settings.starsSize*2 - starsUI.startSpace
+		starsUI.starsPos.x = starsUI.starsPos.x - settings.starsSize - starsUI.startSpace
+		starsUI.starsSize.x = starsUI.starsSize.x - settings.starsSize - starsUI.startSpace
 	end
-
 end
 
 local showPreviewMsg = false
