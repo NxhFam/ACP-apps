@@ -753,7 +753,6 @@ local function hudInChase()
 	end
 	ui.endGroup()
 	ui.popDWriteFont()
-	showStarsPursuit()
 end
 
 local function drawText()
@@ -1004,6 +1003,7 @@ function script.drawUI()
 			initsettings()
 		end
 		radarUI()
+		if pursuit.suspect then showStarsPursuit() end
 		showPursuitMsg()
 		if settingsOpen then
 			ui.toolWindow('settings', settings.menuPos, menuSize[2], true, function ()
