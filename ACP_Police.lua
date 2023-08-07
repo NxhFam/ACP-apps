@@ -207,11 +207,13 @@ local settingsJSON = {
 	menuPos = vec2(0, 0),
 	unit = "km/h",
 	unitMult = 1,
-	starsSize = 20
+	starsSize = 20,
+	starsPos = vec2(windowWidth - (settings.starsSize or 20), settings.starsSize or 20)
 }
 
 
 local function stringToVec2(str)
+	if str == nil then return vec2(0, 0) end
 	local x = string.match(str, "([^,]+)")
 	local y = string.match(str, "[^,]+,(.+)")
 	return vec2(tonumber(x), tonumber(y))
@@ -249,6 +251,7 @@ local function parsesettings(table)
 	settings.unit = table.unit
 	settings.unitMult = table.unitMult
 	settings.starsSize = table.starsSize or 20
+	settings.starsPos = stringToVec2(table.starsPos)
 end
 
 
@@ -450,6 +453,7 @@ local function onsettingsChange()
 	settingsJSON.unit = settings.unit
 	settingsJSON.unitMult = settings.unitMult
 	settingsJSON.starsSize = settings.starsSize
+	settingsJSON.starsPos = vec2ToString(settings.starsPos)
 	updatesettings()
 end
 
@@ -460,11 +464,31 @@ local acpPolice = ac.OnlineEvent({
 	messageType = ac.StructItem.int16(),
 	yourIndex = ac.StructItem.int16(),
 }, function (sender, data)
-	if data.yourIndex == car.sessionID and data.messageType == 0 then
+	if data.yourIndex == car.sessionID and data.messageType == 0 and pursuit.suspect ~= nil and sender == pursuit.suspect then
 		pursuit.hasArrested = true
 		ac.log("ACP Police: Police received")
 	end
 end)
+
+local starsUI = {
+	starsPos = vec2(windowWidth - (settings.starsSize or 20), settings.starsSize or 20),
+	starsSize = vec2(windowWidth - (settings.starsSize or 20)*2, (settings.starsSize or 20)*2),
+	startSpace = (settings.starsSize or 20)/4,
+}
+
+local function resetStarsUI()
+	if settings.starsPos == nil then
+		settings.starsPos = vec2(windowWidth, 0)
+	end
+	if settings.starsSize == nil then
+		settings.starsSize = 20
+	end
+	ac.log(settings.starsSize)
+	starsUI.starsPos = vec2(settings.starsPos.x - settings.starsSize, settings.starsPos.y + settings.starsSize)
+	ac.log(starsUI.starsPos)
+	starsUI.starsSize = vec2(settings.starsPos.x - settings.starsSize*2, settings.starsPos.y + settings.starsSize*2)
+	ac.log(starsUI.starsSize)
+end
 
 local function updatePos()
 	imageSize = vec2(windowHeight/80 * settings.policeSize, windowHeight/80 * settings.policeSize)
@@ -488,9 +512,27 @@ local function updatePos()
 	textPos.box2 = vec2(textSize.size.x, textSize.size.y*1.8)
 	textPos.addBox = vec2(0, textSize.size.y*1.8)
 	settings.fontSize = settings.policeSize * fontMultiplier
+
+	resetStarsUI()
+end
+
+local function showStarsPursuit()
+	local starsColor = rgbm(1, 1, 1, os.clock()%2 + 0.3)
+	resetStarsUI()
+	for i = 1, 5 do
+		if i > pursuit.level/2 then
+			ui.drawIcon(ui.Icons.StarEmpty, starsUI.starsPos, starsUI.starsSize, rgbm(1, 1, 1, 0.2))
+		else
+			ui.drawIcon(ui.Icons.StarFull, starsUI.starsPos, starsUI.starsSize, starsColor)
+		end
+		starsUI.starsPos.x = starsUI.starsPos.x - settings.starsSize*2 - starsUI.startSpace
+		starsUI.starsSize.x = starsUI.starsSize.x - settings.starsSize*2 - starsUI.startSpace
+	end
+
 end
 
 local showPreviewMsg = false
+local showPreviewStars = false
 COLORSMSGBG = rgbm(0.5,0.5,0.5,0.5)
 
 local function initsettings()
@@ -516,10 +558,19 @@ local function previewMSG()
 	ui.endTransparentWindow()
 end
 
+local function previewStars()
+	ui.beginTransparentWindow("previewStars", vec2(0, 0), vec2(windowWidth, windowHeight))
+	showStarsPursuit()
+	ui.endTransparentWindow()
+end
+
 local function uiTab()
 	ui.text('On Screen Message : ')
 	settings.timeMsg = ui.slider('##' .. 'Time Msg On Screen', settings.timeMsg, 1, 15, 'Time Msg On Screen' .. ': %.0fs')
 	settings.fontSizeMSG = ui.slider('##' .. 'Font Size MSG', settings.fontSizeMSG, 10, 50, 'Font Size' .. ': %.0f')
+	ui.text('Stars : ')
+	settings.starsPos.x = ui.slider('##' .. 'Stars Offset X', settings.starsPos.x, 0, windowWidth, 'Stars Offset X' .. ': %.0f')
+	settings.starsPos.y = ui.slider('##' .. 'Stars Offset Y', settings.starsPos.y, 0, windowHeight, 'Stars Offset Y' .. ': %.0f')
 	settings.starsSize = ui.slider('##' .. 'Stars Size', settings.starsSize, 10, 50, 'Stars Size' .. ': %.0f')
 	ui.newLine()
 	ui.text('Offset : ')
@@ -527,9 +578,18 @@ local function uiTab()
 	settings.msgOffsetX = ui.slider('##' .. 'Msg On Screen Offset X', settings.msgOffsetX, 0, windowWidth, 'Msg On Screen Offset X' .. ': %.0f')
     ui.newLine()
 	ui.text('Preview : ')
-    if ui.button('Message') then showPreviewMsg = not showPreviewMsg end
-    if showPreviewMsg then previewMSG() end
 	ui.sameLine()
+    if ui.button('Message') then
+		showPreviewMsg = not showPreviewMsg
+		showPreviewStars = false
+	end
+	ui.sameLine()
+	if ui.button('Stars') then
+		showPreviewStars = not showPreviewStars
+		showPreviewMsg = false
+	end
+    if showPreviewMsg then previewMSG()
+	elseif showPreviewStars then previewStars() end
 	if ui.button('Offset X to center') then settings.msgOffsetX = windowWidth/2 end
 	ui.newLine()
 end
@@ -557,6 +617,7 @@ local function settingsWindow()
 		settingsOpen = false
 		onsettingsChange()
 	end
+	ui.text('HUD : ')
 	settings.hudOffsetX = ui.slider('##' .. 'HUD Offset X', settings.hudOffsetX, 0, windowWidth, 'HUD Offset X' .. ': %.0f')
 	settings.hudOffsetY = ui.slider('##' .. 'HUD Offset Y', settings.hudOffsetY, 0, windowHeight, 'HUD Offset Y' .. ': %.0f')
 	settings.policeSize = ui.slider('##' .. 'HUD Size', settings.policeSize, 10, 50, 'HUD Size' .. ': %.0f')
@@ -716,22 +777,6 @@ local function playerSelected(player)
 		if cspAboveP218 then
 			ac.setExtraSwitch(0, true)
 		end
-	end
-end
-
-local function showStarsPursuit()
-	local starsPos = vec2(windowWidth - settings.fontSizeMSG, settings.fontSizeMSG)
-	local starsSize = vec2(starsPos.x - settings.fontSizeMSG*2, starsPos.y + settings.fontSizeMSG*2)
-	local startSpace = settings.fontSizeMSG/4
-	local starsColor = rgbm(1, 1, 1, os.clock()%2 + 0.5)
-	for i = 1, 5 do
-		if i > pursuit.level/2 then
-			ui.drawIcon(ui.Icons.StarEmpty, starsPos, starsSize, rgbm(1, 1, 1, 0.2))
-		else
-			ui.drawIcon(ui.Icons.StarEmpty, starsPos, starsSize, starsColor)
-		end
-		starsPos.x = starsPos.x - settings.fontSizeMSG*2 - startSpace
-		starsSize.x = starsSize.x - settings.fontSizeMSG*2 - startSpace
 	end
 end
 
@@ -984,7 +1029,7 @@ end
 
 
 local initialized = false
-local menuSize = {vec2(windowWidth/4, windowHeight/3), vec2(windowWidth/6.5, windowHeight/2.9)}
+local menuSize = {vec2(windowWidth/4, windowHeight/3), vec2(windowWidth/6.4, windowHeight/2.2)}
 local buttonPressed = false
 
 local function moveMenu()
@@ -1040,5 +1085,5 @@ function script.update(dt)
 end
 
 if carID == valideCar[1] or carID == valideCar[2] and cspVersion >= cspMinVersion then
-	ui.registerOnlineExtra("Menu", "Menu", nil, settingsWindow, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
+	ui.registerOnlineExtra(ui.Icons.Settings, "Settings", nil, settingsWindow, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
