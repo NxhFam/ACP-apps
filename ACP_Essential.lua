@@ -206,7 +206,8 @@ local settings = {
 	menuPos = vec2(0, 0),
 	unit = "km/h",
 	unitMult = 1,
-	starsSize = 20
+	starsSize = 20,
+	starsPos = vec2(windowWidth, 0),
 }
 
 local settingsJSON = {
@@ -224,8 +225,10 @@ local settingsJSON = {
 	menuPos = vec2(0, 0),
 	unit = "km/h",
 	unitMult = 1,
-	starsSize = 20
+	starsSize = 20,
+	starsPos = vec2(windowWidth, 0),
 }
+
 
 ui.setAsynchronousImagesLoading(true)
 local imageSize = vec2(0,0)
@@ -398,6 +401,24 @@ end
 
 -- Init
 
+local starsUI = {
+	starsPos = vec2(windowWidth - (settings.starsSize or 20)/2, settings.starsSize or 20)/2,
+	starsSize = vec2(windowWidth - (settings.starsSize or 20)*2, (settings.starsSize or 20)*2),
+	startSpace = (settings.starsSize or 20)/4,
+}
+
+local function resetStarsUI()
+	if settings.starsPos == nil then
+		settings.starsPos = vec2(windowWidth, 0)
+	end
+	if settings.starsSize == nil then
+		settings.starsSize = 20
+	end
+	starsUI.starsPos = vec2(settings.starsPos.x - settings.starsSize/2, settings.starsPos.y + settings.starsSize/2)
+	starsUI.starsSize = vec2(settings.starsPos.x - settings.starsSize*2, settings.starsPos.y + settings.starsSize*2)
+	starsUI.startSpace = settings.starsSize/1.5
+end
+
 local function updatePos()
 	imageSize = vec2(windowHeight/80 * settings.essentialSize, windowHeight/80 * settings.essentialSize)
 	imgPos.theftPos1 = vec2(imageSize.x - imageSize.x/1.56, imageSize.y/1.9)
@@ -413,6 +434,8 @@ local function updatePos()
 	imgPos.rightPos1 = vec2(imageSize.x, imageSize.y/2.8)
 	imgPos.rightPos2 = vec2(imageSize.x - imageSize.x/8, imageSize.y/4.3)
 	settings.fontSize = settings.essentialSize * fontMultiplier
+
+	resetStarsUI()
 end
 
 local function initLines()
@@ -451,7 +474,9 @@ end
 
 ----------------------------------------------------------------------------------------------- Firebase -----------------------------------------------------------------------------------------------
 
+
 local function stringToVec2(str)
+	if str == nil then return vec2(0, 0) end
 	local x = string.match(str, "([^,]+)")
 	local y = string.match(str, "[^,]+,(.+)")
 	return vec2(tonumber(x), tonumber(y))
@@ -489,6 +514,11 @@ local function parsesettings(table)
 	settings.unit = table.unit
 	settings.unitMult = table.unitMult
 	settings.starsSize = table.starsSize or 20
+	if table.starsPos == nil then
+		settings.starsPos = vec2(windowWidth, 0)
+	else
+		settings.starsPos = stringToVec2(table.starsPos)
+	end
 end
 
 local function addPlayerToDataBase(steamID)
@@ -607,6 +637,7 @@ local function onSettingsChange()
 	settingsJSON.unit = settings.unit
 	settingsJSON.unitMult = settings.unitMult
 	settingsJSON.starsSize = settings.starsSize
+	settingsJSON.starsPos = vec2ToString(settings.starsPos)
 	updateSettings()
 end
 
@@ -826,10 +857,34 @@ end
 
 local showPreviewMsg = false
 local showPreviewDistanceBar = false
+local showPreviewStars = false
 COLORSMSGBG = rgbm(0.5,0.5,0.5,0.5)
 
+local online = {
+	message = "",
+	messageTimer = 0,
+	type = 1,
+	chased = false,
+	officer = nil,
+	level = 0,
+}
+
+local function showStarsPursuit()
+	local starsColor = rgbm(1, 1, 1, os.clock()%2 + 0.3)
+	resetStarsUI()
+	for i = 1, 5 do
+		if i > online.level/2 then
+			ui.drawIcon(ui.Icons.StarEmpty, starsUI.starsPos, starsUI.starsSize, rgbm(1, 1, 1, 0.2))
+		else
+			ui.drawIcon(ui.Icons.StarFull, starsUI.starsPos, starsUI.starsSize, starsColor)
+		end
+		starsUI.starsPos.x = starsUI.starsPos.x - settings.starsSize - starsUI.startSpace
+		starsUI.starsSize.x = starsUI.starsSize.x - settings.starsSize - starsUI.startSpace
+	end
+end
+
 local function distanceBarPreview()
-	ui.beginTransparentWindow("progressBar", vec2(0, 0), vec2(windowWidth, windowHeight))
+	ui.transparentWindow("progressBar", vec2(0, 0), vec2(windowWidth, windowHeight), function ()
 	local playerInFront = "You are in front"
 	local text = math.floor(50) .. "m"
 	local textLenght = ui.measureDWriteText(text, 30)
@@ -840,11 +895,11 @@ local function distanceBarPreview()
 	ui.progressBar(125/250, vec2(windowWidth/3,windowHeight/60), playerInFront)
 	ui.endRotation(90,vec2(settings.msgOffsetX - windowWidth/2 - textLenght.x/2,settings.msgOffsetY + textLenght.y/3))
 	ui.dwriteDrawText(text, 30, vec2(settings.msgOffsetX - textLenght.x/2 , settings.msgOffsetY), rgbm.colors.white)
-	ui.endTransparentWindow()
+	end)
 end
 
 local function previewMSG()
-	ui.beginTransparentWindow("previewMSG", vec2(0, 0), vec2(windowWidth, windowHeight))
+	ui.transparentWindow("previewMSG", vec2(0, 0), vec2(windowWidth, windowHeight), function ()
 	ui.pushDWriteFont("Orbitron;Weight=Black")
 	local textSize = ui.measureDWriteText("Messages from Police when being chased", settings.fontSizeMSG)
 	local uiOffsetX = settings.msgOffsetX - textSize.x/2
@@ -852,34 +907,51 @@ local function previewMSG()
 	ui.drawRectFilled(vec2(uiOffsetX - 5, uiOffsetY-5), vec2(uiOffsetX + textSize.x + 5, uiOffsetY + textSize.y + 5), COLORSMSGBG)
 	ui.dwriteDrawText("Messages from Police when being chased", settings.fontSizeMSG, vec2(uiOffsetX, uiOffsetY), settings.colorHud)
 	ui.popDWriteFont()
-	ui.endTransparentWindow()
+	end)
 end
+
+local function previewStars()
+	ui.transparentWindow("PreviewStars", vec2(0, 0), vec2(windowWidth, windowHeight), function ()
+		showStarsPursuit()
+	end)
+end
+
 
 local function uiTab()
 	ui.text('On Screen Message : ')
 	settings.timeMsg = ui.slider('##' .. 'Time Msg On Screen', settings.timeMsg, 1, 15, 'Time Msg On Screen' .. ': %.0fs')
 	settings.fontSizeMSG = ui.slider('##' .. 'Font Size MSG', settings.fontSizeMSG, 10, 50, 'Font Size' .. ': %.0f')
-	settings.starsSize = ui.slider('##' .. 'Stars Size', settings.starsSize, 10, 50, 'Stars Size' .. ': %.0f')
-	ui.newLine()
-	ui.text('Offset : ')
 	settings.msgOffsetY = ui.slider('##' .. 'Msg On Screen Offset Y', settings.msgOffsetY, 0, windowHeight, 'Msg On Screen Offset Y' .. ': %.0f')
 	settings.msgOffsetX = ui.slider('##' .. 'Msg On Screen Offset X', settings.msgOffsetX, 0, windowWidth, 'Msg On Screen Offset X' .. ': %.0f')
     ui.newLine()
+	ui.text('Stars : ')
+	settings.starsPos.x = ui.slider('##' .. 'Stars Offset X', settings.starsPos.x, 0, windowWidth, 'Stars Offset X' .. ': %.0f')
+	settings.starsPos.y = ui.slider('##' .. 'Stars Offset Y', settings.starsPos.y, 0, windowHeight, 'Stars Offset Y' .. ': %.0f')
+	settings.starsSize = ui.slider('##' .. 'Stars Size', settings.starsSize, 10, 50, 'Stars Size' .. ': %.0f')
+	ui.newLine()
 	ui.text('Preview : ')
     if ui.button('Message') then
         showPreviewMsg = not showPreviewMsg
-        if showPreviewMsg then showPreviewDistanceBar = false end
+        showPreviewDistanceBar = false
+		showPreviewStars = false
     end
     ui.sameLine()
     if ui.button('Distance Bar') then
         showPreviewDistanceBar = not showPreviewDistanceBar
-        if showPreviewDistanceBar then showPreviewMsg = false end
+        showPreviewMsg = false
+		showPreviewStars = false
     end
+	ui.sameLine()
+	if ui.button('Stars') then
+		showPreviewStars = not showPreviewStars
+		showPreviewMsg = false
+		showPreviewDistanceBar = false
+	end
     if showPreviewMsg then previewMSG() end
     if showPreviewDistanceBar then distanceBarPreview() end
-	ui.sameLine()
-	if ui.button('Offset X to center') then settings.msgOffsetX = windowWidth/2 end
+	if showPreviewStars then previewStars() end
 	ui.newLine()
+	if ui.button('MSG Offset X to center') then settings.msgOffsetX = windowWidth/2 end
 end
 
 
@@ -889,6 +961,11 @@ local function settingsWindow()
 	ui.beginGroup()
 	ui.newLine(15)
 	ui.text('HUD :')
+	ui.sameLine(windowWidth/6 - windowWidth/20)
+	if ui.button('Close', vec2(windowWidth/25, windowHeight/50)) then
+		menuOpen = false
+		onSettingsChange()
+	end
 	settings.hudOffsetX = ui.slider('##' .. 'HUD Offset X', settings.hudOffsetX, 0, windowWidth, 'HUD Offset X' .. ': %.0f')
 	settings.hudOffsetY = ui.slider('##' .. 'HUD Offset Y', settings.hudOffsetY, 0, windowHeight, 'HUD Offset Y' .. ': %.0f')
 	settings.essentialSize = ui.slider('##' .. 'HUD Size', settings.essentialSize, 10, 50, 'HUD Size' .. ': %.0f')
@@ -902,10 +979,6 @@ local function settingsWindow()
 	end
     ui.newLine()
     uiTab()
-	if ui.button('Close', vec2(100, windowHeight/50)) then
-		menuOpen = false
-		onSettingsChange()
-	end
 	ui.endGroup()
 	updatePos()
 	return 2
@@ -1626,15 +1699,6 @@ end
 
 --------------------------------------------------------------------------------------- Police Chase --------------------------------------------------------------------------------------------------
 
-local online = {
-	message = "",
-	messageTimer = 0,
-	type = 1,
-	chased = false,
-	officer = nil,
-	level = 0,
-}
-
 local policeLightsPos = {
 	vec2(0,0), 
 	vec2(windowWidth/15,windowHeight),
@@ -1680,22 +1744,6 @@ local function showPoliceLights()
 	else
 		ui.drawRectFilledMultiColor(policeLightsPos[1], policeLightsPos[2], rgbm(0,0,1,0.5), rgbm(0,0,0,0), rgbm(0,0,0,0), rgbm(0,0,1,0.5))
 		ui.drawRectFilledMultiColor(policeLightsPos[3], policeLightsPos[4], rgbm(0,0,0,0), rgbm(1,0,0,0.5), rgbm(1,0,0,0.5), rgbm(0,0,0,0))
-	end
-end
-
-local function showStarsPursuit()
-	local starsPos = vec2(windowWidth - settings.starsSize, settings.starsSize)
-	local starsSize = vec2(starsPos.x - settings.starsSize*2, starsPos.y + settings.starsSize*2)
-	local startSpace = settings.starsSize/4
-	local starsColor = rgbm(1, 1, 1, os.clock()%2 + 0.3)
-	for i = 1, 5 do
-		if i > online.level/2 then
-			ui.drawIcon(ui.Icons.StarEmpty, starsPos, starsSize, rgbm(1, 1, 1, 0.2))
-		else
-			ui.drawIcon(ui.Icons.StarEmpty, starsPos, starsSize, starsColor)
-		end
-		starsPos.x = starsPos.x - settings.starsSize*2 - startSpace
-		starsSize.x = starsSize.x - settings.starsSize*2 - startSpace
 	end
 end
 
@@ -1915,7 +1963,7 @@ end
 -------------------------------------------------------------------------------------------- Menu --------------------------------------------------------------------------------------------
 
 local initialized = false
-local menuSize = {vec2(windowWidth/5, windowHeight/4), vec2(windowWidth/6, windowHeight*1.8/3), vec2(windowWidth/3, windowHeight/3)}
+local menuSize = {vec2(windowWidth/5, windowHeight/4), vec2(windowWidth/6, windowHeight*2/3), vec2(windowWidth/3, windowHeight/3)}
 local currentTab = 1
 local buttonPressed = false
 
