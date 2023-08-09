@@ -1626,6 +1626,7 @@ end
 
 -- Disable drift event if car is in arena area
 local function driftUpdate(dt)
+	isDriftValid()
 	if driftState.lastScore ~= car.driftPoints then
 		if car.driftPoints - driftState.lastScore > driftState.bestScore and isDriftValidSpot() and driftState.valid then
 			driftState.bestScore = car.driftPoints - driftState.lastScore
