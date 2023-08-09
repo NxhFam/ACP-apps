@@ -2187,13 +2187,13 @@ end
 --------------------------------------------------------------------------------- Welcome Menu ---------------------------------------------------------------------------------
 
 local imgToDraw = {
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138277327210549308/leftArrow.png",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138277321896366080/rightArrow.png",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138283506410192906/leftBoxOff.png",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138283503042166834/centerBoxOff.png",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138283511443374090/rightBoxOff.png",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138277324354228234/ACPmenu.png",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138277320868757504/logo.png"
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1138966456252518430/leftArrow.png",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1138966461797384192/rightArrow.png",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1138966460883026060/leftBoxOff.png",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1138966455728226446/centerBoxOff.png",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1138966462028054639/rightBoxOff.png",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1138966455476572231/ACPmenu.png",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1138966461528952872/logo.png"
 }
 
 local imgColor = {
@@ -2311,15 +2311,15 @@ local function drawMenuImage()
 				end
 			elseif ui.rectHovered(imgPos_[3][1], imgPos_[3][2]) then
 				imgColor[3] = settings.colorHud
-				imgToDraw[3] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283507643338842/leftBoxOn.png"
+				imgToDraw[3] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138966461310828748/leftBoxOn.png"
 				if uiStats.isMouseLeftKeyClicked then os.openURL(imgLink[imgDisplayed[1]]) end
 			elseif ui.rectHovered(imgPos_[4][1], imgPos_[4][2]) then
 				imgColor[4] = settings.colorHud
-				imgToDraw[4] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283504162066513/centerBoxOn.png"
+				imgToDraw[4] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138966455996645457/centerBoxOn.png"
 				if uiStats.isMouseLeftKeyClicked then os.openURL(imgLink[imgDisplayed[2]]) end
 			elseif ui.rectHovered(imgPos_[5][1], imgPos_[5][2]) then
 				imgColor[5] = settings.colorHud
-				imgToDraw[5] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283500697571348/rightBoxOn.png"
+				imgToDraw[5] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138966455229087884/rightBoxOn.png"
 				if uiStats.isMouseLeftKeyClicked then os.openURL(imgLink[imgDisplayed[3]]) end
 			elseif ui.rectHovered(imgPos_[7][1], imgPos_[7][2]) then
 				iconCloseColor = settings.colorHud
@@ -2423,3 +2423,27 @@ end
 if carID ~= valideCar[1] and carID ~= valideCar[2] and cspVersion >= cspMinVersion then
 	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
+
+
+
+-- **:checkered_flag: Velocity Vendetta #5 - Rev Up Your Engines! :checkered_flag:**
+
+-- This time, we're hitting the twisty road of H3, where precision and skill will be your greatest allies.
+
+-- **:red_car: Car Restriction: Mazda RX-7 Rental Only**
+-- Level the playing field with the iconic Mazda RX-7. Unleash its raw power and master the curves of H3 as you vie for victory.
+
+-- **:sunrise_over_mountains: Route: Conquer the Twisty Roads of H3**
+-- The racecourse for Velocity Vendetta #5 will put your driving prowess to the test as you navigate the winding paths of H3.
+
+-- **:calendar: Event Period: Race Until August 20th**
+-- You have until August 20th to prove your mettle. So, rev up your engines, take on the challenge, and secure your spot in the Velocity Vendetta hall of fame!
+
+-- **:white_check_mark: How to Participate**
+-- Simply hop into your Mazda RX-7 rental, drive your best lap on the specified route, and your time will be automatically sent to the online leaderboard.
+
+-- **:warning: Important: **Only the rental version is valid for this challenge.
+-- If you're unsure, download the one attached to this message.
+-- Remember, **owned** and **tuned** versions of the car will not be accepted.
+
+-- Good luck to all participants! :four_leaf_clover:
