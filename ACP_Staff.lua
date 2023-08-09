@@ -2333,7 +2333,6 @@ local function drawMenuImage()
 			end
 		end)
 	end)
-	welcomeClosed = true
 end
 
 
