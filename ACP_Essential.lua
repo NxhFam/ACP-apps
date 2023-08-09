@@ -2278,7 +2278,7 @@ local function drawMenuImage()
 			ui.drawRectFilled(imgPos[7][1], imgPos[7][2], rgbm(0, 0, 0, 0.6))
 			if ui.rectHovered(imgPos[1][1], imgPos[1][2]) then
 				imgColor[1] = settings.colorHud
-				if uiStats.isMouseLeftKeyClicked then
+				if uiStats.isMouseLeftClicked then
 					for i = 1, #imgDisplayed do
 						if imgDisplayed[i] == #imgSet then
 							imgDisplayed[i] = 1
@@ -2289,7 +2289,7 @@ local function drawMenuImage()
 				end
 			elseif ui.rectHovered(imgPos[2][1], imgPos[2][2]) then
 				imgColor[2] = settings.colorHud
-				if uiStats.isMouseLeftKeyClicked then
+				if uiStats.isMouseLeftClicked then
 					for i = 1, #imgDisplayed do
 						if imgDisplayed[i] == 1 then
 							imgDisplayed[i] = #imgSet
@@ -2301,18 +2301,18 @@ local function drawMenuImage()
 			elseif ui.rectHovered(imgPos[3][1], imgPos[3][2]) then
 				imgColor[3] = settings.colorHud
 				imgToDraw[3] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283507643338842/leftBoxOn.png"
-				if uiStats.isMouseLeftKeyClicked then os.openURL(imgLink[imgDisplayed[1]]) end
+				if uiStats.isMouseLeftClicked then os.openURL(imgLink[imgDisplayed[1]]) end
 			elseif ui.rectHovered(imgPos[4][1], imgPos[4][2]) then
 				imgColor[4] = settings.colorHud
 				imgToDraw[4] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283504162066513/centerBoxOn.png"
-				if uiStats.isMouseLeftKeyClicked then os.openURL(imgLink[imgDisplayed[2]]) end
+				if uiStats.isMouseLeftClicked then os.openURL(imgLink[imgDisplayed[2]]) end
 			elseif ui.rectHovered(imgPos[5][1], imgPos[5][2]) then
 				imgColor[5] = settings.colorHud
 				imgToDraw[5] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283500697571348/rightBoxOn.png"
-				if uiStats.isMouseLeftKeyClicked then os.openURL(imgLink[imgDisplayed[3]]) end
+				if uiStats.isMouseLeftClicked then os.openURL(imgLink[imgDisplayed[3]]) end
 			elseif ui.rectHovered(imgPos[7][1], imgPos[7][2]) then
 				iconCloseColor = settings.colorHud
-				if uiStats.isMouseLeftKeyClicked then welcomeClosed = true end
+				if uiStats.isMouseLeftClicked then welcomeClosed = true end
 			end
 			ui.drawIcon(ui.Icons.Cancel, imgPos[7][1]+vec2(10,10), imgPos[7][2]-vec2(10,10), iconCloseColor)
 			for i = 1, #imgToDraw do ui.drawImage(imgToDraw[i], vec2(0,0), vec2(windowWidth, windowHeight), imgColor[i]) end
@@ -2349,7 +2349,7 @@ function script.drawUI()
 		hudUI()
 		onlineEventMessageUI()
 		raceUI()
-		if ac.isKeyPressed(ui.KeyIndex.P) then welcomeClosed = false end
+		--if ac.isKeyPressed(ui.KeyIndex.P) then welcomeClosed = false end
 		if menuOpen then
 			ui.toolWindow('Menu', settings.menuPos, menuSize[currentTab], true, function ()
 				ui.childWindow('childMenu', menuSize[currentTab], true, function ()
