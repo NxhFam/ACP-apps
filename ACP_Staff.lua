@@ -2352,7 +2352,7 @@ end
 -------------------------------------------------------------------------------- UPDATE --------------------------------------------------------------------------------
 
 function script.drawUI()
-	if ac.isKeyPressed(ui.KeyIndex.P) then welcomeClosed = not welcomeClosed end
+	--if ac.isKeyPressed(ui.KeyIndex.P) then welcomeClosed = not welcomeClosed end
 	if not welcomeClosed then drawMenuWelcome()
 	elseif initialized then
 		if cspVersion < cspMinVersion then return end
