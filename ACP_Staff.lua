@@ -1,3 +1,15 @@
+local staffID = {"76561199125972202", "76561199012836734", "76561198036229857", "76561198081667660", "76561197979739646", "76561199070560482", "76561197985451774", "76561198113108587", "76561197997930988"}
+local steamID = ac.getUserSteamID()
+
+for i = 1, #staffID do
+	if steamID == staffID[i] then
+		break
+	end
+	if i == #staffID then
+		return
+	end
+end
+
 local class = 'C'
 local timeRequirement = 150
 local sim = ac.getSim()
@@ -12,17 +24,6 @@ local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 local fontMultiplier = windowHeight/1440
 local carID = ac.getCarID(0)
 local wheels = car.wheels
-local staffID = {"76561199125972202", "76561199012836734", "76561198036229857", "76561198081667660", "76561197979739646", "76561199070560482", "76561197985451774", "76561198113108587", "76561197997930988"}
-local steamID = ac.getUserSteamID()
-
-for i = 1, #staffID do
-	if steamID == staffID[i] then
-		break
-	end
-	if i == #staffID then
-		return
-	end
-end
 
 if carID == valideCar[1] or carID == valideCar[2] or cspVersion < cspMinVersion then return end
 
@@ -327,7 +328,7 @@ local sectors  = {
 		linesData = {vec4(-3944.9,10004.4,-3951.9,10007.2),
 					vec4(-5774.6,10183.9,-5776.7,10173.8),
 					vec4(-3977.2,9537.4,-3969.2,9540.2)},
-		length = 4,
+		length = 6.5,
 	},
 	{
 		name = 'JDM LEGENDS',
@@ -365,23 +366,23 @@ local drugAccessPointsName = {
 	"Gas Station 1",
 	"Street Runners",
 	"Gas Station 2",
-	"MC Danalds 1",
+	"McDanalds 3",
 	"Road Criminals",
-	"MC Danalds 2",
-	"Gas Station 3",
+	"McDanalds 4",
+	"Gas Station 5",
 	"Reckless Renegades",
 	"Motion Masters",
-	"Restaurants 1",
-	"Restaurants 2",
-	"Restaurants 3",
-	"Restaurants 4",
-	"Restaurants 5",
-	"Restaurants 6",
-	"Restaurants 7",
-	"MC Danalds 3",
-	"Restaurants 8",
-	"MC Danalds 4",
-	"Restaurants 9",
+	"restaurant 4",
+	"restaurant 7",
+	"McDanalds 7",
+	"restaurant 9",
+	"restaurant 11",
+	"restaurant 13",
+	"restaurant 14",
+	"McDanalds 8",
+	"restaurant 15",
+	"McDanalds 9",
+	"restaurant 16",
 }
 
 local drugAccessPoints = {
@@ -1625,7 +1626,6 @@ local comboMeter = 1
 local comboColor = 0
 local dangerouslySlowTimer = 0
 local carsState = {}
-local wheelsWarningTimeout = 0
 
 
 local function overtakeUpdate(dt)
@@ -1646,17 +1646,8 @@ local function overtakeUpdate(dt)
     local comboFadingRate = 0.5 * math.lerp(1, 0.1, math.lerpInvSat(car.speedKmh, 80, 200)) + car.wheelsOutside
     comboMeter = math.max(1, comboMeter - dt * comboFadingRate)
 
-    local sim = ac.getSim()
     while sim.carsCount > #carsState do
         carsState[#carsState + 1] = {}
-    end
-
-    if wheelsWarningTimeout > 0 then
-        wheelsWarningTimeout = wheelsWarningTimeout - dt
-    elseif car.wheelsOutside > 0 then
-        if wheelsWarningTimeout == 0 then
-        end
-        wheelsWarningTimeout = 60
     end
 
     if car.speedKmh < requiredSpeed then
@@ -1677,7 +1668,7 @@ local function overtakeUpdate(dt)
         dangerouslySlowTimer = 0
     end
 
-    for i = 1, ac.getSim().carsCount - 1 do	
+    for i = 1, ac.getSim().carsCount - 1 do
         local state = carsState[i]
 		local otherCar = ac.getCar(i)
         if otherCar.isConnected and otherCar.position:closerToThan(car.position, 10) then
@@ -1729,7 +1720,6 @@ local function overtakeUpdate(dt)
     end
 end
 
-local speedWarning = 0
 local function overtakeUI(textOffset)
 	local text
 	local colorCombo
@@ -1768,6 +1758,7 @@ end
 
 -- Disable drift event if car is in arena area
 local function driftUpdate(dt)
+	isDriftValid()
 	if driftState.lastScore ~= car.driftPoints then
 		if car.driftPoints - driftState.lastScore > driftState.bestScore and isDriftValidSpot() and driftState.valid then
 			driftState.bestScore = car.driftPoints - driftState.lastScore
@@ -2136,6 +2127,7 @@ end
 
 -------------------------------------------------------------------------------------------- Menu --------------------------------------------------------------------------------------------
 
+local firstLoad = true
 local initialized = false
 local menuSize = {vec2(windowWidth/5, windowHeight/4), vec2(windowWidth/6, windowHeight*2/3), vec2(windowWidth/3, windowHeight/3)}
 local currentTab = 1
@@ -2204,9 +2196,6 @@ local imgToDraw = {
 	"https://cdn.discordapp.com/attachments/1130004696984203325/1138277320868757504/logo.png"
 }
 
-
-local boxActive = 0
-
 local imgColor = {
 	rgbm.colors.white,
 	rgbm.colors.white,
@@ -2230,7 +2219,7 @@ local imgPos1440p = {
 }
 
 -- Position adjusted for the current screen size (windowWidth, windowHeight)
-local imgPos = {
+local imgPos_ = {
 	{vec2(imgPos1440p.arrowL.x*windowWidth/2560, imgPos1440p.arrowL.y*windowHeight/1440), vec2(imgPos1440p.arrowL.z*windowWidth/2560, imgPos1440p.arrowL.w*windowHeight/1440)},
 	{vec2(imgPos1440p.arrowR.x*windowWidth/2560, imgPos1440p.arrowR.y*windowHeight/1440), vec2(imgPos1440p.arrowR.z*windowWidth/2560, imgPos1440p.arrowR.w*windowHeight/1440)},
 	{vec2(imgPos1440p.boxL.x*windowWidth/2560, imgPos1440p.boxL.y*windowHeight/1440), vec2(imgPos1440p.boxL.z*windowWidth/2560, imgPos1440p.boxL.w*windowHeight/1440)},
@@ -2240,27 +2229,39 @@ local imgPos = {
 	{vec2(imgPos1440p.close.x*windowWidth/2560, imgPos1440p.close.y*windowHeight/1440), vec2(imgPos1440p.close.z*windowWidth/2560, imgPos1440p.close.w*windowHeight/1440)},
 }
 
-
 local imgSet = {
 	"https://cdn.discordapp.com/attachments/1130004696984203325/1138257702129254430/buyCar.jpg",
 	"https://cdn.discordapp.com/attachments/1130004696984203325/1138257701789507595/police.jpg",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1138257701445587026/earn.jpg",
 	"https://cdn.discordapp.com/attachments/1130004696984203325/1138257701445587026/earn.jpg",
 }
 
 local imgLink = {
 	"https://discord.com/channels/358562025032646659/1076123906362056784",
 	"https://discord.com/channels/358562025032646659/1095681142197325975",
-	"https://discord.com/channels/358562025032646659/1075156026992635995"
+	"https://discord.com/channels/358562025032646659/1075156026992635995",
+	""
 }
 
 local imgDisplayed = {
 	1,
 	2,
 	3,
+	4,
 }
 
-local textFrameTopR = imgPos[6][1] + vec2(windowHeight/100, windowHeight/100)
-local textFrameTopL = vec2(imgPos[6][2].x - windowHeight/80, imgPos[6][1].y + windowHeight/100)
+local textFrameTopR = imgPos_[6][1] + vec2(windowHeight/100, windowHeight/100)
+local textFrameTopL = vec2(imgPos_[6][2].x - windowHeight/80, imgPos_[6][1].y + windowHeight/100)
+
+local function drugShowInfo(i)
+	local leftCorner = vec2(imgPos_[i+2][1].x, imgPos_[i+2][1].y) + vec2(windowHeight/100, windowHeight/100)
+	ui.popDWriteFont()
+	ui.pushDWriteFont("Orbitron;Weight=BLACK")
+	ui.dwriteDrawText("Drug Delivery :", 20, leftCorner, rgbm.colors.white)
+	ui.dwriteDrawText("Pick Up : " .. drugDelivery.pickUpName, 30, vec2(leftCorner.x, leftCorner.y + ui.measureDWriteText("Drug Delivery :", 20).y), rgbm.colors.white)
+	ui.dwriteDrawText("Drop Off : " .. drugDelivery.dropOffName, 30, vec2(leftCorner.x, ui.measureDWriteText("Drug Delivery :", 20).y + leftCorner.y + ui.measureDWriteText("Pick Up Point : " .. drugDelivery.pickUpName, 30).y), rgbm.colors.white)
+	ui.popDWriteFont()
+end
 
 local function drawMenuText()
 	ui.popDWriteFont()
@@ -2284,9 +2285,9 @@ local function drawMenuImage()
 	ui.transparentWindow('welcomeIMG', vec2(0,0), vec2(windowWidth, windowHeight), true, function ()
 		ui.childWindow('welcomeIMGChild', vec2(windowWidth, windowHeight), true, function ()
 			local uiStats = ac.getUI()
-			ui.drawRectFilled(imgPos[6][1], imgPos[6][2], rgbm(0, 0, 0, 0.6))
-			ui.drawRectFilled(imgPos[7][1], imgPos[7][2], rgbm(0, 0, 0, 0.6))
-			if ui.rectHovered(imgPos[1][1], imgPos[1][2]) then
+			ui.drawRectFilled(imgPos_[6][1], imgPos_[6][2], rgbm(0, 0, 0, 0.6))
+			ui.drawRectFilled(imgPos_[7][1], imgPos_[7][2], rgbm(0, 0, 0, 0.6))
+			if ui.rectHovered(imgPos_[1][1], imgPos_[1][2]) then
 				imgColor[1] = settings.colorHud
 				if uiStats.isMouseLeftKeyClicked then
 					for i = 1, #imgDisplayed do
@@ -2297,7 +2298,7 @@ local function drawMenuImage()
 						end
 					end
 				end
-			elseif ui.rectHovered(imgPos[2][1], imgPos[2][2]) then
+			elseif ui.rectHovered(imgPos_[2][1], imgPos_[2][2]) then
 				imgColor[2] = settings.colorHud
 				if uiStats.isMouseLeftKeyClicked then
 					for i = 1, #imgDisplayed do
@@ -2308,28 +2309,30 @@ local function drawMenuImage()
 						end
 					end
 				end
-			elseif ui.rectHovered(imgPos[3][1], imgPos[3][2]) then
+			elseif ui.rectHovered(imgPos_[3][1], imgPos_[3][2]) then
 				imgColor[3] = settings.colorHud
 				imgToDraw[3] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283507643338842/leftBoxOn.png"
 				if uiStats.isMouseLeftKeyClicked then os.openURL(imgLink[imgDisplayed[1]]) end
-			elseif ui.rectHovered(imgPos[4][1], imgPos[4][2]) then
+			elseif ui.rectHovered(imgPos_[4][1], imgPos_[4][2]) then
 				imgColor[4] = settings.colorHud
 				imgToDraw[4] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283504162066513/centerBoxOn.png"
 				if uiStats.isMouseLeftKeyClicked then os.openURL(imgLink[imgDisplayed[2]]) end
-			elseif ui.rectHovered(imgPos[5][1], imgPos[5][2]) then
+			elseif ui.rectHovered(imgPos_[5][1], imgPos_[5][2]) then
 				imgColor[5] = settings.colorHud
 				imgToDraw[5] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283500697571348/rightBoxOn.png"
 				if uiStats.isMouseLeftKeyClicked then os.openURL(imgLink[imgDisplayed[3]]) end
-			elseif ui.rectHovered(imgPos[7][1], imgPos[7][2]) then
+			elseif ui.rectHovered(imgPos_[7][1], imgPos_[7][2]) then
 				iconCloseColor = settings.colorHud
 				if uiStats.isMouseLeftKeyClicked then welcomeClosed = true end
 			end
-			ui.drawIcon(ui.Icons.Cancel, imgPos[7][1]+vec2(10,10), imgPos[7][2]-vec2(10,10), iconCloseColor)
+			ui.drawIcon(ui.Icons.Cancel, imgPos_[7][1]+vec2(10,10), imgPos_[7][2]-vec2(10,10), iconCloseColor)
 			for i = 1, #imgToDraw do ui.drawImage(imgToDraw[i], vec2(0,0), vec2(windowWidth, windowHeight), imgColor[i]) end
-			for i = 1, #imgSet do
-				if i == 1 then ui.drawImage(imgSet[imgDisplayed[i]], imgPos[3][1], imgPos[3][2], rgbm(1,1,1,1))
-				elseif i == 2 then ui.drawImage(imgSet[imgDisplayed[i]], imgPos[4][1], imgPos[4][2], rgbm(1,1,1,1))
-				elseif i == 3 then ui.drawImage(imgSet[imgDisplayed[i]], imgPos[5][1], imgPos[5][2], rgbm(1,1,1,1)) end
+			local colorOfIMG = rgbm(1,1,1,1)
+			for i = 1, 3 do
+				if imgDisplayed[i] == 4 then
+					ui.drawImage(imgSet[imgDisplayed[i]], imgPos_[i+2][1], imgPos_[i+2][2], rgbm(0,0,0,0))
+					drugShowInfo(i)
+				else ui.drawImage(imgSet[imgDisplayed[i]], imgPos_[i+2][1], imgPos_[i+2][2], rgbm(1,1,1,1)) end
 			end
 		end)
 	end)
@@ -2343,11 +2346,9 @@ end
 
 -------------------------------------------------------------------------------- UPDATE --------------------------------------------------------------------------------
 
-local firstLoad = true
-
 function script.drawUI()
-	if not welcomeClosed then --drawMenuWelcome()
-		welcomeClosed = true
+	if ac.isKeyPressed(ui.KeyIndex.P) then welcomeClosed = not welcomeClosed end
+	if not welcomeClosed then drawMenuWelcome()
 	elseif initialized then
 		if cspVersion < cspMinVersion then return end
 		if firstLoad then
@@ -2359,7 +2360,6 @@ function script.drawUI()
 		onlineEventMessageUI()
 		raceUI()
 		drugDeliveryUI()
-		--if ac.isKeyPressed(ui.KeyIndex.P) then welcomeClosed = false end
 		if menuOpen then
 			ui.toolWindow('Menu', settings.menuPos, menuSize[currentTab], true, function ()
 				ui.childWindow('childMenu', menuSize[currentTab], true, function ()
