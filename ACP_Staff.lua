@@ -2346,7 +2346,8 @@ end
 local firstLoad = true
 
 function script.drawUI()
-	if not welcomeClosed then drawMenuWelcome()
+	if not welcomeClosed then --drawMenuWelcome()
+		welcomeClosed = true
 	elseif initialized then
 		if cspVersion < cspMinVersion then return end
 		if firstLoad then
@@ -2358,7 +2359,7 @@ function script.drawUI()
 		onlineEventMessageUI()
 		raceUI()
 		drugDeliveryUI()
-		if ac.isKeyPressed(ui.KeyIndex.P) then welcomeClosed = false end
+		--if ac.isKeyPressed(ui.KeyIndex.P) then welcomeClosed = false end
 		if menuOpen then
 			ui.toolWindow('Menu', settings.menuPos, menuSize[currentTab], true, function ()
 				ui.childWindow('childMenu', menuSize[currentTab], true, function ()
