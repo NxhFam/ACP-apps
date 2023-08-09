@@ -16,6 +16,7 @@ local sim = ac.getSim()
 local car = ac.getCar(0)
 local windowWidth = sim.windowWidth/ac.getUI().uiScale
 local windowHeight = sim.windowHeight/ac.getUI().uiScale
+local is16_9 = windowWidth/windowHeight == 16/9
 local menuOpen = false
 local leaderboardOpen = false
 local cspVersion = ac.getPatchVersionCode()
@@ -2187,13 +2188,13 @@ end
 --------------------------------------------------------------------------------- Welcome Menu ---------------------------------------------------------------------------------
 
 local imgToDraw = {
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138966456252518430/leftArrow.png",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138966461797384192/rightArrow.png",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138966460883026060/leftBoxOff.png",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1138974405012246671/leftArrowoff-min.png",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1138974403883966624/rightArrowoff-min.png",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1138974405242921022/leftBoxOff-min.png",
 	"https://cdn.discordapp.com/attachments/1130004696984203325/1138966455728226446/centerBoxOff.png",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138966462028054639/rightBoxOff.png",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138966455476572231/ACPmenu.png",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138966461528952872/logo.png"
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1138974404576026674/centerBoxOff-min.png",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1138974404370518037/ACPmenu-min.png",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1138974405482004530/logo-min.png"
 }
 
 local imgColor = {
@@ -2279,6 +2280,8 @@ local function drawMenuImage()
 		if i == #imgColor - 1 then imgColor[i] = settings.colorHud
 		else imgColor[i] = rgbm.colors.white end
 	end
+	imgToDraw[1] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138974405012246671/leftArrowoff-min.png"
+	imgToDraw[2] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138974403883966624/rightArrowoff-min.png"
 	imgToDraw[3] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283506410192906/leftBoxOff.png"
 	imgToDraw[4] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283503042166834/centerBoxOff.png"
 	imgToDraw[5] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283511443374090/rightBoxOff.png"
@@ -2289,6 +2292,7 @@ local function drawMenuImage()
 			ui.drawRectFilled(imgPos_[7][1], imgPos_[7][2], rgbm(0, 0, 0, 0.6))
 			if ui.rectHovered(imgPos_[1][1], imgPos_[1][2]) then
 				imgColor[1] = settings.colorHud
+				imgToDraw[1] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138974404768972870/leftArrow-min.png"
 				if uiStats.isMouseLeftKeyClicked then
 					for i = 1, #imgDisplayed do
 						if imgDisplayed[i] == #imgSet then
@@ -2300,6 +2304,7 @@ local function drawMenuImage()
 				end
 			elseif ui.rectHovered(imgPos_[2][1], imgPos_[2][2]) then
 				imgColor[2] = settings.colorHud
+				imgToDraw[2] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138974403649097748/rightArrow-min.png"
 				if uiStats.isMouseLeftKeyClicked then
 					for i = 1, #imgDisplayed do
 						if imgDisplayed[i] == 1 then
@@ -2311,15 +2316,15 @@ local function drawMenuImage()
 				end
 			elseif ui.rectHovered(imgPos_[3][1], imgPos_[3][2]) then
 				imgColor[3] = settings.colorHud
-				imgToDraw[3] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138966461310828748/leftBoxOn.png"
+				imgToDraw[3] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138975450102775858/leftBoxOn-min.png"
 				if uiStats.isMouseLeftKeyClicked then os.openURL(imgLink[imgDisplayed[1]]) end
 			elseif ui.rectHovered(imgPos_[4][1], imgPos_[4][2]) then
 				imgColor[4] = settings.colorHud
-				imgToDraw[4] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138966455996645457/centerBoxOn.png"
+				imgToDraw[4] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138975449809162352/centerBoxOn-min.png"
 				if uiStats.isMouseLeftKeyClicked then os.openURL(imgLink[imgDisplayed[2]]) end
 			elseif ui.rectHovered(imgPos_[5][1], imgPos_[5][2]) then
 				imgColor[5] = settings.colorHud
-				imgToDraw[5] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138966455229087884/rightBoxOn.png"
+				imgToDraw[5] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138975450371199057/rightBoxOn-min.png"
 				if uiStats.isMouseLeftKeyClicked then os.openURL(imgLink[imgDisplayed[3]]) end
 			elseif ui.rectHovered(imgPos_[7][1], imgPos_[7][2]) then
 				iconCloseColor = settings.colorHud
