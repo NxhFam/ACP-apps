@@ -1,3 +1,12 @@
+local staffID = {"76561199125972202", "76561199012836734", "76561198036229857", "76561198081667660", "76561197979739646", "76561199070560482", "76561197985451774", "76561198113108587", "76561197997930988"}
+local steamID = ac.getUserSteamID()
+
+for i = 1, #staffID do
+    if staffID[i] == steamID then
+        return
+    end
+end
+
 local class = 'C'
 local timeRequirement = 150
 local sim = ac.getSim()
@@ -11,8 +20,6 @@ local cspMinVersion = 2144
 local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 local fontMultiplier = windowHeight/1440
 local carID = ac.getCarID(0)
-local cspAboveP218 = cspVersion >= 2363
-local emile = ac.getUserSteamID() == "76561199125972202"
 local wheels = car.wheels
 
 if carID == valideCar[1] or carID == valideCar[2] or cspVersion < cspMinVersion then return end
