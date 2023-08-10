@@ -781,6 +781,7 @@ local function updateSectorData(sectorName, time)
 			}
 		end
 	elseif sectorName == 'VV' then
+		ac.log(sectorName .. ' ' .. time)
 		if not playerData.Sectors then
 			playerData.Sectors = {
 				H1 = {},
@@ -1074,7 +1075,7 @@ local function discordLinks()
 		if ui.textHyperlink("Double Trouble Discord") then
 			os.openURL("https://discord.com/channels/358562025032646659/1097229381308530728")
 		end
-	elseif sectorInfo.sectorIndex  == #sectors then
+	elseif sectorInfo.sectorIndex  == 4 then
 		if ui.textHyperlink("Velocity Vendetta Discord") then
 			os.openURL("https://discord.com/channels/358562025032646659/1118046532168589392")
 		end
@@ -1255,7 +1256,7 @@ local function sectorUpdate()
 					updatefirebase()
 				else
 					if sectors[sectorInfo.sectorIndex].name == "H1" then updateSectorData('H1', sectorInfo.time)
-					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" and rx7Valid then updateSectorData('Velocity', sectorInfo.time)
+					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" and rx7Valid then updateSectorData('VV', sectorInfo.time)
 					elseif sectors[sectorInfo.sectorIndex].name == "JDM LEGENDS" then updateSectorData('JDM', sectorInfo.time) end
 					ac.sendChatMessage(" has finished " .. sectors[sectorInfo.sectorIndex].name .. " in " .. sectorInfo.timerText .. "!")
 				end
