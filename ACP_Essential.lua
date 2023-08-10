@@ -2405,7 +2405,7 @@ end
 ac.onCarJumped(0, function (carid)
 	if carID ~= valideCar[1] and carID ~= valideCar[2] then
 		ac.log("Car Jumped")
-		--resetSectors()
+		resetSectors()
 		if online.chased and online.officer then
 			acpPolice{message = "TP", messageType = 0, yourIndex = online.officer.sessionID}
 		end
