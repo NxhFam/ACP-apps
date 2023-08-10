@@ -1,11 +1,11 @@
 local staffID = {"76561199125972202", "76561199012836734", "76561198036229857", "76561198081667660", "76561197979739646", "76561199070560482", "76561197985451774", "76561198113108587", "76561197997930988"}
 local steamID = ac.getUserSteamID()
 
-for i = 1, #staffID do
-    if staffID[i] == steamID then
-        return
-    end
-end
+-- for i = 1, #staffID do
+--     if staffID[i] == steamID then
+--         return
+--     end
+-- end
 
 local class = 'C'
 local timeRequirement = 150
@@ -21,6 +21,7 @@ local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 local fontMultiplier = windowHeight/1440
 local carID = ac.getCarID(0)
 local wheels = car.wheels
+local rx7Valid = ac.checksumSHA256(ac.getFolder(ac.FolderID.ContentCars) .. "/rx7_2_acpursuit/data.acd") == "e07cbc9c58b38772d8312e9418a231ac3ec4d54b352c8d269154cc921f7b5cb3" 
 
 if carID == valideCar[1] or carID == valideCar[2] or cspVersion < cspMinVersion then return end
 
@@ -322,13 +323,21 @@ local sectors  = {
     },
 	{
 		name = 'Velocity Vendetta',
-		pointsData = {{vec3(-3951.9,-184.7,10007.2), vec3(-3944.9,-184.7,10004.4)},
-					{vec3(-5774.6,-349.1,10183.9), vec3(-5776.7,-349.2,10173.8)},
-					{vec3(-3977.2,-147.5,9537.4), vec3(-3969.2,-147.6,9540.2)}},
-		linesData = {vec4(-3944.9,10004.4,-3951.9,10007.2),
-					vec4(-5774.6,10183.9,-5776.7,10173.8),
-					vec4(-3977.2,9537.4,-3969.2,9540.2)},
-		length = 4,
+		pointsData = {{vec3(-155,10,-320.6), vec3(-146.5,10,-327.4)},
+                    {vec3(118.1,41.8,397.7), vec3(129.1,42.2,409.9)},
+                    {vec3(-270,23.6,-20.6), vec3(-270.2,23.4,-31.7)},
+                    {vec3(-274.7,35.6,403.8), vec3(-265,35.7,402.9)},
+                    {vec3(-205.7,23.7,-41.2), vec3(-217.6,23.5,-44.8)},
+                    {vec3(-173.3,19.7,-102.5), vec3(-177.1,19.2,-114.2)},
+                    {vec3(139.9,39.4,308.3), vec3(129.2,39.4,314.7)}},
+		linesData = {vec4(-155, -320.6, -146.5, -327.4),
+                    vec4(129.1, 409.9, 118.1, 397.7),
+                    vec4(-270, -20.6, -270.2, -31.7),
+                    vec4(-274.7, 403.8, -265, 402.9),
+                    vec4(-217.6, -44.8, -205.7, -41.2),
+                    vec4(-177.1, -114.2, -173.3, -102.5),
+                    vec4(139.9, 308.3, 129.2, 314.7)},
+		length = 6.6,
 	},
 	{
 		name = 'JDM LEGENDS',
@@ -1166,6 +1175,10 @@ local function sectorUI()
 		sectorInfo.sectorIndex = 1
 		resetSectors()
 	end
+    if sectorInfo.sectorIndex == 4 and not rx7Valid then
+        ui.newLine()
+        ui.dwriteTextWrapped("You need to have the Rental RX-7 to do this sector", 15, rgbm.colors.white)
+    end
 	if sectorInfo.sectorIndex == 3 then doubleTrouble() end
 	if duo.request then
 		ui.newLine()
@@ -1242,7 +1255,7 @@ local function sectorUpdate()
 					updatefirebase()
 				else
 					if sectors[sectorInfo.sectorIndex].name == "H1" then updateSectorData('H1', sectorInfo.time)
-					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" then updateSectorData('VV', sectorInfo.time)
+					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" and rx7Valid then updateSectorData('Velocity', sectorInfo.time)
 					elseif sectors[sectorInfo.sectorIndex].name == "JDM LEGENDS" then updateSectorData('JDM', sectorInfo.time) end
 					ac.sendChatMessage(" has finished " .. sectors[sectorInfo.sectorIndex].name .. " in " .. sectorInfo.timerText .. "!")
 				end
@@ -2392,7 +2405,7 @@ end
 ac.onCarJumped(0, function (carid)
 	if carID ~= valideCar[1] and carID ~= valideCar[2] then
 		ac.log("Car Jumped")
-		resetSectors()
+		--resetSectors()
 		if online.chased and online.officer then
 			acpPolice{message = "TP", messageType = 0, yourIndex = online.officer.sessionID}
 		end
