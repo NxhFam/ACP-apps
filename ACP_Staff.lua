@@ -1,3 +1,4 @@
+
 local staffID = {"76561199125972202", "76561199012836734", "76561198036229857", "76561198081667660", "76561197979739646", "76561199070560482", "76561197985451774", "76561198113108587", "76561197997930988"}
 local steamID = ac.getUserSteamID()
 
@@ -25,7 +26,6 @@ local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 local fontMultiplier = windowHeight/1440
 local carID = ac.getCarID(0)
 local wheels = car.wheels
-local rx7Valid = ac.checksumSHA256(ac.getFolder(ac.FolderID.ContentCars) .. "/rx7_2_acpursuit/data.acd") == "e07cbc9c58b38772d8312e9418a231ac3ec4d54b352c8d269154cc921f7b5cb3" 
 
 if carID == valideCar[1] or carID == valideCar[2] or cspVersion < cspMinVersion then return end
 
@@ -324,21 +324,13 @@ local sectors  = {
     },
 	{
 		name = 'Velocity Vendetta',
-		pointsData = {{vec3(-155,10,-320.6), vec3(-146.5,10,-327.4)},
-                    {vec3(118.1,41.8,397.7), vec3(129.1,42.2,409.9)},
-                    {vec3(-270,23.6,-20.6), vec3(-270.2,23.4,-31.7)},
-                    {vec3(-274.7,35.6,403.8), vec3(-265,35.7,402.9)},
-                    {vec3(-205.7,23.7,-41.2), vec3(-217.6,23.5,-44.8)},
-                    {vec3(-173.3,19.7,-102.5), vec3(-177.1,19.2,-114.2)},
-                    {vec3(139.9,39.4,308.3), vec3(129.2,39.4,314.7)}},
-		linesData = {vec4(-155, -320.6, -146.5, -327.4),
-                    vec4(129.1, 409.9, 118.1, 397.7),
-                    vec4(-270, -20.6, -270.2, -31.7),
-                    vec4(-274.7, 403.8, -265, 402.9),
-                    vec4(-217.6, -44.8, -205.7, -41.2),
-                    vec4(-177.1, -114.2, -173.3, -102.5),
-                    vec4(139.9, 308.3, 129.2, 314.7)},
-		length = 6.6,
+		pointsData = {{vec3(-3951.9,-184.7,10007.2), vec3(-3944.9,-184.7,10004.4)},
+					{vec3(-5774.6,-349.1,10183.9), vec3(-5776.7,-349.2,10173.8)},
+					{vec3(-3977.2,-147.5,9537.4), vec3(-3969.2,-147.6,9540.2)}},
+		linesData = {vec4(-3944.9,10004.4,-3951.9,10007.2),
+					vec4(-5774.6,10183.9,-5776.7,10173.8),
+					vec4(-3977.2,9537.4,-3969.2,9540.2)},
+		length = 6.5,
 	},
 	{
 		name = 'JDM LEGENDS',
@@ -1269,10 +1261,6 @@ local function sectorUI()
 		sectorInfo.sectorIndex = 1
 		resetSectors()
 	end
-	if sectorInfo.sectorIndex == 4 and not rx7Valid then
-		ui.newLine()
-		ui.dwriteTextWrapped("You need to have the Rental RX-7 to do this sector", 15, rgbm.colors.white)
-	end
 	if sectorInfo.sectorIndex == 3 then doubleTrouble() end
 	if duo.request then
 		ui.newLine()
@@ -1347,7 +1335,7 @@ local function sectorUpdate()
 					updatefirebase()
 				else
 					if sectors[sectorInfo.sectorIndex].name == "H1" then updateSectorData('H1', sectorInfo.time)
-					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" and rx7Valid then updateSectorData('Velocity', sectorInfo.time)
+					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" then updateSectorData('VV', sectorInfo.time)
 					elseif sectors[sectorInfo.sectorIndex].name == "JDM LEGENDS" then updateSectorData('JDM', sectorInfo.time) end
 					ac.sendChatMessage(" has finished " .. sectors[sectorInfo.sectorIndex].name .. " in " .. sectorInfo.timerText .. "!")
 				end
@@ -2221,40 +2209,53 @@ local imgColor = {
 }
 
 -- Position for interaction with the image
--- Position is based on the image size of 3340x1440
-local imgPos1440p = {
-	arrowL = vec4(70, 650, 320, 910),
-	arrowR = vec4(2230, 650, 2490, 910),
-	boxL = vec4(355, 325, 920, 1234),
-	boxC = vec4(993, 325, 1557, 1234),
-	boxR = vec4(1630, 325, 2195, 1234),
-	frame = vec4(31, 106, 2535, 1370),
-	close = vec4(2437, 48, 2510, 100),
+-- Position is based on the image size of 2560x1440
+local imgPos_ = {
+	{vec2(70, 650), vec2(320, 910)},
+	{vec2(2230, 650), vec2(2490, 910)},
+	{vec2(355, 325), vec2(920, 1234)},
+	{vec2(993, 325), vec2(1557, 1234)},
+	{vec2(1630, 325), vec2(2195, 1234)},
+	{vec2(31, 106), vec2(2535, 1370)},
+	{vec2(2437, 48), vec2(2510, 100)},
 }
 
--- Position adjusted for the current screen size (windowWidth, windowHeight)
-local imgPos_ = {
-	{vec2(imgPos1440p.arrowL.x*windowWidth/2560, imgPos1440p.arrowL.y*windowHeight/1440), vec2(imgPos1440p.arrowL.z*windowWidth/2560, imgPos1440p.arrowL.w*windowHeight/1440)},
-	{vec2(imgPos1440p.arrowR.x*windowWidth/2560, imgPos1440p.arrowR.y*windowHeight/1440), vec2(imgPos1440p.arrowR.z*windowWidth/2560, imgPos1440p.arrowR.w*windowHeight/1440)},
-	{vec2(imgPos1440p.boxL.x*windowWidth/2560, imgPos1440p.boxL.y*windowHeight/1440), vec2(imgPos1440p.boxL.z*windowWidth/2560, imgPos1440p.boxL.w*windowHeight/1440)},
-	{vec2(imgPos1440p.boxC.x*windowWidth/2560, imgPos1440p.boxC.y*windowHeight/1440), vec2(imgPos1440p.boxC.z*windowWidth/2560, imgPos1440p.boxC.w*windowHeight/1440)},
-	{vec2(imgPos1440p.boxR.x*windowWidth/2560, imgPos1440p.boxR.y*windowHeight/1440), vec2(imgPos1440p.boxR.z*windowWidth/2560, imgPos1440p.boxR.w*windowHeight/1440)},
-	{vec2(imgPos1440p.frame.x*windowWidth/2560, imgPos1440p.frame.y*windowHeight/1440), vec2(imgPos1440p.frame.z*windowWidth/2560, imgPos1440p.frame.w*windowHeight/1440)},
-	{vec2(imgPos1440p.close.x*windowWidth/2560, imgPos1440p.close.y*windowHeight/1440), vec2(imgPos1440p.close.z*windowWidth/2560, imgPos1440p.close.w*windowHeight/1440)},
-}
+function scalePositions()
+	local xScale = windowWidth / 2560 * 0.8
+	local yScale = windowHeight / 1440 * 0.8
+	--Get the minimum scale factor to prevent stretching
+	local minScale = math.min(xScale, yScale)
+
+	-- Scale the positions
+	for i = 1, #imgPos_ do
+		imgPos_[i][1] = imgPos_[i][1] * minScale
+		imgPos_[i][2] = imgPos_[i][2] * minScale
+	end
+end
+
 
 local imgSet = {
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138257702129254430/buyCar.jpg",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138257701789507595/police.jpg",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138257701445587026/earn.jpg",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138257701445587026/earn.jpg",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299157320937502/aboutacp.jpg",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299158793138288/leaderboard1.jpg",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299158558261358/earnmoney.jpg",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299157891366943/buycars.jpg",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299159317430292/tuning.jpg",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299159019618355/police.jpg",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299157618720880/bank.jpg",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299158130438257/cartheft2.jpg",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299158340141237/drugdealer.jpg",
 }
 
 local imgLink = {
-	"https://discord.com/channels/358562025032646659/1076123906362056784",
-	"https://discord.com/channels/358562025032646659/1095681142197325975",
-	"https://discord.com/channels/358562025032646659/1075156026992635995",
-	""
+	"https://discord.com/channels/358562025032646659/1062186611091185784",--FAQ
+	"https://discord.com/channels/358562025032646659/1075156026992635995",--earn
+	"https://discord.com/channels/358562025032646659/1127619394328076318",--leaderboard
+	"https://discord.com/channels/358562025032646659/1076123906362056784",--car
+	"https://discord.com/channels/358562025032646659/1079799948306034708",--tuning
+	"https://discord.com/channels/358562025032646659/1095681142197325975",--police
+	"https://discord.com/channels/358562025032646659/1075578309443858522",--bank
+	"https://discord.com/channels/358562025032646659/1096470595392241704",--car theft
+	"",
 }
 
 local imgDisplayed = {
@@ -2262,6 +2263,11 @@ local imgDisplayed = {
 	2,
 	3,
 	4,
+	5,
+	6,
+	7,
+	8,
+	9,
 }
 
 local textFrameTopR = imgPos_[6][1] + vec2(windowHeight/100, windowHeight/100)
@@ -2289,6 +2295,8 @@ end
 
 local function drawMenuImage()
 	local iconCloseColor = rgbm.colors.white
+	local offset = vec2(windowWidth*0.1, windowHeight*0.1)
+	ac.debug("offset : " .. offset.x .. " " .. offset.y)
 	for i = 1, #imgColor - 1 do
 		if i == #imgColor - 1 then imgColor[i] = settings.colorHud
 		else imgColor[i] = rgbm.colors.white end
@@ -2298,8 +2306,8 @@ local function drawMenuImage()
 	imgToDraw[3] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283506410192906/leftBoxOff.png"
 	imgToDraw[4] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283503042166834/centerBoxOff.png"
 	imgToDraw[5] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283511443374090/rightBoxOff.png"
-	ui.transparentWindow('welcomeIMG', vec2(0,0), vec2(windowWidth, windowHeight), true, function ()
-		ui.childWindow('welcomeIMGChild', vec2(windowWidth, windowHeight), true, function ()
+	ui.transparentWindow('welcomeIMG', offset, vec2(windowWidth, windowHeight) - offset, true, function ()
+		ui.childWindow('welcomeIMGChild', vec2(windowWidth, windowHeight) - offset, true, function ()
 			local uiStats = ac.getUI()
 			ui.drawRectFilled(imgPos_[6][1], imgPos_[6][2], rgbm(0, 0, 0, 0.6))
 			ui.drawRectFilled(imgPos_[7][1], imgPos_[7][2], rgbm(0, 0, 0, 0.6))
@@ -2344,7 +2352,7 @@ local function drawMenuImage()
 				if uiStats.isMouseLeftKeyClicked then welcomeClosed = true end
 			end
 			ui.drawIcon(ui.Icons.Cancel, imgPos_[7][1]+vec2(10,10), imgPos_[7][2]-vec2(10,10), iconCloseColor)
-			for i = 1, #imgToDraw do ui.drawImage(imgToDraw[i], vec2(0,0), vec2(windowWidth, windowHeight), imgColor[i]) end
+			for i = 1, #imgToDraw do ui.drawImage(imgToDraw[i], vec2(0,0), vec2(windowWidth, windowHeight) - offset*2, imgColor[i]) end
 			local colorOfIMG = rgbm(1,1,1,1)
 			for i = 1, 3 do
 				if imgDisplayed[i] == 4 then
@@ -2355,7 +2363,6 @@ local function drawMenuImage()
 		end)
 	end)
 end
-
 
 local function drawMenuWelcome()
 	drawMenuImage()
@@ -2399,6 +2406,7 @@ function script.update(dt)
 		getFirebase()
 		loadLeaderboard()
 		initDrugRoute()
+		scalePositions()
 	else
 		sectorUpdate()
 		raceUpdate(dt)
@@ -2441,27 +2449,3 @@ end
 if carID ~= valideCar[1] and carID ~= valideCar[2] and cspVersion >= cspMinVersion then
 	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
-
-
-
--- **:checkered_flag: Velocity Vendetta #5 - Rev Up Your Engines! :checkered_flag:**
-
--- This time, we're hitting the twisty road of H3, where precision and skill will be your greatest allies.
-
--- **:red_car: Car Restriction: Mazda RX-7 Rental Only**
--- Level the playing field with the iconic Mazda RX-7. Unleash its raw power and master the curves of H3 as you vie for victory.
-
--- **:sunrise_over_mountains: Route: Conquer the Twisty Roads of H3**
--- The racecourse for Velocity Vendetta #5 will put your driving prowess to the test as you navigate the winding paths of H3.
-
--- **:calendar: Event Period: Race Until August 20th**
--- You have until August 20th to prove your mettle. So, rev up your engines, take on the challenge, and secure your spot in the Velocity Vendetta hall of fame!
-
--- **:white_check_mark: How to Participate**
--- Simply hop into your Mazda RX-7 rental, drive your best lap on the specified route, and your time will be automatically sent to the online leaderboard.
-
--- **:warning: Important: **Only the rental version is valid for this challenge.
--- If you're unsure, download the one attached to this message.
--- Remember, **owned** and **tuned** versions of the car will not be accepted.
-
--- Good luck to all participants! :four_leaf_clover:
