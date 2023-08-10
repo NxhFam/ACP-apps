@@ -26,7 +26,7 @@ local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 local fontMultiplier = windowHeight/1440
 local carID = ac.getCarID(0)
 local wheels = car.wheels
-
+local rx7Valid = ac.checksumSHA256(ac.getFolder(ac.FolderID.ContentCars) .. "/rx7_2_acpursuit/data.acd") == "e07cbc9c58b38772d8312e9418a231ac3ec4d54b352c8d269154cc921f7b5cb3"
 if carID == valideCar[1] or carID == valideCar[2] or cspVersion < cspMinVersion then return end
 
 local highestScore = 0
@@ -1262,6 +1262,10 @@ local function sectorUI()
 		resetSectors()
 	end
 	if sectorInfo.sectorIndex == 3 then doubleTrouble() end
+	if sectorInfo.sectorIndex == 4 and not rx7Valid then
+        ui.newLine()
+        ui.dwriteTextWrapped("You need to have the Rental RX-7 to do this sector", 15, rgbm.colors.white)
+    end
 	if duo.request then
 		ui.newLine()
 		ui.dwriteTextWrapped((ac.getDriverName(duo.onlineSender.index) .. " want to steal a car with you!"), 15, rgbm.colors.purple)
@@ -1335,7 +1339,7 @@ local function sectorUpdate()
 					updatefirebase()
 				else
 					if sectors[sectorInfo.sectorIndex].name == "H1" then updateSectorData('H1', sectorInfo.time)
-					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" then updateSectorData('VV', sectorInfo.time)
+					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" and rx7Valid then updateSectorData('VV', sectorInfo.time)
 					elseif sectors[sectorInfo.sectorIndex].name == "JDM LEGENDS" then updateSectorData('JDM', sectorInfo.time) end
 					ac.sendChatMessage(" has finished " .. sectors[sectorInfo.sectorIndex].name .. " in " .. sectorInfo.timerText .. "!")
 				end
@@ -2258,17 +2262,7 @@ local imgLink = {
 	"",
 }
 
-local imgDisplayed = {
-	1,
-	2,
-	3,
-	4,
-	5,
-	6,
-	7,
-	8,
-	9,
-}
+local imgDisplayed = {1,2,3,4,5,6,7,8,9,}
 
 local textFrameTopR = imgPos_[6][1] + vec2(windowHeight/100, windowHeight/100)
 local textFrameTopL = vec2(imgPos_[6][2].x - windowHeight/80, imgPos_[6][1].y + windowHeight/100)
