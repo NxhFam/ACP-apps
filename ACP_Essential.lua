@@ -1,11 +1,11 @@
 local staffID = {"76561199125972202", "76561199012836734", "76561198036229857", "76561198081667660", "76561197979739646", "76561199070560482", "76561197985451774", "76561198113108587", "76561197997930988"}
 local steamID = ac.getUserSteamID()
 
-for i = 1, #staffID do
-    if staffID[i] == steamID then
-        return
-    end
-end
+-- for i = 1, #staffID do
+--     if staffID[i] == steamID then
+--         return
+--     end
+-- end
 
 local class = 'C'
 local timeRequirement = 150
@@ -21,7 +21,11 @@ local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 local fontMultiplier = windowHeight/1440
 local carID = ac.getCarID(0)
 local wheels = car.wheels
-local rx7Valid = ac.checksumSHA256(ac.getFolder(ac.FolderID.ContentCars) .. "/rx7_2_acpursuit/data.acd") == "e07cbc9c58b38772d8312e9418a231ac3ec4d54b352c8d269154cc921f7b5cb3" 
+local rx7Valid = ac.INIConfig.carData(0, "brakes.ini"):get("DATA", "MAX_TORQUE", 0) == 2400 and ac.getCarID(0) == "rx7_2_acpursuit"
+local data = "data.json"
+
+ac.log(ac.readDataFile("HEADER"))
+ac.log()
 
 if carID == valideCar[1] or carID == valideCar[2] or cspVersion < cspMinVersion then return end
 
@@ -2202,157 +2206,6 @@ end
 
 
 --------------------------------------------------------------------------------- Welcome Menu ---------------------------------------------------------------------------------
-
-local imageSize = vec2(windowWidth, windowHeight)
-
-
-local imgToDraw = {
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138277327210549308/leftArrow.png",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138277321896366080/rightArrow.png",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138283506410192906/leftBoxOff.png",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138283503042166834/centerBoxOff.png",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138283511443374090/rightBoxOff.png",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138277324354228234/ACPmenu.png",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138277320868757504/logo.png"
-}
-
-
-local boxActive = 0
-
-local imgColor = {
-	rgbm.colors.white,
-	rgbm.colors.white,
-	rgbm.colors.white,
-	rgbm.colors.white,
-	rgbm.colors.white,
-	settings.colorHud,
-	rgbm.colors.white,
-}
-
--- Position for interaction with the image
--- Position is based on the image size of 3340x1440
-local imgPos1440p = {
-	arrowL = vec4(70, 650, 320, 910),
-	arrowR = vec4(2230, 650, 2490, 910),
-	boxL = vec4(355, 325, 920, 1234),
-	boxC = vec4(993, 325, 1557, 1234),
-	boxR = vec4(1630, 325, 2195, 1234),
-	frame = vec4(31, 106, 2535, 1370),
-	close = vec4(2437, 48, 2510, 100),
-}
-
--- Position adjusted for the current screen size (windowWidth, windowHeight)
-local imgPos = {
-	{vec2(imgPos1440p.arrowL.x*windowWidth/2560, imgPos1440p.arrowL.y*windowHeight/1440), vec2(imgPos1440p.arrowL.z*windowWidth/2560, imgPos1440p.arrowL.w*windowHeight/1440)},
-	{vec2(imgPos1440p.arrowR.x*windowWidth/2560, imgPos1440p.arrowR.y*windowHeight/1440), vec2(imgPos1440p.arrowR.z*windowWidth/2560, imgPos1440p.arrowR.w*windowHeight/1440)},
-	{vec2(imgPos1440p.boxL.x*windowWidth/2560, imgPos1440p.boxL.y*windowHeight/1440), vec2(imgPos1440p.boxL.z*windowWidth/2560, imgPos1440p.boxL.w*windowHeight/1440)},
-	{vec2(imgPos1440p.boxC.x*windowWidth/2560, imgPos1440p.boxC.y*windowHeight/1440), vec2(imgPos1440p.boxC.z*windowWidth/2560, imgPos1440p.boxC.w*windowHeight/1440)},
-	{vec2(imgPos1440p.boxR.x*windowWidth/2560, imgPos1440p.boxR.y*windowHeight/1440), vec2(imgPos1440p.boxR.z*windowWidth/2560, imgPos1440p.boxR.w*windowHeight/1440)},
-	{vec2(imgPos1440p.frame.x*windowWidth/2560, imgPos1440p.frame.y*windowHeight/1440), vec2(imgPos1440p.frame.z*windowWidth/2560, imgPos1440p.frame.w*windowHeight/1440)},
-	{vec2(imgPos1440p.close.x*windowWidth/2560, imgPos1440p.close.y*windowHeight/1440), vec2(imgPos1440p.close.z*windowWidth/2560, imgPos1440p.close.w*windowHeight/1440)},
-}
-
-
-local imgSet = {
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138257702129254430/buyCar.jpg",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138257701789507595/police.jpg",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138257701445587026/earn.jpg",
-}
-
-local imgLink = {
-	"https://discord.com/channels/358562025032646659/1076123906362056784",
-	"https://discord.com/channels/358562025032646659/1095681142197325975",
-	"https://discord.com/channels/358562025032646659/1075156026992635995"
-}
-
-local imgDisplayed = {
-	1,
-	2,
-	3,
-}
-
-local textFrameTopR = imgPos[6][1] + vec2(windowHeight/100, windowHeight/100)
-local textFrameTopL = vec2(imgPos[6][2].x - windowHeight/80, imgPos[6][1].y + windowHeight/100)
-
-local function drawMenuText()
-	ui.popDWriteFont()
-	ui.pushDWriteFont("Orbitron;Weight=BLACK")
-	ui.dwriteDrawText("WELCOME BACK,", 20, textFrameTopR, rgbm.colors.white)
-	ui.dwriteDrawText(ac.getDriverName(0), 50, vec2(textFrameTopR.x, textFrameTopR.y + ui.measureDWriteText("WELCOME BACK,", 20).y), settings.colorHud)
-	ui.dwriteDrawText("CURRENT CAR", 20, vec2(textFrameTopL.x - ui.measureDWriteText("CURRENT CAR", 20).x, textFrameTopL.y), rgbm.colors.white)
-	ui.dwriteDrawText(ac.getCarName(0), 50, vec2(textFrameTopL.x - ui.measureDWriteText(ac.getCarName(0), 50).x, textFrameTopL.y + ui.measureDWriteText("CURRENT CAR", 20).y), settings.colorHud)
-	ui.popDWriteFont()
-end
-
-local function drawMenuImage()
-	local iconCloseColor = rgbm.colors.white
-	for i = 1, #imgColor - 1 do
-		if i == #imgColor - 1 then imgColor[i] = settings.colorHud
-		else imgColor[i] = rgbm.colors.white end
-	end
-	imgToDraw[3] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283506410192906/leftBoxOff.png"
-	imgToDraw[4] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283503042166834/centerBoxOff.png"
-	imgToDraw[5] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283511443374090/rightBoxOff.png"
-	ui.transparentWindow('welcomeIMG', vec2(0,0), vec2(windowWidth, windowHeight), true, function ()
-		ui.childWindow('welcomeIMGChild', vec2(windowWidth, windowHeight), true, function ()
-			local uiStats = ac.getUI()
-			ui.drawRectFilled(imgPos[6][1], imgPos[6][2], rgbm(0, 0, 0, 0.6))
-			ui.drawRectFilled(imgPos[7][1], imgPos[7][2], rgbm(0, 0, 0, 0.6))
-			if ui.rectHovered(imgPos[1][1], imgPos[1][2]) then
-				imgColor[1] = settings.colorHud
-				if uiStats.isMouseLeftClicked then
-					for i = 1, #imgDisplayed do
-						if imgDisplayed[i] == #imgSet then
-							imgDisplayed[i] = 1
-						else
-							imgDisplayed[i] = imgDisplayed[i] + 1
-						end
-					end
-				end
-			elseif ui.rectHovered(imgPos[2][1], imgPos[2][2]) then
-				imgColor[2] = settings.colorHud
-				if uiStats.isMouseLeftClicked then
-					for i = 1, #imgDisplayed do
-						if imgDisplayed[i] == 1 then
-							imgDisplayed[i] = #imgSet
-						else
-							imgDisplayed[i] = imgDisplayed[i] - 1
-						end
-					end
-				end
-			elseif ui.rectHovered(imgPos[3][1], imgPos[3][2]) then
-				imgColor[3] = settings.colorHud
-				imgToDraw[3] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283507643338842/leftBoxOn.png"
-				if uiStats.isMouseLeftClicked then os.openURL(imgLink[imgDisplayed[1]]) end
-			elseif ui.rectHovered(imgPos[4][1], imgPos[4][2]) then
-				imgColor[4] = settings.colorHud
-				imgToDraw[4] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283504162066513/centerBoxOn.png"
-				if uiStats.isMouseLeftClicked then os.openURL(imgLink[imgDisplayed[2]]) end
-			elseif ui.rectHovered(imgPos[5][1], imgPos[5][2]) then
-				imgColor[5] = settings.colorHud
-				imgToDraw[5] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283500697571348/rightBoxOn.png"
-				if uiStats.isMouseLeftClicked then os.openURL(imgLink[imgDisplayed[3]]) end
-			elseif ui.rectHovered(imgPos[7][1], imgPos[7][2]) then
-				iconCloseColor = settings.colorHud
-				if uiStats.isMouseLeftClicked then welcomeClosed = true end
-			end
-			ui.drawIcon(ui.Icons.Cancel, imgPos[7][1]+vec2(10,10), imgPos[7][2]-vec2(10,10), iconCloseColor)
-			for i = 1, #imgToDraw do ui.drawImage(imgToDraw[i], vec2(0,0), vec2(windowWidth, windowHeight), imgColor[i]) end
-			for i = 1, #imgSet do
-				if i == 1 then ui.drawImage(imgSet[imgDisplayed[i]], imgPos[3][1], imgPos[3][2], rgbm(1,1,1,1))
-				elseif i == 2 then ui.drawImage(imgSet[imgDisplayed[i]], imgPos[4][1], imgPos[4][2], rgbm(1,1,1,1))
-				elseif i == 3 then ui.drawImage(imgSet[imgDisplayed[i]], imgPos[5][1], imgPos[5][2], rgbm(1,1,1,1)) end
-			end
-		end)
-	end)
-	welcomeClosed = true
-end
-
-
-local function drawMenuWelcome()
-	drawMenuImage()
-	drawMenuText()
-end
 
 -------------------------------------------------------------------------------- UPDATE --------------------------------------------------------------------------------
 
