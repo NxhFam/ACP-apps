@@ -26,7 +26,8 @@ local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 local fontMultiplier = windowHeight/1440
 local carID = ac.getCarID(0)
 local wheels = car.wheels
-local rx7Valid = ac.checksumSHA256(ac.getFolder(ac.FolderID.ContentCars) .. "/rx7_2_acpursuit/data.acd") == "e07cbc9c58b38772d8312e9418a231ac3ec4d54b352c8d269154cc921f7b5cb3"
+local rx7Valid = ac.INIConfig.carData(0, "brakes.ini"):get("DATA", "MAX_TORQUE", 0) == 2400 and ac.getCarID(0) == "rx7_2_acpursuit"
+
 if carID == valideCar[1] or carID == valideCar[2] or cspVersion < cspMinVersion then return end
 
 local highestScore = 0
@@ -1347,7 +1348,7 @@ local function sectorUpdate()
 					updatefirebase()
 				else
 					if sectors[sectorInfo.sectorIndex].name == "H1" then updateSectorData('H1', sectorInfo.time)
-					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" and (rx7Valid or steamID == "76561199125972202") then updateSectorData('VV', sectorInfo.time)
+					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" and rx7Valid then updateSectorData('VV', sectorInfo.time)
 					elseif sectors[sectorInfo.sectorIndex].name == "JDM LEGENDS" then updateSectorData('JDM', sectorInfo.time) end
 					ac.sendChatMessage(" has finished " .. sectors[sectorInfo.sectorIndex].name .. " in " .. sectorInfo.timerText .. "!")
 				end
