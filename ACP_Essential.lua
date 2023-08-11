@@ -21,7 +21,7 @@ local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 local fontMultiplier = windowHeight/1440
 local carID = ac.getCarID(0)
 local wheels = car.wheels
-local rx7Valid = ac.INIConfig.carData(0, "brakes.ini"):get("DATA", "MAX_TORQUE", 0) == 2400 and ac.getCarID(0) == "rx7_2_acpursuit"
+local rx7Valid = ac.INIConfig.carData(0, "brakes.ini"):get("DATA", "MAX_TORQUE", 0) == 4100 and ac.getCarID(0) == "rx7_2_acpursuit"
 
 if carID == valideCar[1] or carID == valideCar[2] or cspVersion < cspMinVersion then return end
 
