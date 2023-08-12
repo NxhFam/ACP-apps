@@ -2233,12 +2233,22 @@ local imgPos_ = {
 	{vec2(2437, 48), vec2(2510, 100)},
 }
 
+local welcomeWindow = {
+	size = vec2(windowWidth, windowHeight),
+	topLeft = vec2(0, 0),
+	topRight = vec2(windowWidth, 0),
+	offsetX = 0,
+}
+
 function scalePositions()
 	local xScale = windowWidth / 2560 * 0.8
 	local yScale = windowHeight / 1440 * 0.8
 	--Get the minimum scale factor to prevent stretching
 	local minScale = math.min(xScale, yScale)
-
+	if xScale ~= yScale then
+		welcomeWindow.size = vec2(16 * windowHeight / 9, windowHeight)
+		welcomeWindow.offsetX = (windowWidth - welcomeWindow.size.x) / 2
+	end
 	-- Scale the positions
 	for i = 1, #imgPos_ do
 		imgPos_[i][1] = imgPos_[i][1] * minScale
@@ -2298,8 +2308,7 @@ end
 
 local function drawMenuImage()
 	local iconCloseColor = rgbm.colors.white
-	local offset = vec2(windowWidth*0.1, windowHeight*0.1)
-	ac.debug("offset : " .. offset.x .. " " .. offset.y)
+	local offset = vec2(welcomeWindow.offsetX + welcomeWindow.size.x * 0.1, welcomeWindow.size.y * 0.1)
 	for i = 1, #imgColor - 1 do
 		if i == #imgColor - 1 then imgColor[i] = settings.colorHud
 		else imgColor[i] = rgbm.colors.white end
@@ -2309,7 +2318,7 @@ local function drawMenuImage()
 	imgToDraw[3] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283506410192906/leftBoxOff.png"
 	imgToDraw[4] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283503042166834/centerBoxOff.png"
 	imgToDraw[5] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283511443374090/rightBoxOff.png"
-	ui.transparentWindow('welcomeIMG', offset, vec2(windowWidth, windowHeight) - offset, true, function ()
+	ui.transparentWindow('welcomeIMG', offset, welcomeWindow.size - offset, true, function ()
 		ui.childWindow('welcomeIMGChild', vec2(windowWidth, windowHeight) - offset, true, function ()
 			local uiStats = ac.getUI()
 			ui.drawRectFilled(imgPos_[6][1], imgPos_[6][2], rgbm(0, 0, 0, 0.6))
@@ -2355,7 +2364,7 @@ local function drawMenuImage()
 				if uiStats.isMouseLeftKeyClicked then welcomeClosed = true end
 			end
 			ui.drawIcon(ui.Icons.Cancel, imgPos_[7][1]+vec2(10,10), imgPos_[7][2]-vec2(10,10), iconCloseColor)
-			for i = 1, #imgToDraw do ui.drawImage(imgToDraw[i], vec2(0,0), vec2(windowWidth, windowHeight) - offset*2, imgColor[i]) end
+			for i = 1, #imgToDraw do ui.drawImage(imgToDraw[i], vec2(0,0), welcomeWindow.size - offset*2, imgColor[i]) end
 			local colorOfIMG = rgbm(1,1,1,1)
 			for i = 1, 3 do
 				if imgDisplayed[i] == 4 then
