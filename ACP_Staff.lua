@@ -1902,7 +1902,17 @@ local acpPolice = ac.OnlineEvent({
 		policeLightsPos[3] = vec2(windowWidth-windowWidth/10,0)
 	elseif data.yourIndex == car.sessionID and data.messageType == 1 then
 		online.level = tonumber(data.message)
-		online.messageTimer = 3
+		online.messageTimer = settings.timeMsg
+        online.message = "CHASE LEVEL " .. data.message
+        if online.level > 8 then
+            online.color = rgbm.colors.red
+        elseif online.level > 6 then
+            online.color = rgbm.colors.orange
+        elseif online.level > 4 then
+            online.color = rgbm.colors.yellow
+        else
+            online.color = rgbm.colors.white
+        end
 	elseif data.yourIndex == car.sessionID and data.messageType == 2 then
 		online.message = data.message
 		online.messageTimer = settings.timeMsg
@@ -1944,14 +1954,13 @@ end
 local function onlineEventMessageUI()
 	if online.messageTimer > 0 then
 		online.messageTimer = online.messageTimer - ui.deltaTime()
-		if online.type == 0 or online.type == 2 then
-			local text = online.message
-			if online.message ~= "BUSTED!" then textWithBackground(text, 1) end
-			if online.type == 2 then
-				if online.message == "BUSTED!" then showArrestMSG() end
-				showPoliceLights()
-			end
-		elseif online.type == 1 then
+        local text = online.message
+        if online.message ~= "BUSTED!" then textWithBackground(text, 1) end
+        if online.type == 2 then
+            if online.message == "BUSTED!" then showArrestMSG() end
+            showPoliceLights()
+        end
+		if online.type == 1 and online.messageTimer < 3 then
 			showPoliceLights()
 		end
 	elseif online.messageTimer < 0 then
@@ -2384,7 +2393,7 @@ end
 -------------------------------------------------------------------------------- UPDATE --------------------------------------------------------------------------------
 
 function script.drawUI()
-	--if ac.isKeyPressed(ui.KeyIndex.P) then welcomeClosed = not welcomeClosed end
+	if ui.keyboardButtonPressed(ui.KeyIndex.Menu) then welcomeClosed = not welcomeClosed end
 	if not welcomeClosed then drawMenuWelcome()
 	elseif initialized then
 		if cspVersion < cspMinVersion then return end
