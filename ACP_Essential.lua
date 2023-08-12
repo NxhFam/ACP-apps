@@ -433,6 +433,8 @@ local starsUI = {
 	starsPos = vec2(windowWidth - (settings.starsSize or 20)/2, settings.starsSize or 20)/2,
 	starsSize = vec2(windowWidth - (settings.starsSize or 20)*2, (settings.starsSize or 20)*2),
 	startSpace = (settings.starsSize or 20)/4,
+	full = "https://acstuff.ru/images/icons_24/star_full.png",
+	empty = "https://acstuff.ru/images/icons_24/star_empty.png",
 }
 
 local function resetStarsUI()
@@ -904,9 +906,9 @@ local function showStarsPursuit()
 	resetStarsUI()
 	for i = 1, 5 do
 		if i > online.level/2 then
-			ui.drawIcon(ui.Icons.StarEmpty, starsUI.starsPos, starsUI.starsSize, rgbm(1, 1, 1, 0.2))
+			ui.drawImage(starsUI.empty, starsUI.starsPos, starsUI.starsSize, rgbm(1, 1, 1, 0.2))
 		else
-			ui.drawIcon(ui.Icons.StarFull, starsUI.starsPos, starsUI.starsSize, starsColor)
+			ui.drawImage(starsUI.full, starsUI.starsPos, starsUI.starsSize, starsColor)
 		end
 		starsUI.starsPos.x = starsUI.starsPos.x - settings.starsSize - starsUI.startSpace
 		starsUI.starsSize.x = starsUI.starsSize.x - settings.starsSize - starsUI.startSpace
@@ -2293,3 +2295,4 @@ end
 if carID ~= valideCar[1] and carID ~= valideCar[2] and cspVersion >= cspMinVersion then
 	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
+
