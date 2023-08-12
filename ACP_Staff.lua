@@ -2237,7 +2237,7 @@ local welcomeWindow = {
 	size = vec2(windowWidth, windowHeight),
 	topLeft = vec2(0, 0),
 	topRight = vec2(windowWidth, 0),
-	offsetX = 0,
+	offset = vec2(0, 0),
 }
 
 function scalePositions()
@@ -2247,8 +2247,12 @@ function scalePositions()
 	local minScale = math.min(xScale, yScale)
 	if xScale ~= yScale then
 		welcomeWindow.size = vec2(16 * windowHeight / 9, windowHeight)
-		welcomeWindow.offsetX = (windowWidth - welcomeWindow.size.x) / 2
+		ac.log(welcomeWindow.size)
 	end
+	welcomeWindow.offset = vec2(welcomeWindow.size.x * 0.1, welcomeWindow.size.y * 0.1)
+	welcomeWindow.size = vec2(welcomeWindow.size.x - welcomeWindow.offset.x * 2, welcomeWindow.size.y - welcomeWindow.offset.y * 2)
+	welcomeWindow.topLeft = vec2(welcomeWindow.offset.x, welcomeWindow.offset.y)
+	welcomeWindow.topRight = vec2(welcomeWindow.size.x - welcomeWindow.offset.x, welcomeWindow.offset.y)
 	-- Scale the positions
 	for i = 1, #imgPos_ do
 		imgPos_[i][1] = imgPos_[i][1] * minScale
@@ -2299,16 +2303,16 @@ end
 local function drawMenuText()
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=BLACK")
-	ui.dwriteDrawText("WELCOME BACK,", 20, textFrameTopR, rgbm.colors.white)
-	ui.dwriteDrawText(ac.getDriverName(0), 50, vec2(textFrameTopR.x, textFrameTopR.y + ui.measureDWriteText("WELCOME BACK,", 20).y), settings.colorHud)
-	ui.dwriteDrawText("CURRENT CAR", 20, vec2(textFrameTopL.x - ui.measureDWriteText("CURRENT CAR", 20).x, textFrameTopL.y), rgbm.colors.white)
-	ui.dwriteDrawText(ac.getCarName(0), 50, vec2(textFrameTopL.x - ui.measureDWriteText(ac.getCarName(0), 50).x, textFrameTopL.y + ui.measureDWriteText("CURRENT CAR", 20).y), settings.colorHud)
+	ui.dwriteDrawText("WELCOME BACK,", 20, welcomeWindow.topRight, rgbm.colors.white)
+	ui.dwriteDrawText(ac.getDriverName(0), 50, vec2(welcomeWindow.topRight.x, welcomeWindow.topRight.y + ui.measureDWriteText("WELCOME BACK,", 20).y), settings.colorHud)
+	ui.dwriteDrawText("CURRENT CAR", 20, vec2(welcomeWindow.topLeft.x - ui.measureDWriteText("CURRENT CAR", 20).x, welcomeWindow.topLeft.y), rgbm.colors.white)
+	ui.dwriteDrawText(ac.getCarName(0), 50, vec2(welcomeWindow.topLeft.x - ui.measureDWriteText(ac.getCarName(0), 50).x, welcomeWindow.topLeft.y + ui.measureDWriteText("CURRENT CAR", 20).y), settings.colorHud)
 	ui.popDWriteFont()
 end
 
 local function drawMenuImage()
 	local iconCloseColor = rgbm.colors.white
-	local offset = vec2(welcomeWindow.offsetX + welcomeWindow.size.x * 0.1, welcomeWindow.size.y * 0.1)
+	
 	for i = 1, #imgColor - 1 do
 		if i == #imgColor - 1 then imgColor[i] = settings.colorHud
 		else imgColor[i] = rgbm.colors.white end
@@ -2318,8 +2322,8 @@ local function drawMenuImage()
 	imgToDraw[3] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283506410192906/leftBoxOff.png"
 	imgToDraw[4] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283503042166834/centerBoxOff.png"
 	imgToDraw[5] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283511443374090/rightBoxOff.png"
-	ui.transparentWindow('welcomeIMG', offset, welcomeWindow.size - offset, true, function ()
-		ui.childWindow('welcomeIMGChild', vec2(windowWidth, windowHeight) - offset, true, function ()
+	ui.transparentWindow('welcomeIMG', welcomeWindow.offset, welcomeWindow.size, true, function ()
+		ui.childWindow('welcomeIMGChild', welcomeWindow.size, true, function ()
 			local uiStats = ac.getUI()
 			ui.drawRectFilled(imgPos_[6][1], imgPos_[6][2], rgbm(0, 0, 0, 0.6))
 			ui.drawRectFilled(imgPos_[7][1], imgPos_[7][2], rgbm(0, 0, 0, 0.6))
@@ -2364,7 +2368,7 @@ local function drawMenuImage()
 				if uiStats.isMouseLeftKeyClicked then welcomeClosed = true end
 			end
 			ui.drawIcon(ui.Icons.Cancel, imgPos_[7][1]+vec2(10,10), imgPos_[7][2]-vec2(10,10), iconCloseColor)
-			for i = 1, #imgToDraw do ui.drawImage(imgToDraw[i], vec2(0,0), welcomeWindow.size - offset*2, imgColor[i]) end
+			for i = 1, #imgToDraw do ui.drawImage(imgToDraw[i], vec2(0,0), welcomeWindow.size, imgColor[i]) end
 			local colorOfIMG = rgbm(1,1,1,1)
 			for i = 1, 3 do
 				if imgDisplayed[i] == 4 then
