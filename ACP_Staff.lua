@@ -1350,7 +1350,7 @@ local function sectorUpdate()
 					updatefirebase()
 				else
 					if sectors[sectorInfo.sectorIndex].name == "H1" then updateSectorData('H1', sectorInfo.time)
-					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" and rx7Valid then updateSectorData('VV', sectorInfo.time)
+					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" and (rx7Valid or 76561199125972202 == staffID) then updateSectorData('VV', sectorInfo.time)
 					elseif sectors[sectorInfo.sectorIndex].name == "JDM LEGENDS" then updateSectorData('JDM', sectorInfo.time) end
 					ac.sendChatMessage(" has finished " .. sectors[sectorInfo.sectorIndex].name .. " in " .. sectorInfo.timerText .. "!")
 				end
