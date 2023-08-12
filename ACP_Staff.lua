@@ -1290,7 +1290,6 @@ local function sectorUI()
 		end
 	end
 	discordLinks()
-	ui.text(car.collisionPosition)
 	ui.endGroup()
 
 	return 1
@@ -1322,7 +1321,6 @@ local function hasCrossedLine(line)
 end
 
 local function sectorUpdate()
-
 	if wheels[0].surfaceSectorID == 47 and wheels[1].surfaceSectorID == 47 and wheels[2].surfaceSectorID == 47 and wheels[3].surfaceSectorID == 47 then
 		resetSectors()
 	end
@@ -1418,7 +1416,7 @@ local function drugDeliveryUpdate(dt)
 			ac.sendChatMessage(" was too slow and got caught by the cops with the drugs!")
 		end
 	end
-	if car.collidedWith ~= -1 and drugDelivery.started and not isPointInCircle(car.position, drugDelivery.dropOff, 500) and not isPointInCircle(car.position, drugDelivery.pickUp, 500) then
+	if drugDelivery.started and car.damage[0] ~= 0 and car.damage[1] ~= 0 and car.damage[2] ~= 0 and car.damage[3] ~= 0 and car.damage[4] then
 		ac.sendChatMessage(" has crashed and lost the drugs!")
 		resetDrugDelivery()
 	end
@@ -2296,9 +2294,13 @@ local imgDisplayed = {1,2,3,4,5,6,7,8,9,}
 local function drugShowInfo(i)
 	local leftCorner = vec2(imgPos_[i+2][1].x, imgPos_[i+2][1].y) + vec2(welcomeWindow.size.x/100, welcomeWindow.size.y/10)
 	local textPos = leftCorner + welcomeWindow.size/100
-	ui.drawRectFilled(leftCorner,  vec2(imgPos_[i+2][2].x - welcomeWindow.size.x/100 , leftCorner.y + ui.measureDWriteText("Pick Up :  \nDrop Off :  " .. drugDelivery.dropOffName, settings.fontSize).y*2), rgbm(0, 0, 0, 0.8))
+	ui.drawRectFilled(leftCorner,  vec2(imgPos_[i+2][2].x - welcomeWindow.size.x/100 , leftCorner.y + ui.measureDWriteText("Locations names are the same\nas the teleports in the mini map.\nDelivery :  \nPick Up :  \nDrop Off :  " .. drugDelivery.dropOffName, settings.fontSize).y*2), rgbm(0, 0, 0, 0.8))
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=BLACK")
+	ui.dwriteDrawText("Location names are the same\nas teleports in the mini map.", settings.fontSize, textPos, rgbm.colors.white)
+	textPos.y = textPos.y + ui.measureDWriteText("Locations names are the same\nas the teleports in the mini map.", settings.fontSize).y*2
+	ui.dwriteDrawText("Delivery : " .. os.date("%a %d") .. "th" .. " of " .. os.date("%B"), settings.fontSize, textPos, rgbm.colors.white)
+	textPos.y = textPos.y + ui.measureDWriteText("Delivery :  " .. os.date("%x"), settings.fontSize).y*2
 	ui.dwriteDrawText("Pick Up :  " .. drugDelivery.pickUpName, settings.fontSize, textPos, rgbm.colors.white)
 	textPos.y = textPos.y + ui.measureDWriteText("Pick Up :  " .. drugDelivery.pickUpName, settings.fontSize).y*2
 	ui.dwriteDrawText("Drop Off :  " .. drugDelivery.dropOffName, settings.fontSize, textPos, rgbm.colors.white)
@@ -2429,6 +2431,7 @@ function script.update(dt)
 		initDrugRoute()
 		scalePositions()
 	else
+
 		sectorUpdate()
 		raceUpdate(dt)
 		overtakeUpdate(dt)
@@ -2460,8 +2463,7 @@ end)
 
 function script.draw3D()
 	if initialized and settings.current == 4 then
-		local lineToRender = sector.pointsData[sectorInfo.checkpoints]
-		if sectorInfo.drawLine then render.debugLine(lineToRender[1], lineToRender[2], rgbm(0,100,0,1)) end
+		if sectorInfo.drawLine then render.debugLine(sector.pointsData[sectorInfo.checkpoints][1], sector.pointsData[sectorInfo.checkpoints][2], rgbm(0,100,0,1)) end
 		if drugDelivery.drawPickUp then render.circle(drugDelivery.pickUp, vec3(0,1,0), 5, rgbm(0,100,0,1))
 		elseif drugDelivery.drawDropOff then render.circle(drugDelivery.dropOff, vec3(0,1,0), 5, rgbm(0,100,0,1)) end
 	end
