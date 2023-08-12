@@ -1,4 +1,3 @@
-
 local staffID = {"76561199125972202", "76561199012836734", "76561198036229857", "76561198081667660", "76561197979739646", "76561199070560482", "76561197985451774", "76561198113108587", "76561197997930988"}
 local steamID = ac.getUserSteamID()
 
@@ -1291,6 +1290,7 @@ local function sectorUI()
 		end
 	end
 	discordLinks()
+	ui.text(car.collidedWith)
 	ui.endGroup()
 
 	return 1
@@ -2205,8 +2205,8 @@ local imgToDraw = {
 	"https://cdn.discordapp.com/attachments/1130004696984203325/1138974405012246671/leftArrowoff-min.png",
 	"https://cdn.discordapp.com/attachments/1130004696984203325/1138974403883966624/rightArrowoff-min.png",
 	"https://cdn.discordapp.com/attachments/1130004696984203325/1138974405242921022/leftBoxOff-min.png",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1138966455728226446/centerBoxOff.png",
 	"https://cdn.discordapp.com/attachments/1130004696984203325/1138974404576026674/centerBoxOff-min.png",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1138974404123050034/rightBoxOff-min.png",
 	"https://cdn.discordapp.com/attachments/1130004696984203325/1138974404370518037/ACPmenu-min.png",
 	"https://cdn.discordapp.com/attachments/1130004696984203325/1138974405482004530/logo-min.png"
 }
@@ -2226,38 +2226,34 @@ local imgColor = {
 local imgPos_ = {
 	{vec2(70, 650), vec2(320, 910)},
 	{vec2(2230, 650), vec2(2490, 910)},
-	{vec2(355, 325), vec2(920, 1234)},
+	{vec2(357, 325), vec2(920, 1234)},
 	{vec2(993, 325), vec2(1557, 1234)},
-	{vec2(1630, 325), vec2(2195, 1234)},
+	{vec2(1633, 325), vec2(2195, 1234)},
 	{vec2(31, 106), vec2(2535, 1370)},
 	{vec2(2437, 48), vec2(2510, 100)},
 }
 
 local welcomeWindow = {
-	size = vec2(windowWidth, windowHeight),
+	size = vec2(16 * windowHeight / 9, windowHeight),
 	topLeft = vec2(0, 0),
 	topRight = vec2(windowWidth, 0),
 	offset = vec2(0, 0),
+	scale = 0.9,
 }
 
 function scalePositions()
-	local xScale = windowWidth / 2560 * 0.8
-	local yScale = windowHeight / 1440 * 0.8
-	--Get the minimum scale factor to prevent stretching
+	local xScale = windowWidth / 2560
+	local yScale = windowHeight / 1440
 	local minScale = math.min(xScale, yScale)
-	if xScale ~= yScale then
-		welcomeWindow.size = vec2(16 * windowHeight / 9, windowHeight)
-		ac.log(welcomeWindow.size)
-	end
-	welcomeWindow.offset = vec2(welcomeWindow.size.x * 0.1, welcomeWindow.size.y * 0.1)
-	welcomeWindow.size = vec2(welcomeWindow.size.x - welcomeWindow.offset.x * 2, welcomeWindow.size.y - welcomeWindow.offset.y * 2)
-	welcomeWindow.topLeft = vec2(welcomeWindow.offset.x, welcomeWindow.offset.y)
-	welcomeWindow.topRight = vec2(welcomeWindow.size.x - welcomeWindow.offset.x, welcomeWindow.offset.y)
-	-- Scale the positions
+	welcomeWindow.size = welcomeWindow.size * welcomeWindow.scale
+	welcomeWindow.offset = vec2((windowWidth - welcomeWindow.size.x) / 2, (windowHeight - welcomeWindow.size.y) / 2)
+	minScale = minScale * welcomeWindow.scale
 	for i = 1, #imgPos_ do
 		imgPos_[i][1] = imgPos_[i][1] * minScale
 		imgPos_[i][2] = imgPos_[i][2] * minScale
 	end
+	welcomeWindow.topLeft = imgPos_[6][1] + welcomeWindow.offset + welcomeWindow.size/100
+	welcomeWindow.topRight = vec2(imgPos_[6][2].x - welcomeWindow.size.x/100, imgPos_[6][1].y + welcomeWindow.size.y/100) + welcomeWindow.offset
 end
 
 
@@ -2287,26 +2283,26 @@ local imgLink = {
 
 local imgDisplayed = {1,2,3,4,5,6,7,8,9,}
 
-local textFrameTopR = imgPos_[6][1] + vec2(windowHeight/100, windowHeight/100)
-local textFrameTopL = vec2(imgPos_[6][2].x - windowHeight/80, imgPos_[6][1].y + windowHeight/100)
-
 local function drugShowInfo(i)
-	local leftCorner = vec2(imgPos_[i+2][1].x, imgPos_[i+2][1].y) + vec2(windowHeight/100, windowHeight/100)
+	local leftCorner = vec2(imgPos_[i+2][1].x, imgPos_[i+2][1].y) + vec2(welcomeWindow.size.x/100, welcomeWindow.size.y/10)
+	local textPos = leftCorner + welcomeWindow.size/100
+	ui.drawRectFilled(leftCorner,  vec2(imgPos_[i+2][2].x - welcomeWindow.size.x/100 , leftCorner.y + ui.measureDWriteText("Pick Up :  \nDrop Off :  " .. drugDelivery.dropOffName, settings.fontSize).y*2), rgbm(0, 0, 0, 0.8))
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=BLACK")
-	ui.dwriteDrawText("Drug Delivery :", 20, leftCorner, rgbm.colors.white)
-	ui.dwriteDrawText("Pick Up : " .. drugDelivery.pickUpName, 30, vec2(leftCorner.x, leftCorner.y + ui.measureDWriteText("Drug Delivery :", 20).y), rgbm.colors.white)
-	ui.dwriteDrawText("Drop Off : " .. drugDelivery.dropOffName, 30, vec2(leftCorner.x, ui.measureDWriteText("Drug Delivery :", 20).y + leftCorner.y + ui.measureDWriteText("Pick Up Point : " .. drugDelivery.pickUpName, 30).y), rgbm.colors.white)
+	ui.dwriteDrawText("Pick Up :  " .. drugDelivery.pickUpName, settings.fontSize, textPos, rgbm.colors.white)
+	textPos.y = textPos.y + ui.measureDWriteText("Pick Up :  " .. drugDelivery.pickUpName, settings.fontSize).y*2
+	ui.dwriteDrawText("Drop Off :  " .. drugDelivery.dropOffName, settings.fontSize, textPos, rgbm.colors.white)
 	ui.popDWriteFont()
 end
 
 local function drawMenuText()
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=BLACK")
-	ui.dwriteDrawText("WELCOME BACK,", 20, welcomeWindow.topRight, rgbm.colors.white)
-	ui.dwriteDrawText(ac.getDriverName(0), 50, vec2(welcomeWindow.topRight.x, welcomeWindow.topRight.y + ui.measureDWriteText("WELCOME BACK,", 20).y), settings.colorHud)
-	ui.dwriteDrawText("CURRENT CAR", 20, vec2(welcomeWindow.topLeft.x - ui.measureDWriteText("CURRENT CAR", 20).x, welcomeWindow.topLeft.y), rgbm.colors.white)
-	ui.dwriteDrawText(ac.getCarName(0), 50, vec2(welcomeWindow.topLeft.x - ui.measureDWriteText(ac.getCarName(0), 50).x, welcomeWindow.topLeft.y + ui.measureDWriteText("CURRENT CAR", 20).y), settings.colorHud)
+	ui.dwriteDrawText("WELCOME BACK,", settings.fontSize, welcomeWindow.topLeft, rgbm.colors.white)
+	ui.dwriteDrawText(ac.getDriverName(0), settings.fontSize*2, vec2(welcomeWindow.topLeft.x, welcomeWindow.topLeft.y + ui.measureDWriteText("WELCOME BACK,", settings.fontSize).y), settings.colorHud)
+	
+	ui.dwriteDrawText("CURRENT CAR", settings.fontSize, vec2(welcomeWindow.topRight.x - ui.measureDWriteText("CURRENT CAR", settings.fontSize).x, welcomeWindow.topRight.y), rgbm.colors.white)
+	ui.dwriteDrawText(ac.getCarName(0), settings.fontSize*2, vec2(welcomeWindow.topRight.x - ui.measureDWriteText(ac.getCarName(0), settings.fontSize*2).x, welcomeWindow.topRight.y + ui.measureDWriteText("CURRENT CAR", settings.fontSize).y), settings.colorHud)
 	ui.popDWriteFont()
 end
 
@@ -2319,9 +2315,9 @@ local function drawMenuImage()
 	end
 	imgToDraw[1] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138974405012246671/leftArrowoff-min.png"
 	imgToDraw[2] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138974403883966624/rightArrowoff-min.png"
-	imgToDraw[3] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283506410192906/leftBoxOff.png"
-	imgToDraw[4] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283503042166834/centerBoxOff.png"
-	imgToDraw[5] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138283511443374090/rightBoxOff.png"
+	imgToDraw[3] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138974405242921022/leftBoxOff-min.png"
+	imgToDraw[4] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138974404576026674/centerBoxOff-min.png"
+	imgToDraw[5] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138974404123050034/rightBoxOff-min.png"
 	ui.transparentWindow('welcomeIMG', welcomeWindow.offset, welcomeWindow.size, true, function ()
 		ui.childWindow('welcomeIMGChild', welcomeWindow.size, true, function ()
 			local uiStats = ac.getUI()
@@ -2369,10 +2365,9 @@ local function drawMenuImage()
 			end
 			ui.drawIcon(ui.Icons.Cancel, imgPos_[7][1]+vec2(10,10), imgPos_[7][2]-vec2(10,10), iconCloseColor)
 			for i = 1, #imgToDraw do ui.drawImage(imgToDraw[i], vec2(0,0), welcomeWindow.size, imgColor[i]) end
-			local colorOfIMG = rgbm(1,1,1,1)
 			for i = 1, 3 do
-				if imgDisplayed[i] == 4 then
-					ui.drawImage(imgSet[imgDisplayed[i]], imgPos_[i+2][1], imgPos_[i+2][2], rgbm(0,0,0,0))
+				if imgDisplayed[i] == 9 then
+					ui.drawImage(imgSet[imgDisplayed[i]], imgPos_[i+2][1], imgPos_[i+2][2], rgbm(1,1,1,1))
 					drugShowInfo(i)
 				else ui.drawImage(imgSet[imgDisplayed[i]], imgPos_[i+2][1], imgPos_[i+2][2], rgbm(1,1,1,1)) end
 			end
