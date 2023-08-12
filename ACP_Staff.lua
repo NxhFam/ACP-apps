@@ -1687,6 +1687,7 @@ local function overtakeUpdate(dt)
         local state = carsState[i]
 		local otherCar = ac.getCar(i)
 		ac.hideCarLabels(i, true)
+		ac.debug("car index", i)
         if otherCar.isConnected and otherCar.position:closerToThan(car.position, 10) then
             local drivingAlong = math.dot(otherCar.look, car.look) > 0.2
             if not drivingAlong then
