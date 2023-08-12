@@ -1322,6 +1322,11 @@ local function hasCrossedLine(line)
 end
 
 local function sectorUpdate()
+	for i = 1, ac.getSim().carsCount - 1 do
+		ac.hideCarLabels(i, true)
+		ac.debug("car index", i)
+	end
+
 	if wheels[0].surfaceSectorID == 47 and wheels[1].surfaceSectorID == 47 and wheels[2].surfaceSectorID == 47 and wheels[3].surfaceSectorID == 47 then
 		resetSectors()
 	end
@@ -1686,8 +1691,6 @@ local function overtakeUpdate(dt)
     for i = 1, ac.getSim().carsCount - 1 do
         local state = carsState[i]
 		local otherCar = ac.getCar(i)
-		ac.hideCarLabels(i, true)
-		ac.debug("car index", i)
         if otherCar.isConnected and otherCar.position:closerToThan(car.position, 10) then
             local drivingAlong = math.dot(otherCar.look, car.look) > 0.2
             if not drivingAlong then
