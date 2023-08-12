@@ -429,6 +429,7 @@ local drugDelivery = {
 	drawDropOff = false,
 	timer = 0,
 	distance = 0,
+	damage = {0,0,0,0,0},
 }
 
 local sector = nil
@@ -502,6 +503,8 @@ local starsUI = {
 	starsPos = vec2(windowWidth - (settings.starsSize or 20)/2, settings.starsSize or 20)/2,
 	starsSize = vec2(windowWidth - (settings.starsSize or 20)*2, (settings.starsSize or 20)*2),
 	startSpace = (settings.starsSize or 20)/4,
+	full = "https://acstuff.ru/images/icons_24/star_full.png",
+	empty = "https://acstuff.ru/images/icons_24/star_empty.png",
 }
 
 local function resetStarsUI()
@@ -996,9 +999,9 @@ local function showStarsPursuit()
 	resetStarsUI()
 	for i = 1, 5 do
 		if i > online.level/2 then
-			ui.drawIcon(ui.Icons.StarEmpty, starsUI.starsPos, starsUI.starsSize, rgbm(1, 1, 1, 0.2))
+			ui.drawImage(starsUI.empty, starsUI.starsPos, starsUI.starsSize, rgbm(1, 1, 1, 0.2))
 		else
-			ui.drawIcon(ui.Icons.StarFull, starsUI.starsPos, starsUI.starsSize, starsColor)
+			ui.drawImage(starsUI.full, starsUI.starsPos, starsUI.starsSize, starsColor)
 		end
 		starsUI.starsPos.x = starsUI.starsPos.x - settings.starsSize - starsUI.startSpace
 		starsUI.starsSize.x = starsUI.starsSize.x - settings.starsSize - starsUI.startSpace
@@ -1408,6 +1411,7 @@ local function drugDeliveryUpdate(dt)
 		drugDelivery.distance = car.distanceDrivenSessionKm
 	elseif not drugDelivery.started and drugDelivery.active and car.speedKmh > 5 and isPointInCircle(car.position, drugDelivery.pickUp, 100) then
 		ac.sendChatMessage(" has picked up the drugs and is on the way to the drop off! (".. drugDelivery.dropOffName ..")")
+		for i = 1, #car.damage do drugDelivery.damage[i] = car.damage[i] end
 		drugDelivery.started = true
 	elseif drugDelivery.started and car.speedKmh < 10 and isPointInCircle(car.position, drugDelivery.dropOff, 100) then
 		if drugAvgSpeedValid() then
@@ -1416,9 +1420,17 @@ local function drugDeliveryUpdate(dt)
 			ac.sendChatMessage(" was too slow and got caught by the cops with the drugs!")
 		end
 	end
-	if drugDelivery.started and car.damage[0] ~= 0 and car.damage[1] ~= 0 and car.damage[2] ~= 0 and car.damage[3] ~= 0 and car.damage[4] then
-		ac.sendChatMessage(" has crashed and lost the drugs!")
-		resetDrugDelivery()
+	
+	if drugDelivery.started then
+		if car.speedKmh > 10 then
+			for i = 1, #car.damage do
+				if car.damage[i] > drugDelivery.damage[i] then
+					ac.sendChatMessage(" has crashed and lost the drugs!")
+					resetDrugDelivery()
+					break
+				end
+			end
+		end
 	end
 	if drugDelivery.started then drugDelivery.timer = drugDelivery.timer + dt end
 end
@@ -2247,12 +2259,20 @@ local welcomeWindow = {
 	topRight = vec2(windowWidth, 0),
 	offset = vec2(0, 0),
 	scale = 0.9,
+	font = nil,
+	closeIMG = "https://acstuff.ru/images/icons_24/cancel.png",
 }
 
 function scalePositions()
+	local urlFont = "https://www.fontspace.com/get/family/mqeg2"
+	web.loadRemoteAssets(urlFont, function (success, path)
+		ac.log("Font loaded: " .. path)
+		welcomeWindow.font = ui.DWriteFont("MODERN WARFARE", path)
+	end)
 	local xScale = windowWidth / 2560
 	local yScale = windowHeight / 1440
 	local minScale = math.min(xScale, yScale)
+
 	welcomeWindow.size = welcomeWindow.size * welcomeWindow.scale
 	welcomeWindow.offset = vec2((windowWidth - welcomeWindow.size.x) / 2, (windowHeight - welcomeWindow.size.y) / 2)
 	minScale = minScale * welcomeWindow.scale
@@ -2309,7 +2329,7 @@ end
 
 local function drawMenuText()
 	ui.popDWriteFont()
-	ui.pushDWriteFont("Orbitron;Weight=BLACK")
+	ui.pushDWriteFont(welcomeWindow.font)
 	ui.dwriteDrawText("WELCOME BACK,", settings.fontSize, welcomeWindow.topLeft, rgbm.colors.white)
 	ui.dwriteDrawText(ac.getDriverName(0), settings.fontSize*2, vec2(welcomeWindow.topLeft.x, welcomeWindow.topLeft.y + ui.measureDWriteText("WELCOME BACK,", settings.fontSize).y), settings.colorHud)
 	
@@ -2375,7 +2395,7 @@ local function drawMenuImage()
 				iconCloseColor = settings.colorHud
 				if uiStats.isMouseLeftKeyClicked then welcomeClosed = true end
 			end
-			ui.drawIcon(ui.Icons.Cancel, imgPos_[7][1]+vec2(10,10), imgPos_[7][2]-vec2(10,10), iconCloseColor)
+				ui.drawImage(welcomeWindow.closeIMG, imgPos_[7][1]+vec2(10,10), imgPos_[7][2]-vec2(10,10), iconCloseColor)
 			for i = 1, #imgToDraw do ui.drawImage(imgToDraw[i], vec2(0,0), welcomeWindow.size, imgColor[i]) end
 			for i = 1, 3 do
 				if imgDisplayed[i] == 9 then
