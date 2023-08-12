@@ -1290,7 +1290,7 @@ local function sectorUI()
 		end
 	end
 	discordLinks()
-	ui.text(car.collidedWith)
+	ui.text(car.collisionPosition)
 	ui.endGroup()
 
 	return 1
