@@ -1324,7 +1324,7 @@ end
 local function sectorUpdate()
 	for i = 1, ac.getSim().carsCount - 1 do
 		ac.hideCarLabels(i, true)
-		ac.debug("car index", i)
+		ac.log("car index", i)
 	end
 
 	if wheels[0].surfaceSectorID == 47 and wheels[1].surfaceSectorID == 47 and wheels[2].surfaceSectorID == 47 and wheels[3].surfaceSectorID == 47 then
