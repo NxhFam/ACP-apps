@@ -1411,7 +1411,7 @@ local function drugDeliveryUpdate(dt)
 		drugDelivery.distance = car.distanceDrivenSessionKm
 	elseif not drugDelivery.started and drugDelivery.active and car.speedKmh > 5 and isPointInCircle(car.position, drugDelivery.pickUp, 100) then
 		ac.sendChatMessage(" has picked up the drugs and is on the way to the drop off! (".. drugDelivery.dropOffName ..")")
-		for i = 1, #car.damage do drugDelivery.damage[i] = car.damage[i] end
+		for i = 0, 4 do drugDelivery.damage[i] = car.damage[i] end
 		drugDelivery.started = true
 	elseif drugDelivery.started and car.speedKmh < 10 and isPointInCircle(car.position, drugDelivery.dropOff, 100) then
 		if drugAvgSpeedValid() then
@@ -1420,10 +1420,9 @@ local function drugDeliveryUpdate(dt)
 			ac.sendChatMessage(" was too slow and got caught by the cops with the drugs!")
 		end
 	end
-	
 	if drugDelivery.started then
 		if car.speedKmh > 10 then
-			for i = 1, #car.damage do
+			for i = 0, 4 do
 				if car.damage[i] > drugDelivery.damage[i] then
 					ac.sendChatMessage(" has crashed and lost the drugs!")
 					resetDrugDelivery()
