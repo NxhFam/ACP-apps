@@ -2258,16 +2258,10 @@ local welcomeWindow = {
 	topRight = vec2(windowWidth, 0),
 	offset = vec2(0, 0),
 	scale = 0.9,
-	font = nil,
 	closeIMG = "https://acstuff.ru/images/icons_24/cancel.png",
 }
 
 function scalePositions()
-	local urlFont = "https://www.fontspace.com/get/family/mqeg2"
-	web.loadRemoteAssets(urlFont, function (success, path)
-		ac.log("Font loaded: " .. path)
-		welcomeWindow.font = ui.DWriteFont("MODERN WARFARE", path)
-	end)
 	local xScale = windowWidth / 2560
 	local yScale = windowHeight / 1440
 	local minScale = math.min(xScale, yScale)
@@ -2328,7 +2322,7 @@ end
 
 local function drawMenuText()
 	ui.popDWriteFont()
-	ui.pushDWriteFont(welcomeWindow.font)
+	ui.pushDWriteFont("Orbitron;Weight=Black")
 	ui.dwriteDrawText("WELCOME BACK,", settings.fontSize, welcomeWindow.topLeft, rgbm.colors.white)
 	ui.dwriteDrawText(ac.getDriverName(0), settings.fontSize*2, vec2(welcomeWindow.topLeft.x, welcomeWindow.topLeft.y + ui.measureDWriteText("WELCOME BACK,", settings.fontSize).y), settings.colorHud)
 	
