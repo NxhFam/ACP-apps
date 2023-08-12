@@ -42,6 +42,10 @@ local msgLost = {
 	"We have lost the suspect's visual trail. The vehicle in question is described as a `CAR` driven by `NAME`.",}
 }
 
+local msgEngage = {
+    msg = {"Control! I am engaging on a `CAR` traveling at `SPEED`","Pursuit in progress! I am chasing a `CAR` exceeding `SPEED`","Control, be advised! Pursuit is active on a `CAR` driving over `SPEED`","Attention! Pursuit initiated! Im following a `CAR` going above `SPEED`","Pursuit engaged! `CAR` driving at a high rate of speed over `SPEED`","Attention all units, we have a pursuit in progress! Suspect driving a `CAR` exceeding `SPEED`","Attention units! We have a suspect fleeing in a `CAR` at high speed, pursuing now at `SPEED`","Engaging on a high-speed chase! Suspect driving a `CAR` exceeding `SPEED`!","Attention all units! we have a pursuit in progress! Suspect driving a `CAR` exceeding `SPEED`","High-speed chase underway, suspect driving `CAR` over `SPEED`","Control, `CAR` exceeding `SPEED`, pursuit active.","Engaging on a `CAR` exceeding `SPEED`, pursuit initiated."}
+}
+
 ------------------------------------------------------------------------- JSON Utils -------------------------------------------------------------------------
 
 local json = {}
@@ -345,6 +349,7 @@ local pursuit = {
 	startedTime = 0,
 	timeLostSight = 0,
 	lostSight = false,
+	engage = false,
 }
 
 local arrestations = {}
@@ -790,6 +795,7 @@ local function playerSelected(player)
 		pursuit.level = 1
 		local msgToSend = "Officer " .. ac.getDriverName(0) .. " is chasing you. Run! "
 		pursuit.startedTime = settings.timeMsg
+		pursuit.engage = true
 		acpPolice{message = msgToSend, messageType = 0, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
 		if cspAboveP218 then
 			ac.setExtraSwitch(0, true)
@@ -928,6 +934,10 @@ local function showPursuitMsg()
 			text = "You are chasing " .. ac.getDriverName(pursuit.suspect.index) .. " driving a " .. string.gsub(string.gsub(ac.getCarName(pursuit.suspect.index), "%W", " "), "  ", "") .. " ! Get him! "
 		end
 		if pursuit.startedTime > 6 then showPoliceLights() end
+		if pursuit.engage and pursuit.startedTime < 8 then
+			ac.sendChatMessage(formatMessage(msgEngage.msg[math.random(#msgEngage.msg)]))
+			pursuit.engage = false
+		end
 	end
 	if text ~= "" then
 		local textLenght = ui.measureDWriteText(text, settings.fontSizeMSG)
