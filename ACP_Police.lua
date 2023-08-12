@@ -341,7 +341,7 @@ local pursuit = {
 	enable = false,
 	maxDistance = 250000,
 	minDistance = 40000,
-	nextMessage = 20,
+	nextMessage = 30,
 	level = 1,
 	id = -1,
 	timerArrest = 0,
@@ -690,11 +690,12 @@ end
 local chaseLVL = {
 	message = "",
 	messageTimer = 0,
+	color = rgbm(1,1,1,1),
 }
 
 local function resetChase()
 	pursuit.enable = false
-	pursuit.nextMessage = 20
+	pursuit.nextMessage = 30
 	pursuit.lostSight = false
 	pursuit.timeLostSight = 2
 end
@@ -791,7 +792,7 @@ end
 local function playerSelected(player)
 	if player.speedKmh > 50 then
 		pursuit.suspect = player
-		pursuit.nextMessage = 20
+		pursuit.nextMessage = 30
 		pursuit.level = 1
 		local msgToSend = "Officer " .. ac.getDriverName(0) .. " is chasing you. Run! "
 		pursuit.startedTime = settings.timeMsg
@@ -917,8 +918,19 @@ local function sendChatToSuspect()
 			acpPolice{message = nb, messageType = 1, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
 			if pursuit.level < 10 then
 				pursuit.level = pursuit.level + 1
+				chaseLVL.messageTimer = settings.timeMsg
+				chaseLVL.message = "CHASE LEVEL " .. math.floor(pursuit.level/2)
+				if pursuit.level > 8 then
+					chaseLVL.color = rgbm.colors.red
+				elseif pursuit.level > 6 then
+					chaseLVL.color = rgbm.colors.orange
+				elseif pursuit.level > 4 then
+					chaseLVL.color = rgbm.colors.yellow
+				else
+					chaseLVL.color = rgbm.colors.white
+				end
 			end
-			pursuit.nextMessage = 20
+			pursuit.nextMessage = 30
 		end
 	end
 end
@@ -949,7 +961,7 @@ local function showPursuitMsg()
 		else
 			ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, rgbm(0,0,0,0.5), 10)
 		end
-		ui.dwriteDrawText(text, settings.fontSizeMSG, rectPos1, rgbm.colors.white)
+		ui.dwriteDrawText(text, settings.fontSizeMSG, rectPos1, chaseLVL.color)
 	end
 end
 
