@@ -379,7 +379,7 @@ local drugAccessPointsName = {
 	"McDanalds 3",
 	"Road Criminals",
 	"McDanalds 4",
-	"Gas Station 5",
+	"Gas Station 3",
 	"Reckless Renegades",
 	"Motion Masters",
 	"restaurant 4",
@@ -571,8 +571,8 @@ local function randNum(seed)
 	return num
 end
 
-local function initDrugRoute()
-	local accessPoint = randNum(0)
+local function initDrugRoute(seed)
+	local accessPoint = randNum(seed)
 	drugDelivery.pickUp = drugAccessPoints[accessPoint]
 	drugDelivery.pickUpName = drugAccessPointsName[accessPoint]
 	local deliveryPoint = randNum(accessPoint) % 4 + 3
@@ -1293,8 +1293,10 @@ local function sectorUI()
 		end
 	end
 	discordLinks()
+	if ui.button("Reset Drug Delivery") then
+		initDrugRoute(math.floor(os.clock()))
+	end
 	ui.endGroup()
-
 	return 1
 end
 
@@ -1398,6 +1400,7 @@ local function drugAvgSpeedValid()
 		local routeLength = car.distanceDrivenSessionKm - drugDelivery.distance
 		local avgSpeed = routeLength * 3600 / drugDelivery.timer
 		resetDrugDelivery()
+		ac.sendChatMessage(avgSpeed)
 		if avgSpeed > 100 then return true end
 	end
 	return false
@@ -1410,27 +1413,27 @@ local function drugDeliveryUpdate(dt)
 		drugDelivery.active = true
 		drugDelivery.distance = car.distanceDrivenSessionKm
 	elseif not drugDelivery.started and drugDelivery.active and car.speedKmh > 5 and isPointInCircle(car.position, drugDelivery.pickUp, 100) then
-		ac.sendChatMessage(" has picked up the drugs and is on the way to the drop off! (".. drugDelivery.dropOffName ..")")
+		--ac.sendChatMessage(" has picked up the drugs and is on the way to the drop off! (".. drugDelivery.dropOffName ..")")
 		for i = 0, 4 do drugDelivery.damage[i] = car.damage[i] end
 		drugDelivery.started = true
-	elseif drugDelivery.started and car.speedKmh < 10 and isPointInCircle(car.position, drugDelivery.dropOff, 100) then
-		if drugAvgSpeedValid() then
-			ac.sendChatMessage(" has delivered the drugs and got away with it!")
-		else
-			ac.sendChatMessage(" was too slow and got caught by the cops with the drugs!")
-		end
+	elseif drugDelivery.started and car.speedKmh < 10 and isPointInCircle(car.position, drugDelivery.dropOff, 100) and drugAvgSpeedValid() then
+		-- if drugAvgSpeedValid() then
+		-- 	ac.sendChatMessage(" has delivered the drugs and got away with it!")
+		-- else
+		-- 	ac.sendChatMessage(" was too slow and got caught by the cops with the drugs!")
+		-- end
 	end
-	if drugDelivery.started then
-		if car.speedKmh > 10 then
-			for i = 0, 4 do
-				if car.damage[i] > drugDelivery.damage[i] then
-					ac.sendChatMessage(" has crashed and lost the drugs!")
-					resetDrugDelivery()
-					break
-				end
-			end
-		end
-	end
+	-- if drugDelivery.started then
+	-- 	if car.speedKmh > 10 then
+	-- 		for i = 0, 4 do
+	-- 			if car.damage[i] > drugDelivery.damage[i] then
+	-- 				ac.sendChatMessage(" has crashed and lost the drugs!")
+	-- 				resetDrugDelivery()
+	-- 				break
+	-- 			end
+	-- 		end
+	-- 	end
+	-- end
 	if drugDelivery.started then drugDelivery.timer = drugDelivery.timer + dt end
 end
 
@@ -2258,10 +2261,17 @@ local welcomeWindow = {
 	topRight = vec2(windowWidth, 0),
 	offset = vec2(0, 0),
 	scale = 0.9,
+	font = nil,
 	closeIMG = "https://acstuff.ru/images/icons_24/cancel.png",
 }
 
 function scalePositions()
+	local urlFont = "https://cdn.discordapp.com/attachments/1130004696984203325/1140404820746965002/NeutronsRegular.zip"
+	web.loadRemoteAssets(urlFont, function (success, path)
+		if success == nil then
+			welcomeWindow.font = ui.DWriteFont("Neutrons", path)
+		end
+	end)
 	local xScale = windowWidth / 2560
 	local yScale = windowHeight / 1440
 	local minScale = math.min(xScale, yScale)
@@ -2322,7 +2332,7 @@ end
 
 local function drawMenuText()
 	ui.popDWriteFont()
-	ui.pushDWriteFont("Orbitron;Weight=Black")
+	ui.pushDWriteFont(welcomeWindow.font)
 	ui.dwriteDrawText("WELCOME BACK,", settings.fontSize, welcomeWindow.topLeft, rgbm.colors.white)
 	ui.dwriteDrawText(ac.getDriverName(0), settings.fontSize*2, vec2(welcomeWindow.topLeft.x, welcomeWindow.topLeft.y + ui.measureDWriteText("WELCOME BACK,", settings.fontSize).y), settings.colorHud)
 	
@@ -2441,7 +2451,7 @@ function script.update(dt)
 		initialized = true
 		getFirebase()
 		loadLeaderboard()
-		initDrugRoute()
+		initDrugRoute(0)
 		scalePositions()
 	else
 
@@ -2457,6 +2467,7 @@ ac.onCarJumped(0, function (carid)
 	if carID ~= valideCar[1] and carID ~= valideCar[2] then
 		ac.log("Car Jumped")
 		resetSectors()
+		resetRace()
 		if online.chased and online.officer then
 			acpPolice{message = "TP", messageType = 0, yourIndex = online.officer.sessionID}
 		end
@@ -2485,3 +2496,12 @@ end
 if carID ~= valideCar[1] and carID ~= valideCar[2] and cspVersion >= cspMinVersion then
 	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
+
+-- TODO:
+
+-- test avg speed for drug deliveries + add randomization
+
+-- CTRL + Left Click to open discord links
+-- Add tooltips when hovering over the images for the welcome menu
+-- reset drug delivery when car jumps
+-- overtake damage detection instead of on collision
