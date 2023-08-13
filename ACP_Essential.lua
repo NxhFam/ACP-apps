@@ -1602,7 +1602,7 @@ local function overtakeUI(textOffset)
 	local colorCombo
 
 	if overtake.totalScore > 0 then
-		text = overtake.totalScore .. " pts - " .. string.format("%d",comboMeter) .. "x"
+		text = overtake.totalScore .. " pts - " .. string.format("%d",overtake.comboMeter) .. "x"
 		colorCombo = rgbm(0, 1, 0, 0.9)
 	else
 		text = "PB: " .. highestScore .. "pts"
