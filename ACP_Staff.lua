@@ -379,7 +379,7 @@ local drugAccessPointsName = {
 	"McDanalds 3",
 	"Road Criminals",
 	"McDanalds 4",
-	"Gas Station 3",
+	"Gas Station 5",
 	"Reckless Renegades",
 	"Motion Masters",
 	"restaurant 4",
@@ -571,8 +571,8 @@ local function randNum(seed)
 	return num
 end
 
-local function initDrugRoute(seed)
-	local accessPoint = randNum(seed)
+local function initDrugRoute()
+	local accessPoint = randNum(0)
 	drugDelivery.pickUp = drugAccessPoints[accessPoint]
 	drugDelivery.pickUpName = drugAccessPointsName[accessPoint]
 	local deliveryPoint = randNum(accessPoint) % 4 + 3
@@ -1293,10 +1293,8 @@ local function sectorUI()
 		end
 	end
 	discordLinks()
-	if ui.button("Reset Drug Delivery") then
-		initDrugRoute(math.floor(os.clock()))
-	end
 	ui.endGroup()
+
 	return 1
 end
 
@@ -1400,7 +1398,6 @@ local function drugAvgSpeedValid()
 		local routeLength = car.distanceDrivenSessionKm - drugDelivery.distance
 		local avgSpeed = routeLength * 3600 / drugDelivery.timer
 		resetDrugDelivery()
-		ac.sendChatMessage(avgSpeed)
 		if avgSpeed > 100 then return true end
 	end
 	return false
@@ -1413,27 +1410,27 @@ local function drugDeliveryUpdate(dt)
 		drugDelivery.active = true
 		drugDelivery.distance = car.distanceDrivenSessionKm
 	elseif not drugDelivery.started and drugDelivery.active and car.speedKmh > 5 and isPointInCircle(car.position, drugDelivery.pickUp, 100) then
-		--ac.sendChatMessage(" has picked up the drugs and is on the way to the drop off! (".. drugDelivery.dropOffName ..")")
+		ac.sendChatMessage(" has picked up the drugs and is on the way to the drop off! (".. drugDelivery.dropOffName ..")")
 		for i = 0, 4 do drugDelivery.damage[i] = car.damage[i] end
 		drugDelivery.started = true
-	elseif drugDelivery.started and car.speedKmh < 10 and isPointInCircle(car.position, drugDelivery.dropOff, 100) and drugAvgSpeedValid() then
-		-- if drugAvgSpeedValid() then
-		-- 	ac.sendChatMessage(" has delivered the drugs and got away with it!")
-		-- else
-		-- 	ac.sendChatMessage(" was too slow and got caught by the cops with the drugs!")
-		-- end
+	elseif drugDelivery.started and car.speedKmh < 10 and isPointInCircle(car.position, drugDelivery.dropOff, 100) then
+		if drugAvgSpeedValid() then
+			ac.sendChatMessage(" has delivered the drugs and got away with it!")
+		else
+			ac.sendChatMessage(" was too slow and got caught by the cops with the drugs!")
+		end
 	end
-	-- if drugDelivery.started then
-	-- 	if car.speedKmh > 10 then
-	-- 		for i = 0, 4 do
-	-- 			if car.damage[i] > drugDelivery.damage[i] then
-	-- 				ac.sendChatMessage(" has crashed and lost the drugs!")
-	-- 				resetDrugDelivery()
-	-- 				break
-	-- 			end
-	-- 		end
-	-- 	end
-	-- end
+	if drugDelivery.started then
+		if car.speedKmh > 10 then
+			for i = 0, 4 do
+				if car.damage[i] > drugDelivery.damage[i] then
+					ac.sendChatMessage(" has crashed and lost the drugs!")
+					resetDrugDelivery()
+					break
+				end
+			end
+		end
+	end
 	if drugDelivery.started then drugDelivery.timer = drugDelivery.timer + dt end
 end
 
@@ -1648,52 +1645,62 @@ function script.prepare(dt)
 end
 
 -- Event state:
-local timePassed = 0
-local totalScore = 0
-local comboMeter = 1
-local comboColor = 0
-local dangerouslySlowTimer = 0
+local overtake = {
+	damage = {},
+	timePassed = 0,
+	totalScore = 0,
+	comboMeter = 1,
+	dangerouslySlowTimer = 0,
+}
+
 local carsState = {}
 
+local function resetOvertake()
+	for i = 0, 4 do overtake.damage[i] = car.damage[i] end
+	if overtake.totalScore > highestScore then
+		highestScore = math.floor(overtake.totalScore)
+		ac.sendChatMessage("New highest Overtake score: " .. highestScore .. " pts !")
+		playerData.Overtake = highestScore
+		updatefirebase()
+	end
+	overtake.totalScore = 0
+	overtake.comboMeter = 1
+end
+
+local function iniOverTake()
+	for i = 0, 4 do overtake.damage[i] = car.damage[i] end
+end
 
 local function overtakeUpdate(dt)
-    if car.engineLifeLeft < 1 or car.collidedWith == 0 then
-        if totalScore > highestScore then
-            highestScore = math.floor(totalScore)
-            ac.sendChatMessage("New highest Overtake score: " .. highestScore .. " pts !")
-			playerData.Overtake = highestScore
-			updatefirebase()
-        end
-        totalScore = 0
-        comboMeter = 1
+    if car.engineLifeLeft < 1 then
+		resetOvertake()
         return
     end
-
-    timePassed = timePassed + dt
+	for i = 0, 4 do
+		if car.damage[i] > overtake.damage[i] then
+			resetOvertake()
+			break
+		end
+	end
+    overtake.timePassed = overtake.timePassed + dt
 
     local comboFadingRate = 0.5 * math.lerp(1, 0.1, math.lerpInvSat(car.speedKmh, 80, 200)) + car.wheelsOutside
-    comboMeter = math.max(1, comboMeter - dt * comboFadingRate)
+    overtake.comboMeter = math.max(1, overtake.comboMeter - dt * comboFadingRate)
 
     while sim.carsCount > #carsState do
         carsState[#carsState + 1] = {}
     end
 
     if car.speedKmh < requiredSpeed then
-        if dangerouslySlowTimer > 3 then
-            if totalScore > highestScore then
-                highestScore = math.floor(totalScore)
-				ac.sendChatMessage("New highest Overtake score: " .. highestScore .. " pts !")
-				playerData.Overtake = highestScore
-				updatefirebase()
-            end
-            totalScore = 0
-            comboMeter = 1
+        if overtake.dangerouslySlowTimer > 3 then
+			resetOvertake()
+			return
         end
-        dangerouslySlowTimer = dangerouslySlowTimer + dt
-        comboMeter = 1
+        overtake.dangerouslySlowTimer = overtake.dangerouslySlowTimer + dt
+        overtake.comboMeter = 1
         return
     else
-        dangerouslySlowTimer = 0
+        overtake.dangerouslySlowTimer = 0
     end
 
     for i = 1, ac.getSim().carsCount - 1 do
@@ -1708,23 +1715,17 @@ local function overtakeUpdate(dt)
                     state.nearMiss = true
 
                     if otherCar.position:closerToThan(car.position, 2.5) then
-                        comboMeter = comboMeter + 3
+                        overtake.comboMeter = comboMeter + 3
                     else
-                        comboMeter = comboMeter + 1
+                        overtake.comboMeter = comboMeter + 1
                     end
                 end
             end
 
             if otherCar.collidedWith == 0 then
                 state.collided = true
-                if totalScore > highestScore then
-                    highestScore = math.floor(totalScore)
-					ac.sendChatMessage("New highest Overtake score: " .. highestScore .. " pts !")
-					playerData.Overtake = highestScore
-					updatefirebase()
-                end
-                totalScore = 0
-                comboMeter = 1
+				resetOvertake()
+				return
             end
 
             if not state.overtaken and not state.collided and state.drivingAlong then
@@ -1732,9 +1733,8 @@ local function overtakeUpdate(dt)
                 local posDot = math.dot(posDir, otherCar.look)
                 state.maxPosDot = math.max(state.maxPosDot, posDot)
                 if posDot < -0.5 and state.maxPosDot > 0.5 then
-                    totalScore = totalScore + math.ceil(10 * comboMeter)
-                    comboMeter = comboMeter + 1
-                    comboColor = comboColor + 90
+                    overtake.totalScore = overtake.totalScore + math.ceil(10 * overtake.comboMeter)
+                    overtake.comboMeter = overtake.comboMeter + 1
                     state.overtaken = true
                 end
             end
@@ -1752,9 +1752,9 @@ local function overtakeUI(textOffset)
 	local text
 	local colorCombo
 
-	if totalScore > 0 then
-		text = totalScore .. " pts - " .. string.format("%d",comboMeter) .. "x"
-		colorCombo = rgbm(0, 1, 0, 0.9) --rgbm.new(hsv(comboColor, math.saturate(comboMeter / 10), 1):rgb(), math.saturate(comboMeter / 4))
+	if overtake.totalScore > 0 then
+		text = overtake.totalScore .. " pts - " .. string.format("%d",comboMeter) .. "x"
+		colorCombo = rgbm(0, 1, 0, 0.9)
 	else
 		text = "PB: " .. highestScore .. "pts"
 		colorCombo = rgbm(1, 1, 1, 0.9)
@@ -2070,22 +2070,22 @@ local function drawImage()
 	iconsColorOn[2] = rgbm(0.99,0.99,0.99,1)
 	iconsColorOn[3] = rgbm(0.99,0.99,0.99,1)
 	iconsColorOn[4] = rgbm(0.99,0.99,0.99,1)
-	local uiStats = ac.getUI()
+	local uiState = ac.getUI()
 
 	ui.drawImage(hudCenter, vec2(0,0), imageSize)
 	if ui.rectHovered(imgPos.leftPos2, imgPos.leftPos1) then
 		ui.image(hudLeft, imageSize, settings.colorHud)
-		if uiStats.isMouseLeftKeyClicked then
+		if uiState.isMouseLeftKeyClicked then
 			if settings.current == 1 then settings.current = #statOn else settings.current = settings.current - 1 end
 		end
 	elseif ui.rectHovered(imgPos.rightPos2, imgPos.rightPos1) then
 		ui.image(hudRight, imageSize, settings.colorHud)
-		if uiStats.isMouseLeftKeyClicked then
+		if uiState.isMouseLeftKeyClicked then
 			if settings.current == #statOn then settings.current = 1 else settings.current = settings.current + 1 end
 		end
 	elseif ui.rectHovered(imgPos.theftPos2, imgPos.theftPos1) then
 		iconsColorOn[1] = settings.colorHud
-		if uiStats.isMouseLeftKeyClicked then
+		if uiState.isMouseLeftKeyClicked then
 			if stealingTime == 0 then
 				stealingTime = 30
 				ac.sendChatMessage("* Stealing a " .. string.gsub(ac.getCarName(0), "%W", " ") .. os.date(" %x *"))
@@ -2100,7 +2100,7 @@ local function drawImage()
 		end
 	elseif ui.rectHovered(imgPos.ranksPos2, imgPos.ranksPos1) then
 		iconsColorOn[2] = settings.colorHud
-		if uiStats.isMouseLeftKeyClicked then
+		if uiState.isMouseLeftKeyClicked then
 			if leaderboardOpen then leaderboardOpen = false
 			else
 				if menuOpen then
@@ -2113,7 +2113,7 @@ local function drawImage()
 		end
 	elseif ui.rectHovered(imgPos.countdownPos2, imgPos.countdownPos1) then
 		iconsColorOn[3] = settings.colorHud
-		if not countDownState.countdownOn and uiStats.isMouseLeftKeyClicked then
+		if not countDownState.countdownOn and uiState.isMouseLeftKeyClicked then
 			if cooldownTime == 0 then
 				countdownTime = 5
 				cooldownTime = 30
@@ -2126,7 +2126,7 @@ local function drawImage()
 		end
 	elseif ui.rectHovered(imgPos.menuPos2, imgPos.menuPos1) then
 		iconsColorOn[4] = settings.colorHud
-		if uiStats.isMouseLeftKeyClicked then
+		if uiState.isMouseLeftKeyClicked then
 			if menuOpen then
 				menuOpen = false
 				onSettingsChange()
@@ -2343,7 +2343,7 @@ end
 
 local function drawMenuImage()
 	local iconCloseColor = rgbm.colors.white
-	
+	local toolTipOn = false
 	for i = 1, #imgColor - 1 do
 		if i == #imgColor - 1 then imgColor[i] = settings.colorHud
 		else imgColor[i] = rgbm.colors.white end
@@ -2355,13 +2355,13 @@ local function drawMenuImage()
 	imgToDraw[5] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138974404123050034/rightBoxOff-min.png"
 	ui.transparentWindow('welcomeIMG', welcomeWindow.offset, welcomeWindow.size, true, function ()
 		ui.childWindow('welcomeIMGChild', welcomeWindow.size, true, function ()
-			local uiStats = ac.getUI()
+			local uiState = ac.getUI()
 			ui.drawRectFilled(imgPos_[6][1], imgPos_[6][2], rgbm(0, 0, 0, 0.6))
 			ui.drawRectFilled(imgPos_[7][1], imgPos_[7][2], rgbm(0, 0, 0, 0.6))
 			if ui.rectHovered(imgPos_[1][1], imgPos_[1][2]) then
 				imgColor[1] = settings.colorHud
 				imgToDraw[1] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138974404768972870/leftArrow-min.png"
-				if uiStats.isMouseLeftKeyClicked then
+				if uiState.isMouseLeftKeyClicked then
 					for i = 1, #imgDisplayed do
 						if imgDisplayed[i] == #imgSet then
 							imgDisplayed[i] = 1
@@ -2373,7 +2373,7 @@ local function drawMenuImage()
 			elseif ui.rectHovered(imgPos_[2][1], imgPos_[2][2]) then
 				imgColor[2] = settings.colorHud
 				imgToDraw[2] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138974403649097748/rightArrow-min.png"
-				if uiStats.isMouseLeftKeyClicked then
+				if uiState.isMouseLeftKeyClicked then
 					for i = 1, #imgDisplayed do
 						if imgDisplayed[i] == 1 then
 							imgDisplayed[i] = #imgSet
@@ -2383,20 +2383,23 @@ local function drawMenuImage()
 					end
 				end
 			elseif ui.rectHovered(imgPos_[3][1], imgPos_[3][2]) then
+				toolTipOn = true
 				imgColor[3] = settings.colorHud
 				imgToDraw[3] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138975450102775858/leftBoxOn-min.png"
-				if uiStats.isMouseLeftKeyClicked then os.openURL(imgLink[imgDisplayed[1]]) end
+				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(imgLink[imgDisplayed[1]]) end
 			elseif ui.rectHovered(imgPos_[4][1], imgPos_[4][2]) then
+				toolTipOn = true
 				imgColor[4] = settings.colorHud
 				imgToDraw[4] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138975449809162352/centerBoxOn-min.png"
-				if uiStats.isMouseLeftKeyClicked then os.openURL(imgLink[imgDisplayed[2]]) end
+				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(imgLink[imgDisplayed[2]]) end
 			elseif ui.rectHovered(imgPos_[5][1], imgPos_[5][2]) then
+				toolTipOn = true
 				imgColor[5] = settings.colorHud
 				imgToDraw[5] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138975450371199057/rightBoxOn-min.png"
-				if uiStats.isMouseLeftKeyClicked then os.openURL(imgLink[imgDisplayed[3]]) end
+				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(imgLink[imgDisplayed[3]]) end
 			elseif ui.rectHovered(imgPos_[7][1], imgPos_[7][2]) then
 				iconCloseColor = settings.colorHud
-				if uiStats.isMouseLeftKeyClicked then welcomeClosed = true end
+				if uiState.isMouseLeftKeyClicked then welcomeClosed = true end
 			end
 				ui.drawImage(welcomeWindow.closeIMG, imgPos_[7][1]+vec2(10,10), imgPos_[7][2]-vec2(10,10), iconCloseColor)
 			for i = 1, #imgToDraw do ui.drawImage(imgToDraw[i], vec2(0,0), welcomeWindow.size, imgColor[i]) end
@@ -2408,6 +2411,10 @@ local function drawMenuImage()
 			end
 		end)
 	end)
+	if toolTipOn then ui.tooltip(function ()
+			ui.text("CTRL + Left Click to open Discord link\nWhere you can find more information")
+		end)
+	end
 end
 
 local function drawMenuWelcome()
@@ -2451,8 +2458,9 @@ function script.update(dt)
 		initialized = true
 		getFirebase()
 		loadLeaderboard()
-		initDrugRoute(0)
+		initDrugRoute()
 		scalePositions()
+		iniOverTake()
 	else
 
 		sectorUpdate()
@@ -2467,7 +2475,7 @@ ac.onCarJumped(0, function (carid)
 	if carID ~= valideCar[1] and carID ~= valideCar[2] then
 		ac.log("Car Jumped")
 		resetSectors()
-		resetRace()
+		resetDrugDelivery()
 		if online.chased and online.officer then
 			acpPolice{message = "TP", messageType = 0, yourIndex = online.officer.sessionID}
 		end
@@ -2496,12 +2504,3 @@ end
 if carID ~= valideCar[1] and carID ~= valideCar[2] and cspVersion >= cspMinVersion then
 	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
-
--- TODO:
-
--- test avg speed for drug deliveries + add randomization
-
--- CTRL + Left Click to open discord links
--- Add tooltips when hovering over the images for the welcome menu
--- reset drug delivery when car jumps
--- overtake damage detection instead of on collision
