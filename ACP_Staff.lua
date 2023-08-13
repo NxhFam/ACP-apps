@@ -1667,7 +1667,7 @@ local function resetOvertake()
 	overtake.comboMeter = 1
 end
 
-local function iniOverTake()
+local function initOverTake()
 	for i = 0, 4 do overtake.damage[i] = car.damage[i] end
 end
 
@@ -1753,7 +1753,7 @@ local function overtakeUI(textOffset)
 	local colorCombo
 
 	if overtake.totalScore > 0 then
-		text = overtake.totalScore .. " pts - " .. string.format("%d",comboMeter) .. "x"
+		text = overtake.totalScore .. " pts - " .. string.format("%d",overtake.comboMeter) .. "x"
 		colorCombo = rgbm(0, 1, 0, 0.9)
 	else
 		text = "PB: " .. highestScore .. "pts"
@@ -2460,9 +2460,8 @@ function script.update(dt)
 		loadLeaderboard()
 		initDrugRoute()
 		scalePositions()
-		iniOverTake()
+		initOverTake()
 	else
-
 		sectorUpdate()
 		raceUpdate(dt)
 		overtakeUpdate(dt)
