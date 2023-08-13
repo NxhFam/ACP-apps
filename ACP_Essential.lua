@@ -2269,6 +2269,7 @@ end)
 ac.onChatMessage(function (message, senderCarIndex, senderSessionID)
 	if carID ~= valideCar[1] and carID ~= valideCar[2] and online.chased and online.officer then
 		if (senderSessionID == online.officer.sessionID and string.find(message, 'lost')) then
+			if not playerData.Getaway then playerData.Getaway = 0 end
 			playerData.Getaway = playerData.Getaway + 1
 			online.chased = false
 			online.officer = nil
@@ -2287,3 +2288,4 @@ end
 if carID ~= valideCar[1] and carID ~= valideCar[2] and cspVersion >= cspMinVersion then
 	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
+
