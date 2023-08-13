@@ -1494,65 +1494,65 @@ function script.prepare(dt)
 end
 
 -- Event state:
-local timePassed = 0
-local totalScore = 0
-local comboMeter = 1
-local comboColor = 0
-local dangerouslySlowTimer = 0
-local carsState = {}
-local wheelsWarningTimeout = 0
+local overtake = {
+	damage = {},
+	timePassed = 0,
+	totalScore = 0,
+	comboMeter = 1,
+	dangerouslySlowTimer = 0,
+}
 
+local carsState = {}
+
+local function resetOvertake()
+	for i = 0, 4 do overtake.damage[i] = car.damage[i] end
+	if overtake.totalScore > highestScore then
+		highestScore = math.floor(overtake.totalScore)
+		ac.sendChatMessage("New highest Overtake score: " .. highestScore .. " pts !")
+		playerData.Overtake = highestScore
+		updatefirebase()
+	end
+	overtake.totalScore = 0
+	overtake.comboMeter = 1
+end
+
+local function initOverTake()
+	for i = 0, 4 do overtake.damage[i] = car.damage[i] end
+end
 
 local function overtakeUpdate(dt)
-    if car.engineLifeLeft < 1 or car.collidedWith == 0 then
-        if totalScore > highestScore then
-            highestScore = math.floor(totalScore)
-            ac.sendChatMessage("New highest Overtake score: " .. highestScore .. " pts !")
-			playerData.Overtake = highestScore
-			updatefirebase()
-        end
-        totalScore = 0
-        comboMeter = 1
+    if car.engineLifeLeft < 1 then
+		resetOvertake()
         return
     end
-
-    timePassed = timePassed + dt
+	for i = 0, 4 do
+		if car.damage[i] > overtake.damage[i] then
+			resetOvertake()
+			break
+		end
+	end
+    overtake.timePassed = overtake.timePassed + dt
 
     local comboFadingRate = 0.5 * math.lerp(1, 0.1, math.lerpInvSat(car.speedKmh, 80, 200)) + car.wheelsOutside
-    comboMeter = math.max(1, comboMeter - dt * comboFadingRate)
+    overtake.comboMeter = math.max(1, overtake.comboMeter - dt * comboFadingRate)
 
-    local sim = ac.getSim()
     while sim.carsCount > #carsState do
         carsState[#carsState + 1] = {}
     end
 
-    if wheelsWarningTimeout > 0 then
-        wheelsWarningTimeout = wheelsWarningTimeout - dt
-    elseif car.wheelsOutside > 0 then
-        if wheelsWarningTimeout == 0 then
-        end
-        wheelsWarningTimeout = 60
-    end
-
     if car.speedKmh < requiredSpeed then
-        if dangerouslySlowTimer > 3 then
-            if totalScore > highestScore then
-                highestScore = math.floor(totalScore)
-				ac.sendChatMessage("New highest Overtake score: " .. highestScore .. " pts !")
-				playerData.Overtake = highestScore
-				updatefirebase()
-            end
-            totalScore = 0
-            comboMeter = 1
+        if overtake.dangerouslySlowTimer > 3 then
+			resetOvertake()
+			return
         end
-        dangerouslySlowTimer = dangerouslySlowTimer + dt
-        comboMeter = 1
+        overtake.dangerouslySlowTimer = overtake.dangerouslySlowTimer + dt
+        overtake.comboMeter = 1
         return
     else
-        dangerouslySlowTimer = 0
+        overtake.dangerouslySlowTimer = 0
     end
 
-    for i = 1, ac.getSim().carsCount - 1 do	
+    for i = 1, ac.getSim().carsCount - 1 do
         local state = carsState[i]
 		local otherCar = ac.getCar(i)
         if otherCar.isConnected and otherCar.position:closerToThan(car.position, 10) then
@@ -1564,23 +1564,17 @@ local function overtakeUpdate(dt)
                     state.nearMiss = true
 
                     if otherCar.position:closerToThan(car.position, 2.5) then
-                        comboMeter = comboMeter + 3
+                        overtake.comboMeter = comboMeter + 3
                     else
-                        comboMeter = comboMeter + 1
+                        overtake.comboMeter = comboMeter + 1
                     end
                 end
             end
 
             if otherCar.collidedWith == 0 then
                 state.collided = true
-                if totalScore > highestScore then
-                    highestScore = math.floor(totalScore)
-					ac.sendChatMessage("New highest Overtake score: " .. highestScore .. " pts !")
-					playerData.Overtake = highestScore
-					updatefirebase()
-                end
-                totalScore = 0
-                comboMeter = 1
+				resetOvertake()
+				return
             end
 
             if not state.overtaken and not state.collided and state.drivingAlong then
@@ -1588,9 +1582,8 @@ local function overtakeUpdate(dt)
                 local posDot = math.dot(posDir, otherCar.look)
                 state.maxPosDot = math.max(state.maxPosDot, posDot)
                 if posDot < -0.5 and state.maxPosDot > 0.5 then
-                    totalScore = totalScore + math.ceil(10 * comboMeter)
-                    comboMeter = comboMeter + 1
-                    comboColor = comboColor + 90
+                    overtake.totalScore = overtake.totalScore + math.ceil(10 * overtake.comboMeter)
+                    overtake.comboMeter = overtake.comboMeter + 1
                     state.overtaken = true
                 end
             end
@@ -1604,14 +1597,13 @@ local function overtakeUpdate(dt)
     end
 end
 
-local speedWarning = 0
 local function overtakeUI(textOffset)
 	local text
 	local colorCombo
 
-	if totalScore > 0 then
-		text = totalScore .. " pts - " .. string.format("%d",comboMeter) .. "x"
-		colorCombo = rgbm(0, 1, 0, 0.9) --rgbm.new(hsv(comboColor, math.saturate(comboMeter / 10), 1):rgb(), math.saturate(comboMeter / 4))
+	if overtake.totalScore > 0 then
+		text = overtake.totalScore .. " pts - " .. string.format("%d",comboMeter) .. "x"
+		colorCombo = rgbm(0, 1, 0, 0.9)
 	else
 		text = "PB: " .. highestScore .. "pts"
 		colorCombo = rgbm(1, 1, 1, 0.9)
@@ -2255,12 +2247,12 @@ function script.update(dt)
 		initialized = true
 		getFirebase()
 		loadLeaderboard()
+		initOverTake()
 	else
 		sectorUpdate()
 		raceUpdate(dt)
 		overtakeUpdate(dt)
 		driftUpdate(dt)
-		--if sim.physicsLate > 45 and not cpu99occupancy then cpu99occupancy = true end
 	end
 end
 
@@ -2295,4 +2287,3 @@ end
 if carID ~= valideCar[1] and carID ~= valideCar[2] and cspVersion >= cspMinVersion then
 	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
-
