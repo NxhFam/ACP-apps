@@ -1484,6 +1484,7 @@ end
 
 -------------------------------------------------------------------------------- overtake --------------------------------------------------------------------------------
 
+
 -- Event configuration:
 local requiredSpeed = 80
 
@@ -1564,9 +1565,9 @@ local function overtakeUpdate(dt)
                     state.nearMiss = true
 
                     if otherCar.position:closerToThan(car.position, 2.5) then
-                        overtake.comboMeter = comboMeter + 3
+                        overtake.comboMeter = overtake.comboMeter + 3
                     else
-                        overtake.comboMeter = comboMeter + 1
+                        overtake.comboMeter = overtake.comboMeter + 1
                     end
                 end
             end
