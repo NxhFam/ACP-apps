@@ -2397,13 +2397,13 @@ local function drugShowInfo(i)
 	ui.drawRectFilled(leftCorner,  vec2(imgPos_[i+2][2].x - welcomeWindow.size.x/100 , leftCorner.y + ui.measureDWriteText("Locations names are the same\nas the teleports in the mini map.\nDelivery :  \nPick Up :  \nDrop Off :  " .. drugDelivery.dropOffName, settings.fontSize).y*2), rgbm(0, 0, 0, 0.8))
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=BLACK")
-	ui.dwriteDrawText("Location names are the same\nas teleports in the mini map.", settings.fontSize, textPos, rgbm.colors.white)
-	textPos.y = textPos.y + ui.measureDWriteText("Locations names are the same\nas the teleports in the mini map.", settings.fontSize).y*2
-	ui.dwriteDrawText("Delivery : " .. os.date("%a %d") .. "th" .. " of " .. os.date("%B"), settings.fontSize, textPos, rgbm.colors.white)
-	textPos.y = textPos.y + ui.measureDWriteText("Delivery :  " .. os.date("%x"), settings.fontSize).y*2
-	ui.dwriteDrawText("Pick Up :  " .. drugDelivery.pickUpName, settings.fontSize, textPos, rgbm.colors.white)
-	textPos.y = textPos.y + ui.measureDWriteText("Pick Up :  " .. drugDelivery.pickUpName, settings.fontSize).y*2
-	ui.dwriteDrawText("Drop Off :  " .. drugDelivery.dropOffName, settings.fontSize, textPos, rgbm.colors.white)
+	ui.dwriteDrawText("Location names are the same\nas teleports in the mini map.", welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+	textPos.y = textPos.y + ui.measureDWriteText("Locations names are the same\nas the teleports in the mini map.", welcomeWindow.fontSize*0.6).y*2
+	ui.dwriteDrawText("Delivery : " .. os.date("%a %d") .. "th" .. " of " .. os.date("%B"), welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+	textPos.y = textPos.y + ui.measureDWriteText("Delivery :  " .. os.date("%x"), welcomeWindow.fontSize*0.6).y*2
+	ui.dwriteDrawText("Pick Up :  " .. drugDelivery.pickUpName, welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+	textPos.y = textPos.y + ui.measureDWriteText("Pick Up :  " .. drugDelivery.pickUpName, welcomeWindow.fontSize*0.6).y*2
+	ui.dwriteDrawText("Drop Off :  " .. drugDelivery.dropOffName, welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
 	ui.popDWriteFont()
 end
 
