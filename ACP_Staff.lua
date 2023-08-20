@@ -29,6 +29,81 @@ local rx7Valid = ac.INIConfig.carData(0, "brakes.ini"):get("DATA", "MAX_TORQUE",
 
 if carID == valideCar[1] or carID == valideCar[2] or cspVersion < cspMinVersion then return end
 
+local carVersion = "Rental"
+
+local stockHash256 = {
+    "49f0d0e1683d338c719cc5c5cb29bd2562e766eeb12f9f333075482625621dfb",
+    "008461cbca3bbbe5469edafd97d3beba31d73293f793bd595319ca34196e1443",
+    "0d5a20c2e936f9aab941e5c2ee450daf6322cdd8f18d1a44ac4687d048b59d77",
+    "6f56567669dfa90bb67fbc7be102f4508457af3990015a70160ba3cb26887993",
+    "3b41c5f96b59f862a176dcfb365a453f46e695a37829a16d0d05d899548463dd",
+    "c651de6887419c2c103cc1cd2b0bac8df9a20e3f81254a7737008095372642b4",
+    "236578882256b20a3b9698c9bec510da21c9a9da52324c06b22f3712e8b8ab49",
+    "58be1d2dd3de57fa33a6233eeac61cdb2267c3d3130866eb8ae86196e1791e9b",
+    "68d4063b0e71df24850c8bf6d9928eeafe5a917bee49775a49b6fbc86daef322",
+    "06d7e9d3cb2a9bbaf21c9bbeda7654d68fdd3ef9b58852b769f03aff775ae35b",
+    "f069f3cbd41fe0a4caa5799e75d2503682aa82b45085680390f370b7ead4e8fc",
+    "57b813694499530b1550c208762c24c119654696c03f0ce1fffd229816468f7e",
+    "8c54420f3c1818387c535417ed1f2b74a1d2781a3072c78cb8fac945cb8732d9",
+}
+
+local tunedHash256 = {
+    "3ab92c7b2643885126106f0954946b9826b055a7eb12463c679e4062fee9e3a2",
+    "b3555528f97ebff84b48a8bcfedb21372b6a3e98bae75a421c0c084819497a56",
+    "c8f88adeacd0421984cf04d4ee25f79696d16590b4adbe113455a2a9b0bd0f95",
+    "404b4999855761d4875e35ee25b8a03d4d72d65e9dd696e9f154942af40ec83f",
+    "2a4c6a0c8c4b13b191dd1309b9423265f302c6add266b714701e16c77d3a7ae4",
+    "e43fa68ad0768ae4d88380e6bc6aca218162d0ba9c8e8a1afac1aac9c2035546",
+    "a73c494f6a6d262bb0aacba68947ad2c1fcfa9a49ea586b8865a098e2e9a7760",
+    "286ff2d6ed38c8ed1212079d91865be65a6587200b364d363258380eb6221346",
+    "e589eb21e899c7e661de9072aa5e80c6266f7ca144184a00cb5442743672a9c3",
+    "5dcdc1fafcf76c3684da7d3dee09ec10a077c57073f8bc6cb035d3f0fe1ac23f",
+    "992ae5200fe88a458733a3ab0a973a0a76c62c4b3057f351f50c4b636c2a5333",
+    "00e5386e6a5ba94b950f35391128e2ba7409f47023af411a0aeb0232a5437431",
+    "2a6a1f1ce7ecf5cb8fbe81a9b10f468f28b5dbbad373000a3ea2c774d26e4093",
+}
+
+local driftHash256 = {
+    "fe04aab967c373de4580271d88e9f26d2ba463a29ccc03a30d1fd3e708265c07",
+    "2907ae504e794d36a9fed6eed317527ba10eb2b9c040d70634d37c5968c460f7",
+    "b5d95b03324aa04a4f8330f79869295a31bcf984bbabfa7d1b3387a477b9b99f",
+    "fb2cd39d5d8311e1abc8e9d8ca156faa046d9f4e6b017fafb4ed2dc2629d8267",
+    "9d452cec475af6a7aa99daa047948e874250f1e724962a4fa45934f65b2345f0",
+    "91d494330244fb95867039588303eb21a863dc62b68342e840a9df5cfb7c5845",
+    "76dde11d01c607befca128b269bdd659268fef564309ca43991fa2dd265b5bdd",
+    "e47b0704f3a64ccde3d48e4396a01663dd1b809aa620b071fa1ec734f2a35830",
+    "25ba03f4babc88184b86f37d6022423a547f08971e990341a3bf54addf2f64b5",
+    "9010ddea5fbf187a52afa7a6e7d31d2dd4adf8a2c3a49d7bd1736cb758cfa665",
+    "6467223e5a187bc7d5bd400557446e76a6bc47e08603fd86ea6eaff946e1f6a7",
+}
+
+local function checkHash256()
+	local carDataPath = ac.getFolder(ac.FolderID.ContentCars) .. '/' .. ac.getCarID(0) .. '/data.acd'
+    local carHash256 = ac.checksumSHA256(io.load(carDataPath))
+    
+    for i, hash in ipairs(stockHash256) do
+        if hash == carHash256 then
+            carVersion = "Stock"
+            break
+        end
+    end
+    for i, hash in ipairs(tunedHash256) do
+        if hash == carHash256 then
+            carVersion = "Tuned"
+            break
+        end
+    end
+    for i, hash in ipairs(driftHash256) do
+        if hash == carHash256 then
+            carVersion = "Drift"
+            break
+        end
+    end
+    table.clear(stockHash256)
+    table.clear(tunedHash256)
+    table.clear(driftHash256)
+end
+
 local highestScore = 0
 local driftState = {
 	bestScore = 0,
@@ -557,6 +632,7 @@ local function initLines()
 	end
     sector = sectors[1]
 	updatePos()
+	checkHash256()
 end
 
 local function randNum(seed)
@@ -2263,6 +2339,7 @@ local welcomeWindow = {
 	scale = 0.9,
 	font = nil,
 	closeIMG = "https://acstuff.ru/images/icons_24/cancel.png",
+	fontSize = windowHeight/35,
 }
 
 function scalePositions()
@@ -2333,11 +2410,12 @@ end
 local function drawMenuText()
 	ui.popDWriteFont()
 	ui.pushDWriteFont(welcomeWindow.font)
-	ui.dwriteDrawText("WELCOME BACK,", settings.fontSize, welcomeWindow.topLeft, rgbm.colors.white)
-	ui.dwriteDrawText(ac.getDriverName(0), settings.fontSize*2, vec2(welcomeWindow.topLeft.x, welcomeWindow.topLeft.y + ui.measureDWriteText("WELCOME BACK,", settings.fontSize).y), settings.colorHud)
+	ui.dwriteDrawText("WELCOME BACK,", welcomeWindow.fontSize*0.6, welcomeWindow.topLeft, rgbm.colors.white)
+	ui.dwriteDrawText(ac.getDriverName(0), welcomeWindow.fontSize, vec2(welcomeWindow.topLeft.x, welcomeWindow.topLeft.y + ui.measureDWriteText("WELCOME BACK,", welcomeWindow.fontSize*0.6).y), settings.colorHud)
 	
-	ui.dwriteDrawText("CURRENT CAR", settings.fontSize, vec2(welcomeWindow.topRight.x - ui.measureDWriteText("CURRENT CAR", settings.fontSize).x, welcomeWindow.topRight.y), rgbm.colors.white)
-	ui.dwriteDrawText(ac.getCarName(0), settings.fontSize*2, vec2(welcomeWindow.topRight.x - ui.measureDWriteText(ac.getCarName(0), settings.fontSize*2).x, welcomeWindow.topRight.y + ui.measureDWriteText("CURRENT CAR", settings.fontSize).y), settings.colorHud)
+	ui.dwriteDrawText("CURRENT CAR", welcomeWindow.fontSize*0.6, vec2(welcomeWindow.topRight.x - ui.measureDWriteText("CURRENT CAR", welcomeWindow.fontSize*0.6).x, welcomeWindow.topRight.y), rgbm.colors.white)
+	ui.dwriteDrawText(string.gsub(string.gsub(ac.getCarName(0), "%W", " "), "  ", ""), welcomeWindow.fontSize, vec2(welcomeWindow.topRight.x - ui.measureDWriteText(string.gsub(string.gsub(ac.getCarName(0), "%W", " "), "  ", ""), welcomeWindow.fontSize).x - ui.measureDWriteText(carVersion, welcomeWindow.fontSize*0.8).x, welcomeWindow.topRight.y + ui.measureDWriteText("CURRENT CAR", welcomeWindow.fontSize*0.6).y), settings.colorHud)
+	ui.dwriteDrawText(carVersion, welcomeWindow.fontSize*0.7, vec2(welcomeWindow.topRight.x - ui.measureDWriteText(carVersion, welcomeWindow.fontSize*0.7).x, welcomeWindow.topRight.y + ui.measureDWriteText("CURRENT CAR", welcomeWindow.fontSize).y*0.85), rgbm.colors.white)
 	ui.popDWriteFont()
 end
 
