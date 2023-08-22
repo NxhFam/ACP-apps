@@ -1015,7 +1015,10 @@ local function arrestSuspect()
 			pursuit.nextMessage = 20
 			pursuit.lostSight = false
 			pursuit.timeLostSight = 0
-			updatefirebase("Arrests", playerData.Arrests)
+			local data = {
+				["Arrests"] = playerData.Arrests,
+			}
+			updatefirebase("Arrests", data)
 		end
 	end
 end
