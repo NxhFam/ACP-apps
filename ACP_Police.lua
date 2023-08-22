@@ -193,6 +193,19 @@ function json.parse(str, pos, end_delim)
   end
 end
 
+--return json of playerData with only the data needed for the leaderboard
+-- data are keys of the playerData table
+local function dataStringify(data)
+	local str = '{"' .. ac.getUserSteamID() .. '": '
+	local name = ac.getDriverName(0)
+	data['Name'] = name
+	str = str .. json.stringify(data) .. '}'
+	return str
+end
+
+
+------------------------------------------------------------------------- Web Utils -------------------------------------------------------------------------
+
 local settings = {
 	essentialSize = 20,
 	policeSize = 20,
@@ -364,9 +377,11 @@ local playerData = {}
 
 ---------------------------------------------------------------------------------------------- Firebase ----------------------------------------------------------------------------------------------
 
-local firebaseUrlsettings = 'https://acp-server-97674-default-rtdb.firebaseio.com/Settings'
-local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/Players'
+--------------firebase--------------
 local urlAppScript = 'https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec'
+local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/'
+local firebaseUrlData = 'https://acp-server-97674-default-rtdb.firebaseio.com/PlayersData/'
+local firebaseUrlsettings = 'https://acp-server-97674-default-rtdb.firebaseio.com/Settings'
 
 local function updateSheets()
 	web.post(urlAppScript, function(err, response)
@@ -411,9 +426,19 @@ local function getFirebase()
 	end)
 end
 
-local function updatefirebase()
+local function updatefirebase(node, data)
 	local str = '{"' .. ac.getUserSteamID() .. '": ' .. json.stringify(playerData) .. '}'
 	web.request('PATCH', firebaseUrl .. ".json", str, function(err, response)
+		if err then
+			print(err)
+			return
+		else
+			updateSheets()
+		end
+	end)
+	str = dataStringify(data)
+	ac.log(str)
+	web.request('PATCH', firebaseUrlData .. node .. ".json", str, function(err, response)
 		if err then
 			print(err)
 			return
@@ -990,7 +1015,7 @@ local function arrestSuspect()
 			pursuit.nextMessage = 20
 			pursuit.lostSight = false
 			pursuit.timeLostSight = 0
-			updatefirebase()
+			updatefirebase("Arrests", playerData.Arrests)
 		end
 	end
 end
