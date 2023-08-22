@@ -25,6 +25,7 @@ local valideCar = {"chargerpolice_acpursuit", "crown_police"}
 local fontMultiplier = windowHeight/1440
 local carID = ac.getCarID(0)
 local wheels = car.wheels
+local playerData = {}
 
 if carID == valideCar[1] or carID == valideCar[2] or cspVersion < cspMinVersion then return end
 
@@ -257,18 +258,30 @@ function json.parse(str, pos, end_delim)
   end
 end
 
+--return json of playerData with only the data needed for the leaderboard
+-- data are keys of the playerData table
+local function dataStringify(data)
+	local str = '{"' .. ac.getUserSteamID() .. '": '
+	local name = ac.getDriverName(0)
+	data['Name'] = name
+	str = str .. json.stringify(data) .. '}'
+	return str
+end
+
+
 --------------firebase--------------
 local urlAppScript = 'https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec'
 local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/'
+local firebaseUrlData = 'https://acp-server-97674-default-rtdb.firebaseio.com/PlayersData/'
+local firebaseUrlLeaderboards = 'https://acp-server-97674-default-rtdb.firebaseio.com/Leaderboards/'
 local nodes = {['Settings'] = 'Settings',
 				['Players'] = 'Players',
-				['Arrestations'] = 'Arrests',
+				['Arrestations'] = 'Arrestations',
 				['Class C - H1'] = 'H1C',
-				['JDM LEGENDS'] = 'JDM',
-				['HORIZON'] = 'Leaderboard',
-				['Street Racing'] = 'STRace',
-				['Car Thefts'] = 'Theft',
-				['Velocity Vendetta'] = 'VV',
+				['HORIZON'] = 'HORIZON',
+				['Street Racing'] = 'Street Racing',
+				['Car Thefts'] = 'Car Thefts',
+				['Velocity Vendetta'] = 'Velocity Vendetta',
 				['Drift'] = 'Drift',
 				['Overtake'] = 'Overtake',
 				['Most Wanted'] = 'Most Wanted'}
@@ -277,7 +290,7 @@ local welcomeClosed = false
 
 local leaderboard = {}
 local leaderboardName = 'Class C - H1'
-local leaderboardNames = {'Class C - H1', 'Velocity Vendetta', 'JDM LEGENDS', 'Street Racing', 'Car Thefts', 'Arrestations','HORIZON', 'Drift', 'Overtake', 'Most Wanted'}
+local leaderboardNames = {'Class C - H1', 'Velocity Vendetta', 'Street Racing', 'Car Thefts', 'Arrestations','HORIZON', 'Drift', 'Overtake', 'Most Wanted'}
 
 local settings = {
 	essentialSize = 20,
@@ -332,48 +345,6 @@ local hudMenu = "https://cdn.discordapp.com/attachments/1130004696984203325/1130
 local hudRanks = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004778315944017/iconRanks.png"
 local hudTheft = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004776399151144/iconTheft.png"
 
--- local classC = {
--- 	["22b_acpursuit"]= "Impreza 22B STI",
--- 	["370z_acp"]= "370Z",
--- 	["964turbo_acp23"]= "964 Turbo",
--- 	["gt86_acp23"]= "GT86",
--- 	["e46acpursuit"]= "M3 E46",
--- 	["is300_acp"]= "IS300",
--- 	["lancerix_acpursuit"]= "Lancer Evo IX",
--- 	["rx7_2_acpursuit"]= "RX-7",
--- 	["s15_acp"]= "Silvia S15",
--- 	["skyr34_acp2"]= "Skyline R34",
--- 	["supra93_acpursuit"]= "Supra Mk4",
--- 	["mustang_acp"]= "Mustang",
--- 	["nsx94_acp23"]= "NSX",
--- }
-
--- local classB = {
--- 	["911gt3992_acpursuit"]= "911 GT3 (992)",
--- 	["f40_acp2023"]= "F40",
--- 	["gtam_acp"]= "Giulia GTA",
--- 	["gtr_acp2023"]= "R35 Nismo",
--- 	["hellcat_acp2023"]= "Challenger",
--- 	["m4_acp23"]= "M4",
--- 	["murcielago_acp23"]= "Murcielago",
--- 	["rs6abt_acp"]= "RS6 ABT",
--- 	["amgtr_acp23"]= "AMG GT-R",
--- }
-
--- local function verifyClass()
--- 	if classC[carID] then
--- 		class = "C"
--- 		timeRequirement = 150
--- 	elseif classB[carID] then
--- 		class = "B"
--- 		timeRequirement = 130
--- 	end
--- 	table.clear(classC)
--- 	table.clear(classB)
--- end
-
-local playerData = {}
-
 local sectors  = {
     {
         name = 'H1',
@@ -406,36 +377,6 @@ local sectors  = {
 					vec4(-3977.2,9537.4,-3969.2,9540.2)},
 		length = 4,
 	},
-	{
-		name = 'JDM LEGENDS',
-		pointsData = {{vec3(786.6,99.5,1946.8), vec3(795.7,99.5,1941.6)},
-						{vec3(437.1,104.5,1411.5), vec3(446.1,104.5,1405.8)},
-						{vec3(-266.3,56.5,684.6), vec3(-267.3,55.4,674)},
-						{vec3(-275.2,35.5,397.5), vec3(-265.6,35.5,394.7)},
-						{vec3(-205.4,23.5,-41), vec3(-217.2,23.5,-45.8)},
-						{vec3(168.5,41.7,374.2), vec3(161.6,41.7,366.1)},
-						{vec3(-772.4,-33,-2260.6), vec3(-765.7,-32.3,-2266.8)},
-						{vec3(-673.8,-27.1,-2309.7), vec3(-668.3,-27.5,-2317.3)},
-						{vec3(1679.7,103.5,639.5), vec3(1687.4,104,640.5)},
-						{vec3(901.9,93,2101.2), vec3(894.3,93,2106.9)},
-						{vec3(923.4,91.3,2218.7), vec3(913,91.6,2224.9)},
-						{vec3(1377.4,67.5,2665.3), vec3(1387.2,67.3,2669.2)},
-						{vec3(-5774.2,-349.1,10184), vec3(-5770.5,-349.1,10166.8)}},
-		linesData = {vec4(786.6,1946.8,795.7,1941.6),
-					vec4(437.1,1411.5,446.1,1405.8),
-					vec4(-267.3,674,-266.3,684.6),
-					vec4(-275.2,397.5,-265.6,394.7),
-					vec4(-217.2,-45.8,-205.4,-41),
-					vec4(161.6,366.1,168.5,374.2),
-					vec4(-772.4,-2260.6,-765.7,-2266.8),
-					vec4(-668.3,-2317.3,-673.8,-2309.7),
-					vec4(1687.4,640.5,1679.7,639.5),
-					vec4(901.9,2101.2,894.3,2106.9),
-					vec4(923.4,2218.7,913,2224.9),
-					vec4(1387.2,2669.2,1377.4,2665.3),
-					vec4(-5774.2,10184,-5770.5,10166.8)},
-		length = 15,
-	}
 }
 
 local drugAccessPointsName = {
@@ -890,7 +831,7 @@ end
 
 
 local function loadLeaderboard()
-	local url = firebaseUrl .. nodes[leaderboardName] .. '.json'
+	local url = firebaseUrlLeaderboards .. nodes[leaderboardName] .. '.json'
 
 	web.get(url, function(err, response)
 		if err then
@@ -919,10 +860,17 @@ local function updateSheets()
 	end)
 end
 
-local function updatefirebase()
-	local str = '{"' .. steamID .. '": ' .. json.stringify(playerData) .. '}'
-	ac.log(str)
+local function updatefirebase(node, data)
+	local str = '{"' .. ac.getUserSteamID() .. '": ' .. json.stringify(playerData) .. '}'
 	web.request('PATCH', firebaseUrl  .. nodes["Players"] .. ".json", str, function(err, response)
+		if err then
+			print(err)
+			return
+		end
+	end)
+	str = dataStringify(data)
+	ac.log(str)
+	web.request('PATCH', firebaseUrlData .. node .. ".json", str, function(err, response)
 		if err then
 			print(err)
 			return
@@ -932,7 +880,7 @@ local function updatefirebase()
 	end)
 end
 
-local function updateSectorData(sectorName, time)
+function updateSectorData(sectorName, time)
 	if sectorName == 'H1' then
 		if not playerData.Sectors then
 			playerData.Sectors = {
@@ -965,43 +913,31 @@ local function updateSectorData(sectorName, time)
 			playerData.Sectors = {
 				H1 = {},
 				VV = {
+					Car = carID,
 					Time = time,
 				},
 			}
 		end
 		if playerData.Sectors.VV then
 			if time < playerData.Sectors.VV.Time then
-				playerData.Sectors.VV.Time = time
+				playerData.Sectors.VV = {
+					Car = carID,
+					Time = time,
+				}
 			end
 		else
 			playerData.Sectors.VV = {
+				Car = carID,
 				Time = time,
-			}
-		end
-	elseif sectorName == 'JDM' then
-		if not playerData.Sectors then
-			playerData.Sectors = {
-				H1 = {},
-				VV = {},
-				JDM = {
-					Time = time,
-					CarID = carID,
-				},
-			}
-		end
-		if playerData.Sectors.JDM then
-			if time < playerData.Sectors.JDM.Time then
-				playerData.Sectors.JDM.Time = time
-				playerData.Sectors.JDM.CarID = carID
-			end
-		else
-			playerData.Sectors.JDM = {
-				Time = time,
-				CarID = carID,
 			}
 		end
 	end
-	updatefirebase()
+	local data = {
+		[carID] = {
+			Time = time,
+		},
+	}
+	updatefirebase(sectorName, data)
 end
 
 local boxHeight = windowHeight/70
@@ -1373,7 +1309,6 @@ local function sectorUI()
 	end
 	discordLinks()
 	ui.endGroup()
-
 	return 1
 end
 
@@ -1426,7 +1361,7 @@ local function sectorUpdate()
 					else
 						ac.sendChatMessage(" has failed to steal a " .. string.gsub(ac.getCarName(0), "%W", " ") .. " under the time limit!")
 					end
-					updatefirebase()
+					updatefirebase("Theft", playerData.Theft)
 				else
 					if sectors[sectorInfo.sectorIndex].name == "H1" then updateSectorData('H1', sectorInfo.time)
 					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" then updateSectorData('VV', sectorInfo.time)
@@ -1740,7 +1675,7 @@ local function resetOvertake()
 		highestScore = math.floor(overtake.totalScore)
 		ac.sendChatMessage("New highest Overtake score: " .. highestScore .. " pts !")
 		playerData.Overtake = highestScore
-		updatefirebase()
+		updatefirebase("Overtake", playerData.Overtake)
 	end
 	overtake.totalScore = 0
 	overtake.comboMeter = 1
@@ -1872,7 +1807,7 @@ local function driftUpdate(dt)
 			playerData.Drift = math.floor(driftState.bestScore)
 			if driftState.bestScore > 100 then
 				ac.sendChatMessage("New Drift PB: " .. string.format("%d",driftState.bestScore) .. " pts !")
-				updatefirebase()
+				updatefirebase("Drift", playerData.Drift)
 			end
 		end
 		driftState.lastScore = car.driftPoints
@@ -1956,7 +1891,11 @@ local function raceUI()
 		if not raceFinish.messageSent and raceFinish.winner == car then
 			ac.sendChatMessage(ac.getDriverName(0) .. " has just beaten " .. raceFinish.opponentName .. string.format(" in an illegal race. [Win rate: %d",playerData.Wins * 100 / (playerData.Wins + playerData.Losses)) .. "%]")
 			raceFinish.messageSent = true
-			updatefirebase()
+			local data = {
+				["Wins"] = playerData.Wins,
+				["Losses"] = playerData.Losses,
+			}
+			updatefirebase("STRace", data)
 		end
 	elseif horn.resquestTime > 0  and raceState.opponent then
 		text = ac.getDriverName(raceState.opponent.index) .. " wants to challenge you to a race. To accept activate your horn twice quickly"
@@ -2254,6 +2193,9 @@ local function menu()
 		ui.tabItem('Sectors', function () currentTab = sectorUI() end)
 		ui.tabItem('settings', function () currentTab = settingsWindow() end)
 	end)
+	if ui.button("update") then
+		updateSectorData('H1', 542.74774933606)
+	end
 end
 
 local function moveMenu()
@@ -2569,7 +2511,7 @@ ac.onChatMessage(function (message, senderCarIndex, senderSessionID)
 			playerData.Getaway = playerData.Getaway + 1
 			online.chased = false
 			online.officer = nil
-			updatefirebase()
+			updatefirebase("Getaway", playerData.Getaway)
 		end
 	end
 end)
