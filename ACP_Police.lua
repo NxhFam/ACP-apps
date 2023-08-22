@@ -996,6 +996,7 @@ local function arrestSuspect()
 		table.insert(arrestations, msgToSend .. os.date("\nDate of the Arrestation: %c"))
 		ac.sendChatMessage(msgToSend .. "\nPlease Get Back Pit, GG!")
 		pursuit.id = pursuit.suspect.sessionID
+		if playerData.Arrests == nil then playerData.Arrests = 0 end
 		playerData.Arrests = playerData.Arrests + 1
 		pursuit.startedTime = 0
 		pursuit.suspect = nil
