@@ -1,4 +1,3 @@
-return
 local sim = ac.getSim()
 local car = ac.getCar(0)
 local valideCar = {"chargerpolice_acpursuit", "crown_police"}
