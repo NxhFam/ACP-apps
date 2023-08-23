@@ -413,7 +413,7 @@ local function getFirebase()
 			return
 		else
 			if response.body == 'null' then
-				addPlayerToDataBase(ac.getUserSteamID())
+				addPlayerToDataBase()
 			else
 				local jString = response.body
 				playerData = json.parse(jString)
@@ -428,7 +428,7 @@ end
 
 local function updatefirebase(node, data)
 	local str = '{"' .. ac.getUserSteamID() .. '": ' .. json.stringify(playerData) .. '}'
-	web.request('PATCH', firebaseUrl .. ".json", str, function(err, response)
+	web.request('PATCH', firebaseUrl .. "Players.json", str, function(err, response)
 		if err then
 			print(err)
 			return
