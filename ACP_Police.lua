@@ -433,7 +433,7 @@ local function updatefirebase(node, data)
 			print(err)
 			return
 		else
-			updateSheets()
+			print(response.body)
 		end
 	end)
 	str = dataStringify(data)
@@ -443,7 +443,7 @@ local function updatefirebase(node, data)
 			print(err)
 			return
 		else
-			updateSheets()
+			print(response.body)
 		end
 	end)
 end
