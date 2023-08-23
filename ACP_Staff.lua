@@ -277,7 +277,7 @@ local firebaseUrlLeaderboards = 'https://acp-server-97674-default-rtdb.firebasei
 local nodes = {['Settings'] = 'Settings',
 				['Players'] = 'Players',
 				['Arrestations'] = 'Arrestations',
-				['Class C - H1'] = 'H1C',
+				['Class C - H1'] = 'Class C - H1',
 				['HORIZON'] = 'HORIZON',
 				['Street Racing'] = 'Street Racing',
 				['Car Thefts'] = 'Car Thefts',
@@ -866,16 +866,17 @@ local function updatefirebase(node, data)
 		if err then
 			print(err)
 			return
+		else
+			print(response.body)
 		end
 	end)
 	str = dataStringify(data)
-	ac.log(str)
 	web.request('PATCH', firebaseUrlData .. node .. ".json", str, function(err, response)
 		if err then
 			print(err)
 			return
 		else
-			updateSheets()
+			print(response.body)
 		end
 	end)
 end
@@ -932,11 +933,15 @@ function updateSectorData(sectorName, time)
 			}
 		end
 	end
-	local data = {
-		[carID] = {
+	local data
+	if sectorName == 'H1' then
+		data = playerData.Sectors[sectorName]
+	else
+		data = {
+			Car = carID,
 			Time = time,
-		},
-	}
+		}
+	end
 	updatefirebase(sectorName, data)
 end
 
@@ -1368,8 +1373,7 @@ local function sectorUpdate()
 					updatefirebase("Theft", data)
 				else
 					if sectors[sectorInfo.sectorIndex].name == "H1" then updateSectorData('H1', sectorInfo.time)
-					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" then updateSectorData('VV', sectorInfo.time)
-					elseif sectors[sectorInfo.sectorIndex].name == "JDM LEGENDS" then updateSectorData('JDM', sectorInfo.time) end
+					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" then updateSectorData('VV', sectorInfo.time) end
 					ac.sendChatMessage(" has finished " .. sectors[sectorInfo.sectorIndex].name .. " in " .. sectorInfo.timerText .. "!")
 				end
 				sectorInfo.timePosted = true
@@ -2203,9 +2207,6 @@ local function menu()
 		ui.tabItem('Sectors', function () currentTab = sectorUI() end)
 		ui.tabItem('settings', function () currentTab = settingsWindow() end)
 	end)
-	if ui.button("update") then
-		updateSectorData('H1', 542.74774933606)
-	end
 end
 
 local function moveMenu()
