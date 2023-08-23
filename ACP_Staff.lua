@@ -350,31 +350,25 @@ local sectors  = {
         name = 'H1',
 		pointsData = {{vec3(-742.9, 138.9, 3558.7), vec3(-729.8, 138.9, 3542.8)},
 					{vec3(3008.2, 73, 1040.3), vec3(2998.8, 73, 1017.3)}},
-        linesData = {vec4(-742.9, 3558.7, -729.8, 3542.8), vec4(3008.2, 1040.3, 2998.8, 1017.3)},
         length = 26.3,
     },
     {
         name = 'BOBs SCRAPYARD',
 		pointsData = {{vec3(-742.9, 139, 3558.7), vec3(-729.8, 139, 3542.8)},
 					{vec3(-3537.4, 23.8, -199.8), vec3(-3544.4, 23.8, -212.2)}},
-        linesData = {vec4(-742.9, 3558.7, -729.8, 3542.8), vec4(-3537.4, -199.8, -3544.4, -212.2)},
         length = 6.35,
     },
     {
         name = 'DOUBLE TROUBLE',
 		pointsData = {{vec3(-742.9, 139, 3558.7), vec3(-729.8, 139, 3542.8)},
 					{vec3(-3537.4, 23.8, -199.8), vec3(-3544.4, 23.8, -212.2)}},
-        linesData = {vec4(-742.9, 3558.7, -729.8, 3542.8), vec4(-3537.4, -199.8, -3544.4, -212.2)},
         length = 6.35,
     },
 	{
 		name = 'Velocity Vendetta',
-		pointsData = {{vec3(-3951.9,-184.7,10007.2), vec3(-3944.9,-184.7,10004.4)},
+		pointsData = {{vec3(-3944.9,-184.7,10004.4), vec3(-3951.9,-184.7,10007.2)},
 					{vec3(-5774.6,-349.1,10183.9), vec3(-5776.7,-349.2,10173.8)},
 					{vec3(-3977.2,-147.5,9537.4), vec3(-3969.2,-147.6,9540.2)}},
-		linesData = {vec4(-3944.9,10004.4,-3951.9,10007.2),
-					vec4(-5774.6,10183.9,-5776.7,10173.8),
-					vec4(-3977.2,9537.4,-3969.2,9540.2)},
 		length = 4,
 	},
 }
@@ -551,10 +545,10 @@ local function initLines()
 	imageSize = vec2(windowHeight/80 * settings.essentialSize, windowHeight/80 * settings.essentialSize)
 	for i = 1, #sectors do
 		local lines = {}
-		for j = 1, #sectors[i].linesData do
+		for j = 1, #sectors[i].pointsData do
             local line = {}
-            line.p1 = vec2(sectors[i].linesData[j].x, sectors[i].linesData[j].y)
-            line.p2 = vec2(sectors[i].linesData[j].z, sectors[i].linesData[j].w)
+            line.p1 = vec2(sectors[i].pointsData[j][1].x, sectors[i].pointsData[j][1].z)
+            line.p2 = vec2(sectors[i].pointsData[j][2].x, sectors[i].pointsData[j][2].z)
             line.dir = normalize(line.p2 - line.p1)
             line.region = regionAroundLine(line)
 			line.midPoint, line.radius = midPoint(sectors[i].pointsData[j][1], sectors[i].pointsData[j][2])
@@ -675,7 +669,7 @@ end
 
 local function addPlayerToDataBase()
 	local name = ac.getDriverName(0)
-	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","Getaway": 0,"Drift": 0,"Overtake": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0,"Sectors": {"H1": {},"VV": {},"BOB": {}}}}'
+	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","Getaway": 0,"Drift": 0,"Overtake": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0,"Sectors": {"H1": {},"VV": {}}}}'
 	web.request('PATCH', firebaseUrl .. nodes["Players"] .. ".json", str, function(err, response)
 		if err then
 			print(err)
@@ -877,6 +871,7 @@ local function updatefirebase(node, data)
 			return
 		else
 			print(response.body)
+			updateSheets()
 		end
 	end)
 end
