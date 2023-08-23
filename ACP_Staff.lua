@@ -1356,12 +1356,16 @@ local function sectorUpdate()
 			if sectorInfo.finished and not sectorInfo.timePosted then
 				if sectors[sectorInfo.sectorIndex].name == "BOBs SCRAPYARD" then
 					if class == "C" and timeRequirement > sectorInfo.time then
+						if not playerData.Theft then playerData.Theft = 0 end
 						playerData.Theft = playerData.Theft + 1
 						ac.sendChatMessage(" has successfully stolen a " .. string.gsub(ac.getCarName(0), "%W", " ") .. " and got away with it!")
 					else
 						ac.sendChatMessage(" has failed to steal a " .. string.gsub(ac.getCarName(0), "%W", " ") .. " under the time limit!")
 					end
-					updatefirebase("Theft", playerData.Theft)
+					local data = {
+						["Theft"] = playerData.Theft,
+					}
+					updatefirebase("Theft", data)
 				else
 					if sectors[sectorInfo.sectorIndex].name == "H1" then updateSectorData('H1', sectorInfo.time)
 					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" then updateSectorData('VV', sectorInfo.time)
@@ -1675,7 +1679,10 @@ local function resetOvertake()
 		highestScore = math.floor(overtake.totalScore)
 		ac.sendChatMessage("New highest Overtake score: " .. highestScore .. " pts !")
 		playerData.Overtake = highestScore
-		updatefirebase("Overtake", playerData.Overtake)
+		local data = {
+			["Overtake"] = highestScore,
+		}
+		updatefirebase("Overtake", data)
 	end
 	overtake.totalScore = 0
 	overtake.comboMeter = 1
@@ -1807,7 +1814,10 @@ local function driftUpdate(dt)
 			playerData.Drift = math.floor(driftState.bestScore)
 			if driftState.bestScore > 100 then
 				ac.sendChatMessage("New Drift PB: " .. string.format("%d",driftState.bestScore) .. " pts !")
-				updatefirebase("Drift", playerData.Drift)
+				local data = {
+					["Drift"] = playerData.Drift,
+				}
+				updatefirebase("Drift", data)
 			end
 		end
 		driftState.lastScore = car.driftPoints
@@ -2511,7 +2521,10 @@ ac.onChatMessage(function (message, senderCarIndex, senderSessionID)
 			playerData.Getaway = playerData.Getaway + 1
 			online.chased = false
 			online.officer = nil
-			updatefirebase("Getaway", playerData.Getaway)
+			local data = {
+				["Getaway"] = playerData.Getaway,
+			}
+			updatefirebase("Getaway", data)
 		end
 	end
 end)
