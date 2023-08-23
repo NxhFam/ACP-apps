@@ -377,7 +377,6 @@ local playerData = {}
 
 ---------------------------------------------------------------------------------------------- Firebase ----------------------------------------------------------------------------------------------
 
---------------firebase--------------
 local urlAppScript = 'https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec'
 local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/'
 local firebaseUrlData = 'https://acp-server-97674-default-rtdb.firebaseio.com/PlayersData/'
@@ -394,10 +393,11 @@ local function updateSheets()
 	end)
 end
 
-local function addPlayerToDataBase(steamID)
+local function addPlayerToDataBase()
+	local steamID = ac.getUserSteamID()
 	local name = ac.getDriverName(0)
-	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0, "Sectors": {"H1": {},"VV": {}}}}'
-	web.request('PATCH', firebaseUrl .. ".json", str, function(err, response)
+	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","Getaway": 0,"Drift": 0,"Overtake": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0,"Sectors": {"H1": {},"VV": {}}}}'
+	web.request('PATCH', firebaseUrl .. nodes["Players"] .. ".json", str, function(err, response)
 		if err then
 			print(err)
 			return
