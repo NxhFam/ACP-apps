@@ -195,17 +195,14 @@ local urlAppScript = 'https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90Vl
 local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/'
 local firebaseUrlData = 'https://acp-server-97674-default-rtdb.firebaseio.com/PlayersData/'
 local firebaseUrlLeaderboards = 'https://acp-server-97674-default-rtdb.firebaseio.com/Leaderboards/'
-local nodes = {['Settings'] = 'Settings',
-				['Players'] = 'Players',
-				['Arrestations'] = 'Arrestations',
-				['Class C - H1'] = 'Class C - H1',
-				['HORIZON'] = 'HORIZON',
-				['Street Racing'] = 'Street Racing',
-				['Car Thefts'] = 'Car Thefts',
-				['Velocity Vendetta'] = 'Velocity Vendetta',
+local nodes = { ['Arrests'] = 'Arrestations',
+				['H1'] = 'Class C - H1',
+				['STRace'] = 'Street Racing',
+				['Theft'] = 'Car Thefts',
+				['VV'] = 'Velocity Vendetta',
 				['Drift'] = 'Drift',
 				['Overtake'] = 'Overtake',
-				['Most Wanted'] = 'Most Wanted'}
+				['Getaway'] = 'Most Wanted'}
 
 local welcomeClosed = false
 
@@ -684,8 +681,9 @@ local function loadLeaderboard()
 	end)
 end
 
-local function updateSheets()
-	web.post(urlAppScript, function(err, response)
+local function updateSheets(category)
+	local str = '{"category" : "' .. nodes[category] .. '"}'
+	web.post(urlAppScript, str, function(err, response)
 		if err then
 			print(err)
 			return
@@ -695,9 +693,9 @@ local function updateSheets()
 	end)
 end
 
-local function updatefirebase(node, data)
+local function updatefirebase()
 	local str = '{"' .. ac.getUserSteamID() .. '": ' .. json.stringify(playerData) .. '}'
-	web.request('PATCH', firebaseUrl  .. nodes["Players"] .. ".json", str, function(err, response)
+	web.request('PATCH', firebaseUrl  .. "Players" .. ".json", str, function(err, response)
 		if err then
 			print(err)
 			return
@@ -705,14 +703,17 @@ local function updatefirebase(node, data)
 			print(response.body)
 		end
 	end)
-	str = dataStringify(data)
+end
+
+local function updatefirebaseData(node, data)
+	local str = dataStringify(data)
 	web.request('PATCH', firebaseUrlData .. node .. ".json", str, function(err, response)
 		if err then
 			print(err)
 			return
 		else
 			print(response.body)
-			--updateSheets()
+			updateSheets(node)
 		end
 	end)
 end
@@ -778,7 +779,8 @@ local function updateSectorData(sectorName, time)
 			Time = time,
 		}
 	end
-	updatefirebase(sectorName, data)
+	updatefirebase()
+	updatefirebaseData(sectorName, data)
 end
 
 local boxHeight = windowHeight/70
@@ -1209,7 +1211,8 @@ local function sectorUpdate()
 					local data = {
 						["Theft"] = playerData.Theft,
 					}
-					updatefirebase("Theft", data)
+					updatefirebase()
+					updatefirebaseData("Theft", data)
 				else
 					if sectors[sectorInfo.sectorIndex].name == "H1" then updateSectorData('H1', sectorInfo.time)
 					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" then updateSectorData('VV', sectorInfo.time) end
@@ -1466,7 +1469,8 @@ local function resetOvertake()
 		local data = {
 			["Overtake"] = highestScore,
 		}
-		updatefirebase("Overtake", data)
+		updatefirebase()
+		updatefirebaseData("Overtake", data)
 	end
 	overtake.totalScore = 0
 	overtake.comboMeter = 1
@@ -1601,7 +1605,8 @@ local function driftUpdate(dt)
 				local data = {
 					["Drift"] = playerData.Drift,
 				}
-				updatefirebase("Drift", data)
+				updatefirebase()
+				updatefirebaseData("Drift", data)
 			end
 		end
 		driftState.lastScore = car.driftPoints
@@ -1689,7 +1694,8 @@ local function raceUI()
 				["wins"] = playerData.Wins,
 				["losses"] = playerData.Losses,
 			}
-			updatefirebase("STRace", data)
+			updatefirebase()
+			updatefirebaseData("STRace", data)
 		end
 	elseif horn.resquestTime > 0  and raceState.opponent then
 		text = ac.getDriverName(raceState.opponent.index) .. " wants to challenge you to a race. To accept activate your horn twice quickly"
@@ -2239,7 +2245,8 @@ ac.onChatMessage(function (message, senderCarIndex, senderSessionID)
 			local data = {
 				["Getaway"] = playerData.Getaway,
 			}
-			updatefirebase("Getaway", data)
+			updatefirebase()
+			updatefirebaseData("Getaway", data)
 		end
 	end
 end)
