@@ -1686,8 +1686,8 @@ local function raceUI()
 			ac.sendChatMessage(ac.getDriverName(0) .. " has just beaten " .. raceFinish.opponentName .. string.format(" in an illegal race. [Win rate: %d",playerData.Wins * 100 / (playerData.Wins + playerData.Losses)) .. "%]")
 			raceFinish.messageSent = true
 			local data = {
-				wins = playerData.Wins,
-				losses = playerData.Losses,
+				["wins"] = playerData.Wins,
+				["losses"] = playerData.Losses,
 			}
 			updatefirebase("STRace", data)
 		end
