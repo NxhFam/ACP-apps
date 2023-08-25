@@ -517,7 +517,7 @@ end
 local function addPlayerToDataBase(steamID)
 	local name = ac.getDriverName(0)
 	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","Getaway": 0,"Drift": 0,"Overtake": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0,"Sectors": {"H1": {},"VV": {}}}}'
-	web.request('PATCH', firebaseUrl .. nodes["Players"] .. ".json", str, function(err, response)
+	web.request('PATCH', firebaseUrl .. "Players.json", str, function(err, response)
 		if err then
 			print(err)
 			return
@@ -527,7 +527,7 @@ end
 
 local function addPlayersettingsToDataBase(steamID)
 	local str = '{"' .. steamID .. '": {"essentialSize":20,"policeSize":20,"hudOffsetX":0,"hudOffsetY":0,"fontSize":20,"current":1,"colorHud":"1,0,0,1","timeMsg":10,"msgOffsetY":10,"msgOffsetX":' .. windowWidth/2 .. ',"fontSizeMSG":30,"menuPos":"0,0","unit":"km/h","unitMult":1,"starsSize":20}}'
-	web.request('PATCH', firebaseUrl .. nodes["Settings"] .. ".json", str, function(err, response)
+	web.request('PATCH', firebaseUrl .. "Settings.json", str, function(err, response)
 		if err then
 			print(err)
 			return
@@ -551,7 +551,7 @@ local function timeFormat(sec)
 end
 
 local function getFirebase()
-	local url = firebaseUrl .. nodes["Players"] .. "/" .. ac.getUserSteamID() .. '.json'
+	local url = firebaseUrl .. "Players/" .. ac.getUserSteamID() .. '.json'
 	web.get(url, function(err, response)
 		if err then
 			print(err)
@@ -585,7 +585,7 @@ local function getFirebase()
 end
 
 local function loadSettings()
-	local url = firebaseUrl .. nodes["Settings"] .. "/" .. ac.getUserSteamID() .. '.json'
+	local url = firebaseUrl .. "Settings/" .. ac.getUserSteamID() .. '.json'
 	web.get(url, function(err, response)
 		if err then
 			print(err)
@@ -605,7 +605,7 @@ end
 
 local function updateSettings()
 	local str = '{"' .. ac.getUserSteamID() .. '": ' .. json.stringify(settingsJSON) .. '}'
-	web.request('PATCH', firebaseUrl .. nodes["Settings"] .. ".json", str, function(err, response)
+	web.request('PATCH', firebaseUrl .. "Settings.json", str, function(err, response)
 		if err then
 			print(err)
 			return
@@ -663,7 +663,7 @@ end
 
 
 local function loadLeaderboard()
-	local url = firebaseUrl .. nodes[leaderboardName] .. '.json'
+	local url = firebaseUrl .. leaderboardName .. '.json'
 
 	web.get(url, function(err, response)
 		if err then
@@ -2264,4 +2264,3 @@ end
 if carID ~= valideCar[1] and carID ~= valideCar[2] and cspVersion >= cspMinVersion then
 	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
-
