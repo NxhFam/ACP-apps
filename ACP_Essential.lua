@@ -638,21 +638,9 @@ local function onSettingsChange()
 end
 
 local function changeHeaderNames(name)
-	if name == 'carName' then
-		return 'Car'
-	elseif name == 'stRace' then
-		return 'Score'
-	elseif name == 'driver' then
-		return 'Driver'
-	elseif name == 'time' then
-		return 'Time'
-	elseif name == 'losses' then
-		return 'Losses'
-	elseif name == 'wins' then
-		return 'Wins'
-	elseif name == 'arrests' then
+	if name == 'Arrests' then
 		return 'Arrestations'
-	elseif name == 'theft' then
+	elseif name == 'Theft' then
 		return 'Cars Stolen'
 	else 
 		return name
@@ -2269,3 +2257,4 @@ end
 if carID ~= valideCar[1] and carID ~= valideCar[2] and cspVersion >= cspMinVersion then
 	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
+
