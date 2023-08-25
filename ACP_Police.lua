@@ -382,8 +382,18 @@ local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/'
 local firebaseUrlData = 'https://acp-server-97674-default-rtdb.firebaseio.com/PlayersData/'
 local firebaseUrlsettings = 'https://acp-server-97674-default-rtdb.firebaseio.com/Settings'
 
-local function updateSheets()
-	web.post(urlAppScript, function(err, response)
+local nodes = { ['Arrests'] = 'Arrestations',
+				['H1'] = 'Class C - H1',
+				['STRace'] = 'Street Racing',
+				['Theft'] = 'Car Thefts',
+				['VV'] = 'Velocity Vendetta',
+				['Drift'] = 'Drift',
+				['Overtake'] = 'Overtake',
+				['Getaway'] = 'Most Wanted'}
+
+local function updateSheets(category)
+	local str = '{"category" : "' .. nodes[category] .. '"}'
+	web.post(urlAppScript, str, function(err, response)
 		if err then
 			print(err)
 			return
@@ -426,7 +436,7 @@ local function getFirebase()
 	end)
 end
 
-local function updatefirebase(node, data)
+local function updatefirebase()
 	local str = '{"' .. ac.getUserSteamID() .. '": ' .. json.stringify(playerData) .. '}'
 	web.request('PATCH', firebaseUrl .. "Players.json", str, function(err, response)
 		if err then
@@ -436,14 +446,17 @@ local function updatefirebase(node, data)
 			print(response.body)
 		end
 	end)
-	str = dataStringify(data)
-	ac.log(str)
+end
+
+local function updatefirebaseData(node, data)
+	local str = dataStringify(data)
 	web.request('PATCH', firebaseUrlData .. node .. ".json", str, function(err, response)
 		if err then
 			print(err)
 			return
 		else
 			print(response.body)
+			updateSheets(node)
 		end
 	end)
 end
