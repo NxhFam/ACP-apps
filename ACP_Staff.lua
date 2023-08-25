@@ -274,17 +274,14 @@ local urlAppScript = 'https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90Vl
 local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/'
 local firebaseUrlData = 'https://acp-server-97674-default-rtdb.firebaseio.com/PlayersData/'
 local firebaseUrlLeaderboards = 'https://acp-server-97674-default-rtdb.firebaseio.com/Leaderboards/'
-local nodes = {['Settings'] = 'Settings',
-				['Players'] = 'Players',
-				['Arrestations'] = 'Arrestations',
-				['Class C - H1'] = 'Class C - H1',
-				['HORIZON'] = 'HORIZON',
-				['Street Racing'] = 'Street Racing',
-				['Car Thefts'] = 'Car Thefts',
-				['Velocity Vendetta'] = 'Velocity Vendetta',
+local nodes = { ['Arrests'] = 'Arrestations',
+				['H1'] = 'Class C - H1',
+				['STRace'] = 'Street Racing',
+				['Theft'] = 'Car Thefts',
+				['VV'] = 'Velocity Vendetta',
 				['Drift'] = 'Drift',
 				['Overtake'] = 'Overtake',
-				['Most Wanted'] = 'Most Wanted'}
+				['Getaway'] = 'Most Wanted'}
 
 local welcomeClosed = false
 
@@ -573,16 +570,7 @@ local function randNum(seed)
 	return num
 end
 
--- local ray = render.createMouseRay()
--- local hit = ray:track()
--- if hit ~= -1 then
--- 	local pos = ray.pos + ray.dir * hit
--- 	if p == 1 then
--- 		table.insert(points1, pos)
--- 	else
--- 		table.insert(points2, pos)
--- 	end
--- end
+
 local function initDrugRoute()
 	local accessPoint = randNum(0)
 	local ray = render.createRay(drugAccessPoints[accessPoint], vec3(0, -1, 0))
@@ -670,7 +658,7 @@ end
 local function addPlayerToDataBase()
 	local name = ac.getDriverName(0)
 	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","Getaway": 0,"Drift": 0,"Overtake": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0,"Sectors": {"H1": {},"VV": {}}}}'
-	web.request('PATCH', firebaseUrl .. nodes["Players"] .. ".json", str, function(err, response)
+	web.request('PATCH', firebaseUrl .. "Players.json", str, function(err, response)
 		if err then
 			print(err)
 			return
@@ -680,7 +668,7 @@ end
 
 local function addPlayersettingsToDataBase()
 	local str = '{"' .. steamID .. '": {"essentialSize":20,"policeSize":20,"hudOffsetX":0,"hudOffsetY":0,"fontSize":20,"current":1,"colorHud":"1,0,0,1","timeMsg":10,"msgOffsetY":10,"msgOffsetX":' .. windowWidth/2 .. ',"fontSizeMSG":30,"menuPos":"0,0","unit":"km/h","unitMult":1,"starsSize":20}}'
-	web.request('PATCH', firebaseUrl .. nodes["Settings"] .. ".json", str, function(err, response)
+	web.request('PATCH', firebaseUrl .. "Settings.json", str, function(err, response)
 		if err then
 			print(err)
 			return
@@ -704,7 +692,7 @@ local function timeFormat(sec)
 end
 
 local function getFirebase()
-	local url = firebaseUrl .. nodes["Players"] .. "/" .. steamID .. '.json'
+	local url = firebaseUrl .. "Players/" .. steamID .. '.json'
 	web.get(url, function(err, response)
 		if err then
 			print(err)
@@ -735,7 +723,7 @@ local function getFirebase()
 end
 
 local function loadSettings()
-	local url = firebaseUrl .. nodes["Settings"] .. "/" .. steamID .. '.json'
+	local url = firebaseUrl .. "Settings/" .. steamID .. '.json'
 	web.get(url, function(err, response)
 		if err then
 			print(err)
@@ -755,7 +743,7 @@ end
 
 local function updateSettings()
 	local str = '{"' .. steamID .. '": ' .. json.stringify(settingsJSON) .. '}'
-	web.request('PATCH', firebaseUrl .. nodes["Settings"] .. ".json", str, function(err, response)
+	web.request('PATCH', firebaseUrl .. "Settings.json", str, function(err, response)
 		if err then
 			print(err)
 			return
@@ -785,21 +773,9 @@ local function onSettingsChange()
 end
 
 local function changeHeaderNames(name)
-	if name == 'carName' then
-		return 'Car'
-	elseif name == 'stRace' then
-		return 'Score'
-	elseif name == 'driver' then
-		return 'Driver'
-	elseif name == 'time' then
-		return 'Time'
-	elseif name == 'losses' then
-		return 'Losses'
-	elseif name == 'wins' then
-		return 'Wins'
-	elseif name == 'arrests' then
+	if name == 'Arrests' then
 		return 'Arrestations'
-	elseif name == 'theft' then
+	elseif name == 'Theft' then
 		return 'Cars Stolen'
 	else 
 		return name
@@ -825,7 +801,7 @@ end
 
 
 local function loadLeaderboard()
-	local url = firebaseUrlLeaderboards .. nodes[leaderboardName] .. '.json'
+	local url = firebaseUrlLeaderboards .. leaderboardName .. '.json'
 
 	web.get(url, function(err, response)
 		if err then
@@ -843,8 +819,9 @@ local function loadLeaderboard()
 	end)
 end
 
-local function updateSheets()
-	web.post(urlAppScript, function(err, response)
+local function updateSheets(category)
+	local str = '{"category" : "' .. nodes[category] .. '"}'
+	web.post(urlAppScript, str, function(err, response)
 		if err then
 			print(err)
 			return
@@ -854,9 +831,9 @@ local function updateSheets()
 	end)
 end
 
-local function updatefirebase(node, data)
+local function updatefirebase()
 	local str = '{"' .. ac.getUserSteamID() .. '": ' .. json.stringify(playerData) .. '}'
-	web.request('PATCH', firebaseUrl  .. nodes["Players"] .. ".json", str, function(err, response)
+	web.request('PATCH', firebaseUrl  .. "Players" .. ".json", str, function(err, response)
 		if err then
 			print(err)
 			return
@@ -864,14 +841,17 @@ local function updatefirebase(node, data)
 			print(response.body)
 		end
 	end)
-	str = dataStringify(data)
+end
+
+local function updatefirebaseData(node, data)
+	local str = dataStringify(data)
 	web.request('PATCH', firebaseUrlData .. node .. ".json", str, function(err, response)
 		if err then
 			print(err)
 			return
 		else
 			print(response.body)
-			updateSheets()
+			updateSheets(node)
 		end
 	end)
 end
@@ -937,7 +917,8 @@ function updateSectorData(sectorName, time)
 			Time = time,
 		}
 	end
-	updatefirebase(sectorName, data)
+	updatefirebase()
+	updatefirebaseData(sectorName, data)
 end
 
 local boxHeight = windowHeight/70
@@ -1308,6 +1289,12 @@ local function sectorUI()
 		end
 	end
 	discordLinks()
+	-- if ui.button("Update") then
+	-- 	local data = {
+	-- 		["Overtake"] = playerData.Overtake,
+	-- 	}
+	-- 	updatefirebaseData("Overtake", data)
+	-- end
 	ui.endGroup()
 	return 1
 end
@@ -1365,7 +1352,8 @@ local function sectorUpdate()
 					local data = {
 						["Theft"] = playerData.Theft,
 					}
-					updatefirebase("Theft", data)
+					updatefirebase()
+					updatefirebaseData("Theft", data)
 				else
 					if sectors[sectorInfo.sectorIndex].name == "H1" then updateSectorData('H1', sectorInfo.time)
 					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" then updateSectorData('VV', sectorInfo.time) end
@@ -1681,7 +1669,8 @@ local function resetOvertake()
 		local data = {
 			["Overtake"] = highestScore,
 		}
-		updatefirebase("Overtake", data)
+		updatefirebase()
+		updatefirebaseData("Overtake", data)
 	end
 	overtake.totalScore = 0
 	overtake.comboMeter = 1
@@ -1816,7 +1805,8 @@ local function driftUpdate(dt)
 				local data = {
 					["Drift"] = playerData.Drift,
 				}
-				updatefirebase("Drift", data)
+				updatefirebase()
+				updatefirebaseData("Drift", data)
 			end
 		end
 		driftState.lastScore = car.driftPoints
@@ -1904,7 +1894,8 @@ local function raceUI()
 				["Wins"] = playerData.Wins,
 				["Losses"] = playerData.Losses,
 			}
-			updatefirebase("STRace", data)
+			updatefirebase()
+			updatefirebaseData("STRace", data)
 		end
 	elseif horn.resquestTime > 0  and raceState.opponent then
 		text = ac.getDriverName(raceState.opponent.index) .. " wants to challenge you to a race. To accept activate your horn twice quickly"
@@ -2520,7 +2511,8 @@ ac.onChatMessage(function (message, senderCarIndex, senderSessionID)
 			local data = {
 				["Getaway"] = playerData.Getaway,
 			}
-			updatefirebase("Getaway", data)
+			updatefirebase()
+			updatefirebaseData("Getaway", data)
 		end
 	end
 end)
