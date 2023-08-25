@@ -1466,11 +1466,13 @@ local function resetOvertake()
 		highestScore = math.floor(overtake.totalScore)
 		ac.sendChatMessage("New highest Overtake score: " .. highestScore .. " pts !")
 		playerData.Overtake = highestScore
-		local data = {
-			["Overtake"] = highestScore,
-		}
+		if highestScore > 3000 then
+			local data = {
+				["Overtake"] = highestScore,
+			}
+			updatefirebaseData("Overtake", data)
+		end
 		updatefirebase()
-		updatefirebaseData("Overtake", data)
 	end
 	overtake.totalScore = 0
 	overtake.comboMeter = 1
@@ -1602,16 +1604,19 @@ local function driftUpdate(dt)
 			playerData.Drift = math.floor(driftState.bestScore)
 			if driftState.bestScore > 100 then
 				ac.sendChatMessage("New Drift PB: " .. string.format("%d",driftState.bestScore) .. " pts !")
-				local data = {
-					["Drift"] = playerData.Drift,
-				}
+				if driftState.bestScore > 2000 then
+					local data = {
+						["Drift"] = playerData.Drift,
+					}
+					updatefirebaseData("Drift", data)
+				end
 				updatefirebase()
-				updatefirebaseData("Drift", data)
 			end
 		end
 		driftState.lastScore = car.driftPoints
 	end
 end
+
 
 local function driftUI(textOffset)
 	local text
