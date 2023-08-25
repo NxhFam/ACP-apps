@@ -382,17 +382,8 @@ local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/'
 local firebaseUrlData = 'https://acp-server-97674-default-rtdb.firebaseio.com/PlayersData/'
 local firebaseUrlsettings = 'https://acp-server-97674-default-rtdb.firebaseio.com/Settings'
 
-local nodes = { ['Arrests'] = 'Arrestations',
-				['H1'] = 'Class C - H1',
-				['STRace'] = 'Street Racing',
-				['Theft'] = 'Car Thefts',
-				['VV'] = 'Velocity Vendetta',
-				['Drift'] = 'Drift',
-				['Overtake'] = 'Overtake',
-				['Getaway'] = 'Most Wanted'}
-
-local function updateSheets(category)
-	local str = '{"category" : "' .. nodes[category] .. '"}'
+local function updateSheets()
+	local str = '{"category" : "Arrestations"}'
 	web.post(urlAppScript, str, function(err, response)
 		if err then
 			print(err)
@@ -456,7 +447,7 @@ local function updatefirebaseData(node, data)
 			return
 		else
 			print(response.body)
-			updateSheets(node)
+			updateSheets()
 		end
 	end)
 end
