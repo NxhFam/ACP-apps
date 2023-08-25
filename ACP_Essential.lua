@@ -663,7 +663,7 @@ end
 
 
 local function loadLeaderboard()
-	local url = firebaseUrl .. leaderboardName .. '.json'
+	local url = firebaseUrlLeaderboards .. leaderboardName .. '.json'
 
 	web.get(url, function(err, response)
 		if err then
