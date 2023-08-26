@@ -407,14 +407,14 @@ local function addPlayerToDataBase()
 end
 
 local function getFirebase()
-	local url = firebaseUrl .. "/" .. ac.getUserSteamID() .. '.json'
+	local url = firebaseUrl .. "Players/" .. ac.getUserSteamID() .. '.json'
 	web.get(url, function(err, response)
 		if err then
 			print(err)
 			return
 		else
 			if response.body == 'null' then
-				addPlayerToDataBase()
+				addPlayerToDataBase(ac.getUserSteamID())
 			else
 				local jString = response.body
 				playerData = json.parse(jString)
