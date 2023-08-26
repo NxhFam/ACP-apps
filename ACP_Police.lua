@@ -397,7 +397,7 @@ end
 local function addPlayerToDataBase()
 	local steamID = ac.getUserSteamID()
 	local name = ac.getDriverName(0)
-	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","Getaway": 0,"Drift": 0,"Overtake": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0,"Sectors": {"H1": {},"VV": {}}}}'
+	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","Getaway": 0,"Drift": 0,"Overtake": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0}}'
 	web.request('PATCH', firebaseUrl .. "Players.json", str, function(err, response)
 		if err then
 			print(err)
