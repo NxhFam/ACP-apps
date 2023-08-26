@@ -514,9 +514,9 @@ local function parsesettings(table)
 	end
 end
 
-local function addPlayerToDataBase(steamID)
+local function addPlayerToDataBase()
 	local name = ac.getDriverName(0)
-	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","Getaway": 0,"Drift": 0,"Overtake": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0,"Sectors": {"H1": {},"VV": {}}}}'
+	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","Getaway": 0,"Drift": 0,"Overtake": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0}}'
 	web.request('PATCH', firebaseUrl .. "Players.json", str, function(err, response)
 		if err then
 			print(err)
@@ -558,25 +558,12 @@ local function getFirebase()
 			return
 		else
 			if response.body == 'null' then
-				addPlayerToDataBase(ac.getUserSteamID())
+				addPlayerToDataBase()
 			else
 				local jString = response.body
 				playerData = json.parse(jString)
 				if playerData.Name ~= ac.getDriverName(0) then
 					playerData.Name = ac.getDriverName(0)
-				end
-				if not playerData.Drift then
-					playerData.Drift = 0
-				else
-					driftState.bestScore = playerData.Drift
-				end
-				if not playerData.Overtake then
-					playerData.Overtake = 0
-				else
-					highestScore = playerData.Overtake
-				end
-				if not playerData.Getaway then
-					playerData.Getaway = 0
 				end
 			end
 			ac.log('Player data loaded')
