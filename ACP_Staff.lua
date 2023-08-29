@@ -377,7 +377,7 @@ local drugAccessPointsName = {
 	"McDanalds 3",
 	"Road Criminals",
 	"McDanalds 4",
-	"Gas Station 5",
+	"Gas Station 3",
 	"Reckless Renegades",
 	"Motion Masters",
 	"restaurant 4",
@@ -400,7 +400,7 @@ local drugAccessPoints = {
 	[4] = vec3(-2029.1,99.9,3522.9),
 	[5] = vec3(-2357,97.2,3147.6),
 	[6] = vec3(-2605.8,94.9,2863.1),
-	[7] = vec3(-4021.3,59.4,65.4),
+	[7] = vec3(-4021.3,60,65.4),
 	[8] = vec3(-2952.5,-28.5,-593.4),
 	[9] = vec3(-2154.1,-14.3,-1928.1),
 	[10] = vec3(-2317.3,-23.2,-2443),
@@ -422,11 +422,13 @@ local drugDelivery = {
 	pickUpName = "",
 	dropOffName = "",
 	active = false,
+	call = false,
 	started = false,
 	drawPickUp = false,
 	drawDropOff = false,
 	timer = 0,
 	distance = 0,
+	avgSpeed = 0,
 	damage = {0,0,0,0,0},
 }
 
@@ -482,10 +484,8 @@ end
 
 local function isPointInCircle(point, circle, radius)
 	if math.distanceSquared(point, circle) <= radius then
-		--ac.log("Point in circle")
 		return true
 	end
-	--ac.log("Point not in circle")
 	return false
 end
 
@@ -1289,12 +1289,6 @@ local function sectorUI()
 		end
 	end
 	discordLinks()
-	-- if ui.button("Update") then
-	-- 	local data = {
-	-- 		["Overtake"] = playerData.Overtake,
-	-- 	}
-	-- 	updatefirebaseData("Overtake", data)
-	-- end
 	ui.endGroup()
 	return 1
 end
@@ -1382,20 +1376,23 @@ end
 local function resetDrugDelivery()
 	drugDelivery.active = false
 	drugDelivery.started = false
+	drugDelivery.call = false
 	drugDelivery.timer = 0
+	drugDelivery.distance = 0
+	drugDelivery.avgSpeed = 0
 end
 
 local function drugDeliveryUI()
 	if drugDelivery.active and not drugDelivery.started then
-		textWithBackground("You just picked up some drugs! Deliver them to this location : " .. drugDelivery.dropOffName .. "!", 1)
+		textWithBackground("You just picked up some drugs to start the mission click on the THEFT icon! Deliver them to this location : " .. drugDelivery.dropOffName .. "!", 1)
 	elseif drugDelivery.started then
 		textWithBackground("You are on the way to deliver the drugs to " .. drugDelivery.dropOffName .. "!", 1)
 	end
 end
 
 local function drawDrugLocations()
-	if not drugDelivery.started and distanceSquared(vec2(car.position.x, car.position.z), vec2(drugDelivery.pickUp.x, drugDelivery.pickUp.z)) < 30000 then drugDelivery.drawPickUp = true else drugDelivery.drawPickUp = false end
-	if distanceSquared(vec2(car.position.x, car.position.z), vec2(drugDelivery.dropOff.x, drugDelivery.dropOff.z)) < 30000 then drugDelivery.drawDropOff = true else drugDelivery.drawDropOff = false end
+	if not drugDelivery.started and math.distanceSquared(car.position, drugDelivery.pickUp) < 30000 then drugDelivery.drawPickUp = true else drugDelivery.drawPickUp = false end
+	if math.distanceSquared(car.position, drugDelivery.dropOff) < 30000 then drugDelivery.drawDropOff = true else drugDelivery.drawDropOff = false end
 end
 
 local function drugAvgSpeedValid()
@@ -1411,11 +1408,10 @@ end
 local function drugDeliveryUpdate(dt)
 	drawDrugLocations()
 	if not drugDelivery.active and car.speedKmh < 5 and isPointInCircle(car.position, drugDelivery.pickUp, 100) then
+		drugDelivery.active = true	
+	elseif drugDelivery.call and drugDelivery.active and car.speedKmh > 5 and isPointInCircle(car.position, drugDelivery.pickUp, 100) then
 		resetDrugDelivery()
-		drugDelivery.active = true
 		drugDelivery.distance = car.distanceDrivenSessionKm
-	elseif not drugDelivery.started and drugDelivery.active and car.speedKmh > 5 and isPointInCircle(car.position, drugDelivery.pickUp, 100) then
-		ac.sendChatMessage(" has picked up the drugs and is on the way to the drop off! (".. drugDelivery.dropOffName ..")")
 		for i = 0, 4 do drugDelivery.damage[i] = car.damage[i] end
 		drugDelivery.started = true
 	elseif drugDelivery.started and car.speedKmh < 10 and isPointInCircle(car.position, drugDelivery.dropOff, 100) then
@@ -1436,7 +1432,10 @@ local function drugDeliveryUpdate(dt)
 			end
 		end
 	end
-	if drugDelivery.started then drugDelivery.timer = drugDelivery.timer + dt end
+	if drugDelivery.started then
+		drugDelivery.timer = drugDelivery.timer + dt
+		drugDelivery.avgSpeed = (car.distanceDrivenSessionKm - drugDelivery.distance) * 3600 / drugDelivery.timer
+	end
 end
 
 --------------------------------------------------------------------------------------- Race Opponent -----------------------------------------------------------------------------------------------
@@ -2007,7 +2006,8 @@ local statOn = {
 	[3] = "Busted",
 	[4] = "Sector",
 	[5] = "Overtake",
-	[6] = "Drift"
+	[6] = "Drift",
+	[7] = "Drug Delivery",
 }
 
 local iconsColorOn = {
@@ -2076,6 +2076,9 @@ local function drawText()
 		overtakeUI(textOffset)
 	elseif settings.current == 6 then
 		driftUI(textOffset)
+	elseif settings.current == 7 then
+		textSize = ui.measureDWriteText("123 km/h", settings.fontSize)
+		ui.dwriteDrawText(string.format("%.1f ",drugDelivery.avgSpeed * settings.unitMult) .. settings.unit, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1, 1, 1, 0.9))
     end
 	ui.popDWriteFont()
 end
@@ -2106,13 +2109,19 @@ local function drawImage()
 		if uiState.isMouseLeftKeyClicked then
 			if stealingTime == 0 then
 				stealingTime = 30
-				ac.sendChatMessage("* Stealing a " .. string.gsub(ac.getCarName(0), "%W", " ") .. os.date(" %x *"))
-				stealMsgTime = 7
-				if sectorInfo.sectorIndex ~= 3 and sectorInfo.timerText == "00:00.00" then
-					sectorInfo.sectorIndex = 2
-                    sector = sectors[sectorInfo.sectorIndex]
-                    resetSectors()
-					settings.current = 4
+				if not drugDelivery.drawPickUp then
+					ac.sendChatMessage("* Stealing a " .. string.gsub(ac.getCarName(0), "%W", " ") .. os.date(" %x *"))
+					stealMsgTime = 7
+					if sectorInfo.sectorIndex ~= 3 and sectorInfo.timerText == "00:00.00" then
+						sectorInfo.sectorIndex = 2
+						sector = sectors[sectorInfo.sectorIndex]
+						resetSectors()
+						settings.current = 4
+					end
+				end
+				if drugDelivery.active and not drugDelivery.started then
+					ac.sendChatMessage(" has picked up the drugs and is on the way to the drop off! (".. drugDelivery.dropOffName ..")")
+					drugDelivery.call = true
 				end
 			end
 		end
@@ -2494,6 +2503,9 @@ ac.onCarJumped(0, function (carid)
 	if carID ~= valideCar[1] and carID ~= valideCar[2] then
 		ac.log("Car Jumped")
 		resetSectors()
+		if drugDelivery.started then
+			ac.sendChatMessage(" has crashed and lost the drugs!")
+		end
 		resetDrugDelivery()
 		if online.chased and online.officer then
 			acpPolice{message = "TP", messageType = 0, yourIndex = online.officer.sessionID}
@@ -2523,6 +2535,8 @@ function script.draw3D()
 	render.setDepthMode(render.DepthMode.Normal)
 	if initialized and settings.current == 4 then
 		if sectorInfo.drawLine then render.debugLine(sector.pointsData[sectorInfo.checkpoints][1], sector.pointsData[sectorInfo.checkpoints][2], rgbm(0,100,0,1)) end
+	end
+	if initialized and settings.current == 7 then
 		if drugDelivery.drawPickUp then render.circle(drugDelivery.pickUp, vec3(0,1,0), 4, rgbm(0,1,0,1))
 		elseif drugDelivery.drawDropOff then render.circle(drugDelivery.dropOff, vec3(0,1,0), 4, rgbm(0,1,0,1)) end
 	end
