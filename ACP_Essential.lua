@@ -551,19 +551,29 @@ local function timeFormat(sec)
 end
 
 local function getFirebase()
-	local url = firebaseUrl .. "Players/" .. ac.getUserSteamID() .. '.json'
+	local url = firebaseUrl .. "Players/" .. steamID .. '.json'
 	web.get(url, function(err, response)
 		if err then
 			print(err)
 			return
 		else
 			if response.body == 'null' then
-				addPlayerToDataBase()
+				addPlayerToDataBase(steamID)
 			else
 				local jString = response.body
 				playerData = json.parse(jString)
 				if playerData.Name ~= ac.getDriverName(0) then
 					playerData.Name = ac.getDriverName(0)
+				end
+				if not playerData.Drift then
+					playerData.Drift = 0
+				else
+					driftState.bestScore = playerData.Drift
+				end
+				if not playerData.Overtake then
+					playerData.Overtake = 0
+				else
+					highestScore = playerData.Overtake
 				end
 			end
 			ac.log('Player data loaded')
