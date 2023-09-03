@@ -1290,6 +1290,9 @@ local function sectorUI()
 			duo.request = false
 		end
 	end
+	if ui.button("Close Comfy") then
+		ac.setAppWindowVisible("ACP_Tools", '?', true)
+	end
 	discordLinks()
 	ui.endGroup()
 	return 1
@@ -2096,7 +2099,7 @@ local function drawImage()
 	local uiState = ac.getUI()
 	local toolTipOn = false
 	ui.drawImage(hudCenter, vec2(0,0), imageSize)
-	if ui.rectHovered(vec2(0,0), imageSize) then toolTipOn = true end
+	if ui.rectHovered(vec2(0,0), vec2(imageSize.x, imageSize.y/2)) then toolTipOn = true end
 	if ui.rectHovered(imgPos.leftPos2, imgPos.leftPos1) then
 		ui.image(hudLeft, imageSize, settings.colorHud)
 		if uiState.isMouseLeftKeyClicked then
@@ -2502,13 +2505,22 @@ function script.drawUI()
 		drugDeliveryUI()
 		if menuOpen then
 			ui.toolWindow('Menu', settings.menuPos, menuSize[currentTab], true, function ()
-				ui.childWindow('childMenu', menuSize[currentTab], true, function ()
+				ui.childWindow('childMenu', menuSize[currentTab], true, ui.WindowFlags.MenuBar, function ()
 					menu()
 					moveMenu()
 				end)
 			end)
 		end
 		if leaderboardOpen then leaderboardWindow() end
+	end
+end
+
+local function hidePoliceCar()
+	for i = ac.getSim().carsCount - 1, 0, -1 do
+		local playerCarID = ac.getCarID(i)
+		if playerCarID == valideCar[1] or playerCarID == valideCar[2] then
+			ac.hideCarLabels(i)
+		end
 	end
 end
 
@@ -2523,6 +2535,7 @@ function script.update(dt)
 		initDrugRoute()
 		scalePositions()
 		initOverTake()
+		hidePoliceCar()
 	else
 		sectorUpdate()
 		raceUpdate(dt)
@@ -2544,6 +2557,14 @@ ac.onCarJumped(0, function (carid)
 		if online.chased and online.officer then
 			acpPolice{message = "TP", messageType = 0, yourIndex = online.officer.sessionID}
 		end
+	end
+end)
+
+ac.onClientConnected(function (carIndex)
+	local newCar = ac.getCarID(carIndex)
+	ac.log("New Car : " .. newCar)
+	if newCar == valideCar[1] or newCar == valideCar[2] then
+		ac.hideCarLabels(carIndex)
 	end
 end)
 
