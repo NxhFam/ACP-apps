@@ -1171,6 +1171,7 @@ function script.update(dt)
 	else
 		radarUpdate()
 		chaseUpdate()
+		hidePlayers()
 	end
 end
 
