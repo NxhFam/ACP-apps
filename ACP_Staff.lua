@@ -2092,8 +2092,9 @@ local function drawImage()
 	iconsColorOn[3] = rgbm(0.99,0.99,0.99,1)
 	iconsColorOn[4] = rgbm(0.99,0.99,0.99,1)
 	local uiState = ac.getUI()
-
+	local toolTipOn = false
 	ui.drawImage(hudCenter, vec2(0,0), imageSize)
+	if ui.rectHovered(vec2(0,0), imageSize) then toolTipOn = true end
 	if ui.rectHovered(imgPos.leftPos2, imgPos.leftPos1) then
 		ui.image(hudLeft, imageSize, settings.colorHud)
 		if uiState.isMouseLeftKeyClicked then
@@ -2171,6 +2172,10 @@ local function drawImage()
 	if countDownState.countdownOn then countdown() end
 	if stealingTime > 0 then stealingTime = stealingTime - ui.deltaTime()
 	elseif stealingTime < 0 then stealingTime = 0 end
+	if toolTipOn then ui.tooltip(function ()
+			ui.text("Click ALT to Bring up\nThe Welcome Menu")
+		end)
+	end
 end
 
 local function showMsgSteal()
@@ -2289,15 +2294,17 @@ local welcomeWindow = {
 	offset = vec2(0, 0),
 	scale = 0.9,
 	font = nil,
+	fontBold = nil,
 	closeIMG = "https://acstuff.ru/images/icons_24/cancel.png",
 	fontSize = windowHeight/35,
 }
 
 function scalePositions()
-	local urlFont = "https://cdn.discordapp.com/attachments/1130004696984203325/1140404820746965002/NeutronsRegular.zip"
+	local urlFont = "https://cdn.discordapp.com/attachments/1130004696984203325/1147805949944406127/EUROSTARBLACKEXTENDED.zip"
 	web.loadRemoteAssets(urlFont, function (success, path)
 		if success == nil then
-			welcomeWindow.font = ui.DWriteFont("Neutrons", path)
+			welcomeWindow.fontBold = ui.DWriteFont("Eurostar Black Extended", path):weight(ui.DWriteFont.Weight.Bold)
+			welcomeWindow.font = ui.DWriteFont("Eurostar Black Extended", path):weight(ui.DWriteFont.Weight.SemiBold)
 		end
 	end)
 	local xScale = windowWidth / 2560
@@ -2317,7 +2324,7 @@ end
 
 
 local imgSet = {
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299157320937502/aboutacp.jpg",
+	"https://cdn.discordapp.com/attachments/1083015934060531712/1147208860751364238/server.jpg",
 	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299158793138288/leaderboard1.jpg",
 	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299158558261358/earnmoney.jpg",
 	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299157891366943/buycars.jpg",
@@ -2330,12 +2337,12 @@ local imgSet = {
 
 local imgLink = {
 	"https://discord.com/channels/358562025032646659/1062186611091185784",--FAQ
-	"https://discord.com/channels/358562025032646659/1075156026992635995",--earn
+	"https://discord.com/channels/358562025032646659/1147217487524528138",--earn
 	"https://discord.com/channels/358562025032646659/1127619394328076318",--leaderboard
+	"https://discord.com/channels/358562025032646659/1075578309443858522",--bank
+	"https://discord.com/channels/358562025032646659/1095681142197325975",--police
 	"https://discord.com/channels/358562025032646659/1076123906362056784",--car
 	"https://discord.com/channels/358562025032646659/1079799948306034708",--tuning
-	"https://discord.com/channels/358562025032646659/1095681142197325975",--police
-	"https://discord.com/channels/358562025032646659/1075578309443858522",--bank
 	"https://discord.com/channels/358562025032646659/1096470595392241704",--car theft
 	"",
 }
@@ -2345,12 +2352,26 @@ local imgDisplayed = {1,2,3,4,5,6,7,8,9,}
 local function drugShowInfo(i)
 	local leftCorner = vec2(imgPos_[i+2][1].x, imgPos_[i+2][1].y) + vec2(welcomeWindow.size.x/100, welcomeWindow.size.y/10)
 	local textPos = leftCorner + welcomeWindow.size/100
-	ui.drawRectFilled(leftCorner,  vec2(imgPos_[i+2][2].x - welcomeWindow.size.x/100 , leftCorner.y + ui.measureDWriteText("Locations names are the same\nas the teleports in the mini map.\nDelivery :  \nPick Up :  \nDrop Off :  " .. drugDelivery.dropOffName, settings.fontSize).y*2), rgbm(0, 0, 0, 0.8))
+	ui.drawRectFilled(leftCorner,  vec2(imgPos_[i+2][2].x - welcomeWindow.size.x/100 , leftCorner.y + ui.measureDWriteText("Locations names are the same\nas the teleports in the mini map.\nDelivery : \n \nPick Up :  \nDrop Off :  " .. drugDelivery.dropOffName, settings.fontSize).y*2), rgbm(0, 0, 0, 0.8))
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=BLACK")
 	ui.dwriteDrawText("Location names are the same\nas teleports in the mini map.", welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
 	textPos.y = textPos.y + ui.measureDWriteText("Locations names are the same\nas the teleports in the mini map.", welcomeWindow.fontSize*0.6).y*2
-	ui.dwriteDrawText("Delivery : " .. os.date("%a %d") .. "th" .. " of " .. os.date("%B"), welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+	ui.dwriteDrawText("Delivery : " .. os.date("%a the %d"), welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+	textPos.x = textPos.x  + ui.measureDWriteText("Delivery : " .. os.date("%a the %d"), welcomeWindow.fontSize*0.6).x
+	if os.date("%d") == "01" then
+		ui.dwriteDrawText(" st", welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+	elseif os.date("%d") == "02" then
+		ui.dwriteDrawText(" nd", welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+	elseif os.date("%d") == "03" then
+		ui.dwriteDrawText(" rd", welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+	else
+		ui.dwriteDrawText("th", welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+	end
+	textPos.x = textPos.x - ui.measureDWriteText(os.date("%a the %d"), welcomeWindow.fontSize*0.6).x
+	textPos.y = textPos.y + ui.measureDWriteText("Delivery : " .. os.date("%a the %d"), welcomeWindow.fontSize*0.6).y
+	ui.dwriteDrawText("of " .. os.date("%B"), welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+	textPos.x = textPos.x - ui.measureDWriteText("Delivery : ", welcomeWindow.fontSize*0.6).x
 	textPos.y = textPos.y + ui.measureDWriteText("Delivery :  " .. os.date("%x"), welcomeWindow.fontSize*0.6).y*2
 	ui.dwriteDrawText("Pick Up :  " .. drugDelivery.pickUpName, welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
 	textPos.y = textPos.y + ui.measureDWriteText("Pick Up :  " .. drugDelivery.pickUpName, welcomeWindow.fontSize*0.6).y*2
@@ -2362,10 +2383,17 @@ local function drawMenuText()
 	ui.popDWriteFont()
 	ui.pushDWriteFont(welcomeWindow.font)
 	ui.dwriteDrawText("WELCOME BACK,", welcomeWindow.fontSize*0.6, welcomeWindow.topLeft, rgbm.colors.white)
+	ui.popDWriteFont()
+	ui.pushDWriteFont(welcomeWindow.fontBold)
 	ui.dwriteDrawText(ac.getDriverName(0), welcomeWindow.fontSize, vec2(welcomeWindow.topLeft.x, welcomeWindow.topLeft.y + ui.measureDWriteText("WELCOME BACK,", welcomeWindow.fontSize*0.6).y), settings.colorHud)
-	
+	ui.popDWriteFont()
+	ui.pushDWriteFont(welcomeWindow.font)
 	ui.dwriteDrawText("CURRENT CAR", welcomeWindow.fontSize*0.6, vec2(welcomeWindow.topRight.x - ui.measureDWriteText("CURRENT CAR", welcomeWindow.fontSize*0.6).x, welcomeWindow.topRight.y), rgbm.colors.white)
+	ui.popDWriteFont()
+	ui.pushDWriteFont(welcomeWindow.fontBold)
 	ui.dwriteDrawText(string.gsub(string.gsub(ac.getCarName(0), "%W", " "), "  ", ""), welcomeWindow.fontSize, vec2(welcomeWindow.topRight.x - ui.measureDWriteText(string.gsub(string.gsub(ac.getCarName(0), "%W", " "), "  ", ""), welcomeWindow.fontSize).x - ui.measureDWriteText(carVersion, welcomeWindow.fontSize*0.8).x, welcomeWindow.topRight.y + ui.measureDWriteText("CURRENT CAR", welcomeWindow.fontSize*0.6).y), settings.colorHud)
+	ui.popDWriteFont()
+	ui.pushDWriteFont(welcomeWindow.font)
 	ui.dwriteDrawText(carVersion, welcomeWindow.fontSize*0.7, vec2(welcomeWindow.topRight.x - ui.measureDWriteText(carVersion, welcomeWindow.fontSize*0.7).x, welcomeWindow.topRight.y + ui.measureDWriteText("CURRENT CAR", welcomeWindow.fontSize).y*0.85), rgbm.colors.white)
 	ui.popDWriteFont()
 end
