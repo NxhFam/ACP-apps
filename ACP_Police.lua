@@ -892,6 +892,23 @@ local function radarUI()
 	end)
 end
 
+local function hidePlayers()
+	local hideRange = 500
+	for i = ac.getSim().carsCount - 1, 0, -1 do
+		local player = ac.getCar(i)
+		local playerCarID = ac.getCarID(i)
+		if player.isConnected and ac.getCarBrand(i) ~= "traffic" then
+			if playerCarID ~= valideCar[1] and playerCarID ~= valideCar[2] then
+				if player.position.x > car.position.x - hideRange and player.position.z > car.position.z - hideRange and player.position.x < car.position.x + hideRange and player.position.z < car.position.z + hideRange then
+					ac.hideCarLabels(i, false)
+				else
+					ac.hideCarLabels(i, true)
+				end
+			end
+		end
+	end
+end
+
 local function radarUpdate()
 	if firstload and not pursuit.suspect then return end
 	local radarRange = 250
@@ -901,7 +918,7 @@ local function radarUpdate()
 	for i = ac.getSim().carsCount - 1, 0, -1 do
 		local player = ac.getCar(i)
 		local playerCarID = ac.getCarID(i)
-		if player.isConnected and (not player.isHidingLabels) then
+		if player.isConnected and ac.getCarBrand(i) ~= "traffic" then
 			if playerCarID ~= valideCar[1] and playerCarID ~= valideCar[2] then
 				if player.position.x > car.position.x - radarRange and player.position.z > car.position.z - radarRange and player.position.x < car.position.x + radarRange and player.position.z < car.position.z + radarRange then
 					playersInRange[j] = {}
