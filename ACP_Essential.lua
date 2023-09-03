@@ -1452,14 +1452,11 @@ local function resetOvertake()
 	if overtake.totalScore > highestScore then
 		highestScore = math.floor(overtake.totalScore)
 		ac.sendChatMessage("New highest Overtake score: " .. highestScore .. " pts !")
-		playerData.Overtake = highestScore
-		if highestScore > 3000 then
-			local data = {
-				["Overtake"] = highestScore,
-			}
-			updatefirebaseData("Overtake", data)
-		end
+		local data = {
+			["Overtake"] = highestScore,
+		}
 		updatefirebase()
+		updatefirebaseData("Overtake", data)
 	end
 	overtake.totalScore = 0
 	overtake.comboMeter = 1
