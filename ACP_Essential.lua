@@ -1683,8 +1683,8 @@ local function raceUI()
 			ac.sendChatMessage(ac.getDriverName(0) .. " has just beaten " .. raceFinish.opponentName .. string.format(" in an illegal race. [Win rate: %d",playerData.Wins * 100 / (playerData.Wins + playerData.Losses)) .. "%]")
 			raceFinish.messageSent = true
 			local data = {
-				["wins"] = playerData.Wins,
-				["losses"] = playerData.Losses,
+				["Wins"] = playerData.Wins,
+				["Losses"] = playerData.Losses,
 			}
 			updatefirebase()
 			updatefirebaseData("STRace", data)
@@ -2185,7 +2185,6 @@ function script.drawUI()
 		hudUI()
 		onlineEventMessageUI()
 		raceUI()
-		--if ac.isKeyPressed(ui.KeyIndex.P) then welcomeClosed = false end
 		if menuOpen then
 			ui.toolWindow('Menu', settings.menuPos, menuSize[currentTab], true, function ()
 				ui.childWindow('childMenu', menuSize[currentTab], true, function ()
@@ -2196,6 +2195,15 @@ function script.drawUI()
 			end)
 		end
 		if leaderboardOpen then leaderboardWindow() end
+	end
+end
+
+local function hidePoliceCar()
+	for i = ac.getSim().carsCount - 1, 0, -1 do
+		local playerCarID = ac.getCarID(i)
+		if playerCarID == valideCar[1] or playerCarID == valideCar[2] then
+			ac.hideCarLabels(i)
+		end
 	end
 end
 
@@ -2216,6 +2224,14 @@ function script.update(dt)
 		driftUpdate(dt)
 	end
 end
+
+ac.onClientConnected(function (carIndex)
+	local newCar = ac.getCarID(carIndex)
+	ac.log("New Car : " .. newCar)
+	if newCar == valideCar[1] or newCar == valideCar[2] then
+		ac.hideCarLabels(carIndex)
+	end
+end)
 
 ac.onCarJumped(0, function (carid)
 	if carID ~= valideCar[1] and carID ~= valideCar[2] then
