@@ -26,6 +26,8 @@ local fontMultiplier = windowHeight/1440
 local carID = ac.getCarID(0)
 local wheels = car.wheels
 local playerData = {}
+local cpu99occupancy = false
+local showCPUoccupancy = true
 
 if carID == valideCar[1] or carID == valideCar[2] or cspVersion < cspMinVersion then return end
 
@@ -2325,12 +2327,12 @@ end
 
 local imgSet = {
 	"https://cdn.discordapp.com/attachments/1083015934060531712/1147208860751364238/server.jpg",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299158793138288/leaderboard1.jpg",
 	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299158558261358/earnmoney.jpg",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299158793138288/leaderboard1.jpg",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299157618720880/bank.jpg",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299159019618355/police.jpg",
 	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299157891366943/buycars.jpg",
 	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299159317430292/tuning.jpg",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299159019618355/police.jpg",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299157618720880/bank.jpg",
 	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299158130438257/cartheft2.jpg",
 	"https://cdn.discordapp.com/attachments/1130004696984203325/1139299158340141237/drugdealer.jpg",
 }
@@ -2420,10 +2422,10 @@ local function drawMenuImage()
 				imgToDraw[1] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138974404768972870/leftArrow-min.png"
 				if uiState.isMouseLeftKeyClicked then
 					for i = 1, #imgDisplayed do
-						if imgDisplayed[i] == #imgSet then
-							imgDisplayed[i] = 1
+						if imgDisplayed[i] == 1 then
+							imgDisplayed[i] = #imgSet
 						else
-							imgDisplayed[i] = imgDisplayed[i] + 1
+							imgDisplayed[i] = imgDisplayed[i] - 1
 						end
 					end
 				end
@@ -2432,10 +2434,10 @@ local function drawMenuImage()
 				imgToDraw[2] = "https://cdn.discordapp.com/attachments/1130004696984203325/1138974403649097748/rightArrow-min.png"
 				if uiState.isMouseLeftKeyClicked then
 					for i = 1, #imgDisplayed do
-						if imgDisplayed[i] == 1 then
-							imgDisplayed[i] = #imgSet
+						if imgDisplayed[i] == #imgSet then
+							imgDisplayed[i] = 1
 						else
-							imgDisplayed[i] = imgDisplayed[i] - 1
+							imgDisplayed[i] = imgDisplayed[i] + 1
 						end
 					end
 				end
@@ -2481,9 +2483,12 @@ end
 
 -------------------------------------------------------------------------------- UPDATE --------------------------------------------------------------------------------
 
+
+
 function script.drawUI()
 	if ui.keyboardButtonPressed(ui.KeyIndex.Menu) then welcomeClosed = not welcomeClosed end
 	if not welcomeClosed then drawMenuWelcome()
+	elseif cpu99occupancy and showCPUoccupancy then cpuOccupancyWindow()
 	elseif initialized then
 		if cspVersion < cspMinVersion then return end
 		if firstLoad then
@@ -2524,6 +2529,7 @@ function script.update(dt)
 		overtakeUpdate(dt)
 		driftUpdate(dt)
 		drugDeliveryUpdate(dt)
+		if sim.cpuOccupancy > 90 and showCPUoccupancy then cpu99occupancy = true end
 	end
 end
 
