@@ -901,8 +901,10 @@ local function hidePlayers()
 			if playerCarID ~= valideCar[1] and playerCarID ~= valideCar[2] then
 				if player.position.x > car.position.x - hideRange and player.position.z > car.position.z - hideRange and player.position.x < car.position.x + hideRange and player.position.z < car.position.z + hideRange then
 					ac.hideCarLabels(i, false)
+					ac.log("show")
 				else
 					ac.hideCarLabels(i, true)
+					ac.log("hide")
 				end
 			end
 		end
