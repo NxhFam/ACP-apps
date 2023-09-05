@@ -2207,18 +2207,28 @@ function script.drawUI()
 	end
 end
 
+local policeCarIndex = {0, 0, 0, 0, 0, 0}
+
+local function initPoliceCarIndex()
+	local j = 1
+	for i = ac.getSim().carsCount - 1, 0, -1 do
+		local playerCarID = ac.getCarID(i)
+		if playerCarID == valideCar[1] or playerCarID == valideCar[2] then
+			policeCarIndex[j] = i
+			j = j + 1
+		end
+	end
+end
+
 local function hidePolice()
 	local hideRange = 200
-	for i = ac.getSim().carsCount - 1, 0, -1 do
-		local player = ac.getCar(i)
-		local playerCarID = ac.getCarID(i)
-		if player.isConnected and ac.getCarBrand(i) ~= "traffic" then
-			if playerCarID == valideCar[1] or playerCarID == valideCar[2] then
-				if player.position.x > car.position.x - hideRange and player.position.z > car.position.z - hideRange and player.position.x < car.position.x + hideRange and player.position.z < car.position.z + hideRange then
-					ac.hideCarLabels(i, false)
-				else
-					ac.hideCarLabels(i, true)
-				end
+	for i = 1, 6 do
+		local player = ac.getCar(policeCarIndex[i])
+		if player.isConnected then
+			if player.position.x > car.position.x - hideRange and player.position.z > car.position.z - hideRange and player.position.x < car.position.x + hideRange and player.position.z < car.position.z + hideRange then
+				ac.hideCarLabels(i, false)
+			else
+				ac.hideCarLabels(i, true)
 			end
 		end
 	end
@@ -2234,6 +2244,7 @@ function script.update(dt)
 		getFirebase()
 		loadLeaderboard()
 		initOverTake()
+		initPoliceCarIndex()
 	else
 		sectorUpdate()
 		raceUpdate(dt)
