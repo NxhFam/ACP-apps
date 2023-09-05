@@ -431,6 +431,7 @@ local drugDelivery = {
 	timer = 0,
 	distance = 0,
 	avgSpeed = 0,
+	finalAvgSpeed = 0,
 	damage = {0,0,0,0,0},
 }
 
@@ -1403,9 +1404,9 @@ end
 local function drugAvgSpeedValid()
 	if drugDelivery.timer > 0 then
 		local routeLength = car.distanceDrivenSessionKm - drugDelivery.distance
-		local avgSpeed = routeLength * 3600 / drugDelivery.timer
+		drugDelivery.finalAvgSpeed = drugDelivery.avgSpeed
 		resetDrugDelivery()
-		if avgSpeed > 100 then return true end
+		if drugDelivery.finalAvgSpeed > 100 then return true end
 	end
 	return false
 end
@@ -1421,7 +1422,7 @@ local function drugDeliveryUpdate(dt)
 		drugDelivery.started = true
 	elseif drugDelivery.started and car.speedKmh < 10 and isPointInCircle(car.position, drugDelivery.dropOff, 100) then
 		if drugAvgSpeedValid() then
-			ac.sendChatMessage(" has delivered the drugs and got away with it!")
+			ac.sendChatMessage(" has delivered the drugs and got away with it!\nDate : " .. os.date("%d/%m/%Y"))
 		else
 			ac.sendChatMessage(" was too slow and got caught by the cops with the drugs!")
 		end
@@ -2083,7 +2084,15 @@ local function drawText()
 		driftUI(textOffset)
 	elseif settings.current == 7 then
 		textSize = ui.measureDWriteText("123 km/h", settings.fontSize)
-		ui.dwriteDrawText(string.format("%.1f ",drugDelivery.avgSpeed * settings.unitMult) .. settings.unit, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1, 1, 1, 0.9))
+		local avgSpeed = drugDelivery.avgSpeed
+		local color = rgbm(1, 1, 1, 0.9)
+		if drugDelivery.finalAvgSpeed then
+			avgSpeed = drugDelivery.finalAvgSpeed
+			if avgSpeed > 120 then color = rgbm(0, 1, 0, 1)
+			else color = rgbm(1, 0, 0, 1) end
+		end
+		avgSpeed = avgSpeed * settings.unitMult
+		ui.dwriteDrawText(string.format("%.1f ", avgSpeed) .. settings.unit, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), color)
     end
 	ui.popDWriteFont()
 end
@@ -2610,7 +2619,7 @@ function script.draw3D()
 	if initialized and settings.current == 4 then
 		if sectorInfo.drawLine then render.debugLine(sector.pointsData[sectorInfo.checkpoints][1], sector.pointsData[sectorInfo.checkpoints][2], rgbm(0,100,0,1)) end
 	end
-	if initialized and settings.current == 7 then
+	if initialized then
 		if drugDelivery.drawPickUp then render.circle(drugDelivery.pickUp, vec3(0,1,0), 4, rgbm(0,1,0,1))
 		elseif drugDelivery.drawDropOff then render.circle(drugDelivery.dropOff, vec3(0,1,0), 4, rgbm(0,1,0,1)) end
 	end
