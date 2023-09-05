@@ -1414,7 +1414,8 @@ end
 local function drugDeliveryUpdate(dt)
 	drawDrugLocations()
 	if not drugDelivery.active and car.speedKmh < 5 and isPointInCircle(car.position, drugDelivery.pickUp, 100) then
-		drugDelivery.active = true	
+		drugDelivery.active = true
+		drugDelivery.finalAvgSpeed = 0
 	elseif drugDelivery.call and drugDelivery.active and car.speedKmh > 5 and isPointInCircle(car.position, drugDelivery.pickUp, 100) then
 		resetDrugDelivery()
 		drugDelivery.distance = car.distanceDrivenSessionKm
@@ -2086,7 +2087,7 @@ local function drawText()
 		textSize = ui.measureDWriteText("123 km/h", settings.fontSize)
 		local avgSpeed = drugDelivery.avgSpeed
 		local color = rgbm(1, 1, 1, 0.9)
-		if drugDelivery.finalAvgSpeed then
+		if drugDelivery.finalAvgSpeed > 1 then
 			avgSpeed = drugDelivery.finalAvgSpeed
 			if avgSpeed > 120 then color = rgbm(0, 1, 0, 1)
 			else color = rgbm(1, 0, 0, 1) end
@@ -2135,7 +2136,7 @@ local function drawImage()
 					end
 				end
 				if drugDelivery.active and not drugDelivery.started then
-					ac.sendChatMessage(" has picked up the drugs and is on the way to the drop off! (".. drugDelivery.dropOffName ..")")
+					ac.sendChatMessage(" has picked up the drugs at (" .. drugDelivery.pickUpName .. ") and is on the way to the drop off! (".. drugDelivery.dropOffName ..")")
 					drugDelivery.call = true
 				end
 			end
