@@ -2515,11 +2515,28 @@ function script.drawUI()
 	end
 end
 
-local function hidePoliceCar()
+-- local function hidePoliceCar()
+-- 	for i = ac.getSim().carsCount - 1, 0, -1 do
+-- 		local playerCarID = ac.getCarID(i)
+-- 		if playerCarID == valideCar[1] or playerCarID == valideCar[2] then
+-- 			ac.hideCarLabels(i)
+-- 		end
+-- 	end
+-- end
+
+local function hidePolice()
+	local hideRange = 100
 	for i = ac.getSim().carsCount - 1, 0, -1 do
+		local player = ac.getCar(i)
 		local playerCarID = ac.getCarID(i)
-		if playerCarID == valideCar[1] or playerCarID == valideCar[2] then
-			ac.hideCarLabels(i)
+		if player.isConnected and ac.getCarBrand(i) ~= "traffic" then
+			if playerCarID == valideCar[1] or playerCarID == valideCar[2] then
+				if player.position.x > car.position.x - hideRange and player.position.z > car.position.z - hideRange and player.position.x < car.position.x + hideRange and player.position.z < car.position.z + hideRange then
+					ac.hideCarLabels(i, false)
+				else
+					ac.hideCarLabels(i, true)
+				end
+			end
 		end
 	end
 end
@@ -2535,13 +2552,13 @@ function script.update(dt)
 		initDrugRoute()
 		scalePositions()
 		initOverTake()
-		hidePoliceCar()
 	else
 		sectorUpdate()
 		raceUpdate(dt)
 		overtakeUpdate(dt)
 		driftUpdate(dt)
 		drugDeliveryUpdate(dt)
+		hidePolice()
 		if sim.cpuOccupancy > 90 and showCPUoccupancy then cpu99occupancy = true end
 	end
 end
