@@ -2221,7 +2221,7 @@ local function initPoliceCarIndex()
 end
 
 local function hidePolice()
-	local hideRange = 200
+	local hideRange = 100
 	for i = 1, 6 do
 		local player = ac.getCar(policeCarIndex[i])
 		if player.isConnected then
