@@ -1,6 +1,6 @@
 local sim = ac.getSim()
 local car = ac.getCar(0)
-local valideCar = {"chargerpolice_acpursuit", "crown_police"}
+local valideCar = {"chargerpolice_acpursuit", "crown_police", "bk_for_f450_21"}
 local carID = ac.getCarID(0)
 
 local windowWidth = sim.windowWidth
