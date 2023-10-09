@@ -23,7 +23,7 @@ local carID = ac.getCarID(0)
 local wheels = car.wheels
 local playerData = {}
 
-if carID == valideCar[1] or carID == valideCar[2] or cspVersion < cspMinVersion then return end
+if carID == valideCar[1] or carID == valideCar[2] or carID == valideCar[3] or cspVersion < cspMinVersion then return end
 
 local highestScore = 0
 local driftState = {
@@ -1065,7 +1065,7 @@ local function doubleTrouble()
 	for i = ac.getSim().carsCount - 1, 0, -1 do
 		local carPlayer = ac.getCar(i)
 		if carPlayer.isConnected and (not carPlayer.isHidingLabels) then
-			if carPlayer.index ~= car.index and ac.getCarID(i) ~= valideCar[1] and ac.getCarID(i) ~= valideCar[2] then
+			if carPlayer.index ~= car.index and ac.getCarID(i) ~= valideCar[1] and ac.getCarID(i) ~= valideCar[2] and ac.getCarID(i) ~= valideCar[3] then
 				table.insert(players, carPlayer)
 			end
 		end
@@ -2213,7 +2213,7 @@ local function initPoliceCarIndex()
 	local j = 1
 	for i = ac.getSim().carsCount - 1, 0, -1 do
 		local playerCarID = ac.getCarID(i)
-		if playerCarID == valideCar[1] or playerCarID == valideCar[2] then
+		if playerCarID == valideCar[1] or playerCarID == valideCar[2] or carID == valideCar[3] then
 			policeCarIndex[j] = i
 			j = j + 1
 		end
@@ -2236,7 +2236,7 @@ end
 
 function script.update(dt)
 	if not initialized then
-		if carID == valideCar[1] or carID == valideCar[2] or cspVersion < cspMinVersion then return end
+		if carID == valideCar[1] or carID == valideCar[2] or carID == valideCar[3] or cspVersion < cspMinVersion then return end
 		loadSettings()
 		initLines()
 		verifyClass()
@@ -2257,13 +2257,13 @@ end
 ac.onClientConnected(function (carIndex)
 	local newCar = ac.getCarID(carIndex)
 	ac.log("New Car : " .. newCar)
-	if newCar == valideCar[1] or newCar == valideCar[2] then
+	if newCar == valideCar[1] or newCar == valideCar[2] or newCar == valideCar[3] then
 		ac.hideCarLabels(carIndex)
 	end
 end)
 
 ac.onCarJumped(0, function (carid)
-	if carID ~= valideCar[1] and carID ~= valideCar[2] then
+	if carID ~= valideCar[1] and carID ~= valideCar[2] and carID ~= valideCar[3] then
 		ac.log("Car Jumped")
 		resetSectors()
 		if online.chased and online.officer then
@@ -2273,7 +2273,7 @@ ac.onCarJumped(0, function (carid)
 end)
 
 ac.onChatMessage(function (message, senderCarIndex, senderSessionID)
-	if carID ~= valideCar[1] and carID ~= valideCar[2] and online.chased and online.officer then
+	if carID ~= valideCar[1] and carID ~= valideCar[2] and carID ~= valideCar[3] and online.chased and online.officer then
 		if (senderSessionID == online.officer.sessionID and string.find(message, 'lost')) then
 			if not playerData.Getaway then playerData.Getaway = 0 end
 			playerData.Getaway = playerData.Getaway + 1
@@ -2298,6 +2298,6 @@ function script.draw3D()
 	end
 end
 
-if carID ~= valideCar[1] and carID ~= valideCar[2] and cspVersion >= cspMinVersion then
+if carID ~= valideCar[1] and carID ~= valideCar[2] and carID ~= valideCar[3] and cspVersion >= cspMinVersion then
 	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
