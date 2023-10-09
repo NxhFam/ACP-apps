@@ -16,7 +16,7 @@ local fontMultiplier = windowHeight/1440
 local firstload = true
 local cspAboveP218 = cspVersion >= 2363
 
-if not(carID == valideCar[1] or carID == valideCar[2]) or cspVersion < cspMinVersion then return end
+if not(carID == valideCar[1] or carID == valideCar[2] or carID == valideCar[3]) or cspVersion < cspMinVersion then return end
 
 local msgArrest = {
     msg = {"`NAME` has been arrested for Speeding. The individual was driving a `CAR`.",
@@ -898,7 +898,7 @@ local function hidePlayers()
 		local player = ac.getCar(i)
 		local playerCarID = ac.getCarID(i)
 		if player.isConnected and ac.getCarBrand(i) ~= "traffic" then
-			if playerCarID ~= valideCar[1] and playerCarID ~= valideCar[2] then
+			if playerCarID ~= valideCar[1] and playerCarID ~= valideCar[2] and playerCarID ~= valideCar[3] then
 				if player.position.x > car.position.x - hideRange and player.position.z > car.position.z - hideRange and player.position.x < car.position.x + hideRange and player.position.z < car.position.z + hideRange then
 					ac.hideCarLabels(i, false)
 				else
@@ -919,7 +919,7 @@ local function radarUpdate()
 		local player = ac.getCar(i)
 		local playerCarID = ac.getCarID(i)
 		if player.isConnected and ac.getCarBrand(i) ~= "traffic" then
-			if playerCarID ~= valideCar[1] and playerCarID ~= valideCar[2] then
+			if playerCarID ~= valideCar[1] and playerCarID ~= valideCar[2] and playerCarID ~= valideCar[3] then
 				if player.position.x > car.position.x - radarRange and player.position.z > car.position.z - radarRange and player.position.x < car.position.x + radarRange and player.position.z < car.position.z + radarRange then
 					playersInRange[j] = {}
 					playersInRange[j].player = player
@@ -1131,7 +1131,7 @@ end
 ---------------------------------------------------------------------------------------------- updates ----------------------------------------------------------------------------------------------
 
 function script.drawUI()
-	if carID ~= valideCar[1] and carID ~= valideCar[2] or cspVersion < cspMinVersion then return end
+	if carID ~= valideCar[1] and carID ~= valideCar[2] and carID ~= valideCar[3] or cspVersion < cspMinVersion then return end
 	if initialized and settings.policeSize then
 		if firstload then
 			firstload = false
@@ -1157,13 +1157,13 @@ function script.drawUI()
 end
 
 ac.onCarJumped(0, function (carid)
-	if carID == valideCar[1] or carID == valideCar[2] then
+	if carID == valideCar[1] or carID == valideCar[2] or carID == valideCar[3]then
 		if pursuit.suspect then lostSuspect() end
 	end
 end)
 
 function script.update(dt)
-	if carID ~= valideCar[1] and carID ~= valideCar[2] or cspVersion < cspMinVersion then return end
+	if carID ~= valideCar[1] and carID ~= valideCar[2] and carID ~= valideCar[3] or cspVersion < cspMinVersion then return end
 	if not initialized then
 		loadsettings()
 		getFirebase()
@@ -1175,6 +1175,6 @@ function script.update(dt)
 	end
 end
 
-if carID == valideCar[1] or carID == valideCar[2] and cspVersion >= cspMinVersion then
+if carID == valideCar[1] or carID == valideCar[2] or carID == valideCar[3] and cspVersion >= cspMinVersion then
 	ui.registerOnlineExtra(ui.Icons.Settings, "Settings", nil, settingsWindow, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 end
