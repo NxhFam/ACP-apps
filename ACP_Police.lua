@@ -295,13 +295,13 @@ end
 ui.setAsynchronousImagesLoading(true)
 local imageSize = vec2(0,0)
 
-local hud = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004827322196040/hud.png"
-local iconCams = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004828039422102/iconCams.png"
-local iconLost = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004828668567662/iconLost.png"
-local iconLogs = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004828370776115/iconLogs.png"
-local iconMenu = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004829067038750/iconMenuPolice.png"
-local iconRadar = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004827020210246/iconRadar.png"
-local iconArrest = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004827624190052/iconArrest.png"
+local hud = "https://cdn.discordapp.com/attachments/1130004696984203325/1216916513932709928/backgroundPolice.png?ex=660220d2&is=65efabd2&hm=fe86a617a30f581f6ff58f51f431b8c31fb769a551b445a790c0437dd11fa492&"
+local iconCams = "https://cdn.discordapp.com/attachments/1130004696984203325/1216916514813247568/iconCams.png?ex=660220d2&is=65efabd2&hm=ae9049e9a4718ac4c0cb1f1ca5bfdb2213ad82d9117c319a7125fd89e5867fef&"
+local iconLost = "https://cdn.discordapp.com/attachments/1130004696984203325/1216916515991851018/iconLost.png?ex=660220d2&is=65efabd2&hm=64bedd5c97cdffb27662f7bf671c330ffe1569e75052f6fb1be761621c734124&"
+local iconLogs = "https://cdn.discordapp.com/attachments/1130004696984203325/1216916515434270720/iconLogs.png?ex=660220d2&is=65efabd2&hm=4fb569e881e9f69725ce89bb38d79e7abefd74523b34e48c2e0509e04dede3c9&"
+local iconMenu = "https://cdn.discordapp.com/attachments/1130004696984203325/1216916516583243886/iconMenuPolice.png?ex=660220d2&is=65efabd2&hm=276140910b2f2e235c2497f415cef578ebc3e9db1985f2d162d6d28038852fde&"
+local iconRadar = "https://cdn.discordapp.com/attachments/1130004696984203325/1216916517531422821/iconRadar.png?ex=660220d2&is=65efabd2&hm=157891f44630caef382aa787f4df4eb56f703dfdf454f1ffa5f5980bffa6a979&"
+local iconArrest = "https://cdn.discordapp.com/attachments/1130004696984203325/1216916514339295292/iconArrest.png?ex=660220d2&is=65efabd2&hm=09e722a9339da6073697d75f870113067a94967d2074abe3fa380a7f5512c8c5&"
 
 
 local cameras = {
