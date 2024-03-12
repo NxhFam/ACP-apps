@@ -257,14 +257,14 @@ local imgPos = {}
 local cpu99occupancy = false
 local showCPUoccupancy = true
 
-local hudBase = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004776688553994/hudBase.png"
-local hudLeft = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004777229623306/hudLeft.png"
-local hudRight = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004777485471754/hudRight.png"
-local hudCenter = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004776944422952/hudCenter.png"
-local hudCountdown = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004777737146408/iconCountdown.png"
-local hudMenu = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004778026541116/iconMenu.png"
-local hudRanks = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004778315944017/iconRanks.png"
-local hudTheft = "https://cdn.discordapp.com/attachments/1130004696984203325/1130004776399151144/iconTheft.png"
+local hudBase = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929774619070505/hudBase.png?ex=66022d2b&is=65efb82b&hm=0b22866ffeb7daff5c43b95d2526b6909d68a5fb04a4eb160a1e325432403355&"
+local hudLeft = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929776015773806/hudLeft.png?ex=66022d2c&is=65efb82c&hm=78b3a29eb7b7942b932c07c79c65c299e65bc2ac37f3b3d5ad99ec84c1c758f8&"
+local hudRight = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929776502046812/hudRight.png?ex=66022d2c&is=65efb82c&hm=680f627876c5eef9eacffd6ff8f4477cbd6cabc4f9672003b1fce4482a5f2073&"
+local hudCenter = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929775386361926/hudCenter.png?ex=66022d2b&is=65efb82b&hm=039a94f66d5f34f3eddab5c874ccf35c6301649b56348ef2577e7858e8b89302&"
+local hudCountdown = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929777102098483/iconCountdown.png?ex=66022d2c&is=65efb82c&hm=dd52012e7ce69c4e915d0694a85c86c285e922147b981fb14743a7c24dbb3ab6&"
+local hudMenu = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929777848680529/iconMenu.png?ex=66022d2c&is=65efb82c&hm=c863501e4bf19378e3e312da0f63c3fe0b4b832108dbdec9dadd416a1afebd06&"
+local hudRanks = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929774090322091/iconRanks.png?ex=66022d2b&is=65efb82b&hm=c62899dfe2df4f312bda946e552bcba435296a553da0d85d1b6cbfdad43de383&"
+local hudTheft = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929778444009512/iconTheft.png?ex=66022d2c&is=65efb82c&hm=12c0c08f077927f0058357035ec040a3127450d3a5b73be4de288b0a93f58f1b&"
 
 local classC = {
 	["22b_acpursuit"]= "Impreza 22B STI",
