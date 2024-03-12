@@ -2491,9 +2491,10 @@ end
 
 function script.drawUI()
 	if ui.keyboardButtonPressed(ui.KeyIndex.Menu) then welcomeClosed = not welcomeClosed end
-	if not welcomeClosed then drawMenuWelcome()
-	--elseif cpu99occupancy and showCPUoccupancy then cpuOccupancyWindow()
-	elseif initialized then
+	-- if not welcomeClosed then drawMenuWelcome()
+	-- --elseif cpu99occupancy and showCPUoccupancy then cpuOccupancyWindow()
+	-- else
+	if initialized then
 		if cspVersion < cspMinVersion then return end
 		if firstLoad then
 			updatePos()
