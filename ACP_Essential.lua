@@ -1,11 +1,5 @@
-local staffID = {"76561199125972202", "76561199012836734", "76561198036229857", "76561198081667660", "76561197979739646", "76561199070560482", "76561197985451774", "76561198113108587", "76561197997930988"}
 local steamID = ac.getUserSteamID()
 
-for i = 1, #staffID do
-    if staffID[i] == steamID then
-        return
-    end
-end
 
 local class = 'C'
 local timeRequirement = 150
@@ -13,6 +7,7 @@ local sim = ac.getSim()
 local car = ac.getCar(0)
 local windowWidth = sim.windowWidth/ac.getUI().uiScale
 local windowHeight = sim.windowHeight/ac.getUI().uiScale
+local is16_9 = windowWidth/windowHeight == 16/9
 local menuOpen = false
 local leaderboardOpen = false
 local cspVersion = ac.getPatchVersionCode()
@@ -22,8 +17,85 @@ local fontMultiplier = windowHeight/1440
 local carID = ac.getCarID(0)
 local wheels = car.wheels
 local playerData = {}
+local cpu99occupancy = false
+local showCPUoccupancy = true
 
 if carID == valideCar[1] or carID == valideCar[2] or carID == valideCar[3] or cspVersion < cspMinVersion then return end
+
+local carVersion = "Rental"
+
+local stockHash256 = {
+    "49f0d0e1683d338c719cc5c5cb29bd2562e766eeb12f9f333075482625621dfb",
+    "008461cbca3bbbe5469edafd97d3beba31d73293f793bd595319ca34196e1443",
+    "0d5a20c2e936f9aab941e5c2ee450daf6322cdd8f18d1a44ac4687d048b59d77",
+    "6f56567669dfa90bb67fbc7be102f4508457af3990015a70160ba3cb26887993",
+    "3b41c5f96b59f862a176dcfb365a453f46e695a37829a16d0d05d899548463dd",
+    "c651de6887419c2c103cc1cd2b0bac8df9a20e3f81254a7737008095372642b4",
+    "236578882256b20a3b9698c9bec510da21c9a9da52324c06b22f3712e8b8ab49",
+    "58be1d2dd3de57fa33a6233eeac61cdb2267c3d3130866eb8ae86196e1791e9b",
+    "68d4063b0e71df24850c8bf6d9928eeafe5a917bee49775a49b6fbc86daef322",
+    "06d7e9d3cb2a9bbaf21c9bbeda7654d68fdd3ef9b58852b769f03aff775ae35b",
+    "f069f3cbd41fe0a4caa5799e75d2503682aa82b45085680390f370b7ead4e8fc",
+    "57b813694499530b1550c208762c24c119654696c03f0ce1fffd229816468f7e",
+    "8c54420f3c1818387c535417ed1f2b74a1d2781a3072c78cb8fac945cb8732d9",
+}
+
+local tunedHash256 = {
+    "3ab92c7b2643885126106f0954946b9826b055a7eb12463c679e4062fee9e3a2",
+    "b3555528f97ebff84b48a8bcfedb21372b6a3e98bae75a421c0c084819497a56",
+    "c8f88adeacd0421984cf04d4ee25f79696d16590b4adbe113455a2a9b0bd0f95",
+    "404b4999855761d4875e35ee25b8a03d4d72d65e9dd696e9f154942af40ec83f",
+    "2a4c6a0c8c4b13b191dd1309b9423265f302c6add266b714701e16c77d3a7ae4",
+    "e43fa68ad0768ae4d88380e6bc6aca218162d0ba9c8e8a1afac1aac9c2035546",
+    "a73c494f6a6d262bb0aacba68947ad2c1fcfa9a49ea586b8865a098e2e9a7760",
+    "286ff2d6ed38c8ed1212079d91865be65a6587200b364d363258380eb6221346",
+    "e589eb21e899c7e661de9072aa5e80c6266f7ca144184a00cb5442743672a9c3",
+    "5dcdc1fafcf76c3684da7d3dee09ec10a077c57073f8bc6cb035d3f0fe1ac23f",
+    "992ae5200fe88a458733a3ab0a973a0a76c62c4b3057f351f50c4b636c2a5333",
+    "00e5386e6a5ba94b950f35391128e2ba7409f47023af411a0aeb0232a5437431",
+    "2a6a1f1ce7ecf5cb8fbe81a9b10f468f28b5dbbad373000a3ea2c774d26e4093",
+}
+
+local driftHash256 = {
+    "fe04aab967c373de4580271d88e9f26d2ba463a29ccc03a30d1fd3e708265c07",
+    "2907ae504e794d36a9fed6eed317527ba10eb2b9c040d70634d37c5968c460f7",
+    "b5d95b03324aa04a4f8330f79869295a31bcf984bbabfa7d1b3387a477b9b99f",
+    "fb2cd39d5d8311e1abc8e9d8ca156faa046d9f4e6b017fafb4ed2dc2629d8267",
+    "9d452cec475af6a7aa99daa047948e874250f1e724962a4fa45934f65b2345f0",
+    "91d494330244fb95867039588303eb21a863dc62b68342e840a9df5cfb7c5845",
+    "76dde11d01c607befca128b269bdd659268fef564309ca43991fa2dd265b5bdd",
+    "e47b0704f3a64ccde3d48e4396a01663dd1b809aa620b071fa1ec734f2a35830",
+    "25ba03f4babc88184b86f37d6022423a547f08971e990341a3bf54addf2f64b5",
+    "9010ddea5fbf187a52afa7a6e7d31d2dd4adf8a2c3a49d7bd1736cb758cfa665",
+    "6467223e5a187bc7d5bd400557446e76a6bc47e08603fd86ea6eaff946e1f6a7",
+}
+
+local function checkHash256()
+	local carDataPath = ac.getFolder(ac.FolderID.ContentCars) .. '/' .. ac.getCarID(0) .. '/data.acd'
+    local carHash256 = ac.checksumSHA256(io.load(carDataPath))
+    
+    for i, hash in ipairs(stockHash256) do
+        if hash == carHash256 then
+            carVersion = "Stock"
+            break
+        end
+    end
+    for i, hash in ipairs(tunedHash256) do
+        if hash == carHash256 then
+            carVersion = "Tuned"
+            break
+        end
+    end
+    for i, hash in ipairs(driftHash256) do
+        if hash == carHash256 then
+            carVersion = "Drift"
+            break
+        end
+    end
+    table.clear(stockHash256)
+    table.clear(tunedHash256)
+    table.clear(driftHash256)
+end
 
 local highestScore = 0
 local driftState = {
@@ -254,9 +326,6 @@ local imageSize = vec2(0,0)
 
 local imgPos = {}
 
-local cpu99occupancy = false
-local showCPUoccupancy = true
-
 local hudBase = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929774619070505/hudBase.png?ex=66022d2b&is=65efb82b&hm=0b22866ffeb7daff5c43b95d2526b6909d68a5fb04a4eb160a1e325432403355&"
 local hudLeft = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929776015773806/hudLeft.png?ex=66022d2c&is=65efb82c&hm=78b3a29eb7b7942b932c07c79c65c299e65bc2ac37f3b3d5ad99ec84c1c758f8&"
 local hudRight = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929776502046812/hudRight.png?ex=66022d2c&is=65efb82c&hm=680f627876c5eef9eacffd6ff8f4477cbd6cabc4f9672003b1fce4482a5f2073&"
@@ -265,46 +334,6 @@ local hudCountdown = "https://cdn.discordapp.com/attachments/1130004696984203325
 local hudMenu = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929777848680529/iconMenu.png?ex=66022d2c&is=65efb82c&hm=c863501e4bf19378e3e312da0f63c3fe0b4b832108dbdec9dadd416a1afebd06&"
 local hudRanks = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929774090322091/iconRanks.png?ex=66022d2b&is=65efb82b&hm=c62899dfe2df4f312bda946e552bcba435296a553da0d85d1b6cbfdad43de383&"
 local hudTheft = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929778444009512/iconTheft.png?ex=66022d2c&is=65efb82c&hm=12c0c08f077927f0058357035ec040a3127450d3a5b73be4de288b0a93f58f1b&"
-
-local classC = {
-	["22b_acpursuit"]= "Impreza 22B STI",
-	["370z_acp"]= "370Z",
-	["964turbo_acp23"]= "964 Turbo",
-	["gt86_acp23"]= "GT86",
-	["e46acpursuit"]= "M3 E46",
-	["is300_acp"]= "IS300",
-	["lancerix_acpursuit"]= "Lancer Evo IX",
-	["rx7_2_acpursuit"]= "RX-7",
-	["s15_acp"]= "Silvia S15",
-	["skyr34_acp2"]= "Skyline R34",
-	["supra93_acpursuit"]= "Supra Mk4",
-	["mustang_acp"]= "Mustang",
-	["nsx94_acp23"]= "NSX",
-}
-
-local classB = {
-	["911gt3992_acpursuit"]= "911 GT3 (992)",
-	["f40_acp2023"]= "F40",
-	["gtam_acp"]= "Giulia GTA",
-	["gtr_acp2023"]= "R35 Nismo",
-	["hellcat_acp2023"]= "Challenger",
-	["m4_acp23"]= "M4",
-	["murcielago_acp23"]= "Murcielago",
-	["rs6abt_acp"]= "RS6 ABT",
-	["amgtr_acp23"]= "AMG GT-R",
-}
-
-local function verifyClass()
-	if classC[carID] then
-		class = "C"
-		timeRequirement = 150
-	elseif classB[carID] then
-		class = "B"
-		timeRequirement = 130
-	end
-	table.clear(classC)
-	table.clear(classB)
-end
 
 local sectors  = {
     {
@@ -332,6 +361,69 @@ local sectors  = {
 					{vec3(-3977.2,-147.5,9537.4), vec3(-3969.2,-147.6,9540.2)}},
 		length = 4,
 	},
+}
+
+local drugAccessPointsName = {
+	"Gas Station 1",
+	"Street Runners",
+	"Gas Station 2",
+	"McDanalds 3",
+	"Road Criminals",
+	"McDanalds 4",
+	"Gas Station 3",
+	"Reckless Renegades",
+	"Motion Masters",
+	"restaurant 4",
+	"restaurant 7",
+	"McDanalds 7",
+	"restaurant 9",
+	"restaurant 11",
+	"restaurant 13",
+	"restaurant 14",
+	"McDanalds 8",
+	"restaurant 15",
+	"McDanalds 9",
+	"restaurant 16",
+}
+
+local drugAccessPoints = {
+	[1] = vec3(779.2,96.9,2225.4),
+	[2] = vec3(-78.9,100.3,2906.2),
+	[3] = vec3(-902.2,144.1,3494.8),
+	[4] = vec3(-2029.1,99.9,3522.9),
+	[5] = vec3(-2357,97.2,3147.6),
+	[6] = vec3(-2605.8,94.9,2863.1),
+	[7] = vec3(-4021.3,60,65.4),
+	[8] = vec3(-2952.5,-28.5,-593.4),
+	[9] = vec3(-2154.1,-14.3,-1928.1),
+	[10] = vec3(-2317.3,-23.2,-2443),
+	[11] = vec3(-1084.8,-121.5,-3029.7),
+	[12] = vec3(-152.9,-120.3,-3427.6),
+	[13] = vec3(913.1,-77.8,-2670.6),
+	[14] = vec3(2751.9,23.2,-2169.7),
+	[15] = vec3(4231.5,135.1,-2789.3),
+	[16] = vec3(4942.5,101.7,-2367),
+	[17] = vec3(4890.5,69.9,-1525.5),
+	[18] = vec3(4556.7,62.3,-1031.8),
+	[19] = vec3(3147.5,55.9,214.7),
+	[20] = vec3(1831.1,71.9,1621.5)
+}
+
+local drugDelivery = {
+	pickUp = vec3(0,0,0),
+	dropOff = vec3(0,0,0),
+	pickUpName = "",
+	dropOffName = "",
+	active = false,
+	call = false,
+	started = false,
+	drawPickUp = false,
+	drawDropOff = false,
+	timer = 0,
+	distance = 0,
+	avgSpeed = 0,
+	finalAvgSpeed = 0,
+	damage = {0,0,0,0,0},
 }
 
 local sector = nil
@@ -384,13 +476,20 @@ local function regionAroundLine(line)
 	return region
 end
 
+local function isPointInCircle(point, circle, radius)
+	if math.distanceSquared(point, circle) <= radius then
+		return true
+	end
+	return false
+end
+
 local function midPoint(p1, p2)
 	local point = vec3((p1.x + p2.x)/2, (p1.y + p2.y)/2, (p1.z + p2.z)/2)
 	local radius = distance(vec2(p1.x, p1.z), vec2(point.x, point.z))
 	return point, radius
 end
 
--- Init
+-------------------------------------------------------------------------------------------- Init --------------------------------------------------------------------------------------------
 
 local starsUI = {
 	starsPos = vec2(windowWidth - (settings.starsSize or 20)/2, settings.starsSize or 20)/2,
@@ -450,7 +549,43 @@ local function initLines()
 	end
     sector = sectors[1]
 	updatePos()
+	checkHash256()
 end
+
+local function randNum(seed)
+	local date = os.date("%m%d%Y")
+	local num = 0
+	for i = 1, #date do
+		num = num + tonumber(date:sub(i,i))
+	end
+	num = num + seed
+	num = num % 20
+	num = num + 1
+	return num
+end
+
+
+local function initDrugRoute()
+	local accessPoint = randNum(0)
+	local ray = render.createRay(drugAccessPoints[accessPoint], vec3(0, -1, 0))
+	local hit = ray:track() - 0.1
+	if hit ~= -1 then
+		drugDelivery.pickUp = ray.pos + ray.dir * hit
+	else
+		drugDelivery.pickUp = drugAccessPoints[accessPoint]
+	end
+	drugDelivery.pickUpName = drugAccessPointsName[accessPoint]
+	local deliveryPoint = randNum(accessPoint) % 4 + 3
+	if (accessPoint + deliveryPoint) > #drugAccessPoints then
+		deliveryPoint = accessPoint + deliveryPoint - #drugAccessPoints
+	else
+		deliveryPoint = accessPoint + deliveryPoint
+	end
+	drugDelivery.dropOff = drugAccessPoints[deliveryPoint]
+	drugDelivery.dropOffName = drugAccessPointsName[deliveryPoint]
+end
+
+
 
 local function textWithBackground(text, sizeMult)
 	local textLenght = ui.measureDWriteText(text, settings.fontSizeMSG*sizeMult)
@@ -516,7 +651,7 @@ end
 
 local function addPlayerToDataBase()
 	local name = ac.getDriverName(0)
-	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","Getaway": 0,"Drift": 0,"Overtake": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0}}'
+	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","Getaway": 0,"Drift": 0,"Overtake": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0,"Sectors": {"H1": {},"VV": {}}}}'
 	web.request('PATCH', firebaseUrl .. "Players.json", str, function(err, response)
 		if err then
 			print(err)
@@ -525,7 +660,7 @@ local function addPlayerToDataBase()
 	end)
 end
 
-local function addPlayersettingsToDataBase(steamID)
+local function addPlayersettingsToDataBase()
 	local str = '{"' .. steamID .. '": {"essentialSize":20,"policeSize":20,"hudOffsetX":0,"hudOffsetY":0,"fontSize":20,"current":1,"colorHud":"1,0,0,1","timeMsg":10,"msgOffsetY":10,"msgOffsetX":' .. windowWidth/2 .. ',"fontSizeMSG":30,"menuPos":"0,0","unit":"km/h","unitMult":1,"starsSize":20}}'
 	web.request('PATCH', firebaseUrl .. "Settings.json", str, function(err, response)
 		if err then
@@ -582,14 +717,14 @@ local function getFirebase()
 end
 
 local function loadSettings()
-	local url = firebaseUrl .. "Settings/" .. ac.getUserSteamID() .. '.json'
+	local url = firebaseUrl .. "Settings/" .. steamID .. '.json'
 	web.get(url, function(err, response)
 		if err then
 			print(err)
 			return
 		else
 			if response.body == 'null' then
-				addPlayersettingsToDataBase(ac.getUserSteamID())
+				addPlayersettingsToDataBase(steamID)
 			else
 				ac.log("settings loaded")
 				local jString = response.body
@@ -601,7 +736,7 @@ local function loadSettings()
 end
 
 local function updateSettings()
-	local str = '{"' .. ac.getUserSteamID() .. '": ' .. json.stringify(settingsJSON) .. '}'
+	local str = '{"' .. steamID .. '": ' .. json.stringify(settingsJSON) .. '}'
 	web.request('PATCH', firebaseUrl .. "Settings.json", str, function(err, response)
 		if err then
 			print(err)
@@ -715,7 +850,7 @@ local function updatefirebaseData(node, data)
 	end)
 end
 
-local function updateSectorData(sectorName, time)
+function updateSectorData(sectorName, time)
 	if sectorName == 'H1' then
 		if not playerData.Sectors then
 			playerData.Sectors = {
@@ -851,7 +986,6 @@ local online = {
 	chased = false,
 	officer = nil,
 	level = 0,
-    color = rgbm(1, 1, 1, 1),
 }
 
 local function showStarsPursuit()
@@ -1148,6 +1282,9 @@ local function sectorUI()
 			duo.request = false
 		end
 	end
+	if ui.button("Close Comfy") then
+		ac.setAppWindowVisible("ACP_Tools", '?', true)
+	end
 	discordLinks()
 	ui.endGroup()
 	return 1
@@ -1197,9 +1334,7 @@ local function sectorUpdate()
 			if sectorInfo.finished and not sectorInfo.timePosted then
 				if sectors[sectorInfo.sectorIndex].name == "BOBs SCRAPYARD" then
 					if class == "C" and timeRequirement > sectorInfo.time then
-						playerData.Theft = playerData.Theft + 1
-						ac.sendChatMessage(" has successfully stolen a " .. string.gsub(ac.getCarName(0), "%W", " ") .. " and got away with it!")
-					elseif class == "B" and timeRequirement > sectorInfo.time then
+						if not playerData.Theft then playerData.Theft = 0 end
 						playerData.Theft = playerData.Theft + 1
 						ac.sendChatMessage(" has successfully stolen a " .. string.gsub(ac.getCarName(0), "%W", " ") .. " and got away with it!")
 					else
@@ -1233,6 +1368,72 @@ local function sectorUpdate()
 		else sectorInfo.checkpoints = sectorInfo.checkpoints + 1 end
 	end
 	if sectorInfo.checkpoints > 1 and not sectorInfo.finished then textTimeFormat() end
+end
+
+local function resetDrugDelivery()
+	drugDelivery.active = false
+	drugDelivery.started = false
+	drugDelivery.call = false
+	drugDelivery.timer = 0
+	drugDelivery.distance = 0
+	drugDelivery.avgSpeed = 0
+end
+
+local function drugDeliveryUI()
+	if drugDelivery.active and not drugDelivery.started then
+		textWithBackground("You just picked up some drugs to start the mission click on the THEFT icon! Deliver them to this location : " .. drugDelivery.dropOffName .. "!", 1)
+	elseif drugDelivery.started then
+		textWithBackground("You are on the way to deliver the drugs to " .. drugDelivery.dropOffName .. "!", 1)
+	end
+end
+
+local function drawDrugLocations()
+	if not drugDelivery.started and math.distanceSquared(car.position, drugDelivery.pickUp) < 30000 then drugDelivery.drawPickUp = true else drugDelivery.drawPickUp = false end
+	if math.distanceSquared(car.position, drugDelivery.dropOff) < 30000 then drugDelivery.drawDropOff = true else drugDelivery.drawDropOff = false end
+end
+
+local function drugAvgSpeedValid()
+	if drugDelivery.timer > 0 then
+		local routeLength = car.distanceDrivenSessionKm - drugDelivery.distance
+		drugDelivery.finalAvgSpeed = drugDelivery.avgSpeed
+		resetDrugDelivery()
+		if drugDelivery.finalAvgSpeed > 100 then return true end
+	end
+	return false
+end
+
+local function drugDeliveryUpdate(dt)
+	drawDrugLocations()
+	if not drugDelivery.active and car.speedKmh < 5 and isPointInCircle(car.position, drugDelivery.pickUp, 100) then
+		drugDelivery.active = true
+		drugDelivery.finalAvgSpeed = 0
+	elseif drugDelivery.call and drugDelivery.active and car.speedKmh > 5 and isPointInCircle(car.position, drugDelivery.pickUp, 100) then
+		resetDrugDelivery()
+		drugDelivery.distance = car.distanceDrivenSessionKm
+		for i = 0, 4 do drugDelivery.damage[i] = car.damage[i] end
+		drugDelivery.started = true
+	elseif drugDelivery.started and car.speedKmh < 10 and isPointInCircle(car.position, drugDelivery.dropOff, 100) then
+		if drugAvgSpeedValid() then
+			ac.sendChatMessage(" has delivered the drugs and got away with it!\nDate : " .. os.date("%d/%m/%Y"))
+		else
+			ac.sendChatMessage(" was too slow and got caught by the cops with the drugs!")
+		end
+	end
+	if drugDelivery.started then
+		if car.speedKmh > 10 then
+			for i = 0, 4 do
+				if car.damage[i] > drugDelivery.damage[i] then
+					ac.sendChatMessage(" has crashed and lost the drugs!")
+					resetDrugDelivery()
+					break
+				end
+			end
+		end
+	end
+	if drugDelivery.started then
+		drugDelivery.timer = drugDelivery.timer + dt
+		drugDelivery.avgSpeed = (car.distanceDrivenSessionKm - drugDelivery.distance) * 3600 / drugDelivery.timer
+	end
 end
 
 --------------------------------------------------------------------------------------- Race Opponent -----------------------------------------------------------------------------------------------
@@ -1436,7 +1637,6 @@ end
 
 -------------------------------------------------------------------------------- overtake --------------------------------------------------------------------------------
 
-
 -- Event configuration:
 local requiredSpeed = 80
 
@@ -1462,13 +1662,12 @@ local function resetOvertake()
 	if overtake.totalScore > highestScore then
 		highestScore = math.floor(overtake.totalScore)
 		ac.sendChatMessage("New highest Overtake score: " .. highestScore .. " pts !")
-		if highestScore > 3000 then
-			local data = {
-				["Overtake"] = highestScore,
-			}
-			updatefirebaseData("Overtake", data)
-		end
+		playerData.Overtake = highestScore
+		local data = {
+			["Overtake"] = highestScore,
+		}
 		updatefirebase()
+		updatefirebaseData("Overtake", data)
 	end
 	overtake.totalScore = 0
 	overtake.comboMeter = 1
@@ -1600,19 +1799,16 @@ local function driftUpdate(dt)
 			playerData.Drift = math.floor(driftState.bestScore)
 			if driftState.bestScore > 100 then
 				ac.sendChatMessage("New Drift PB: " .. string.format("%d",driftState.bestScore) .. " pts !")
-				if driftState.bestScore > 2000 then
-					local data = {
-						["Drift"] = playerData.Drift,
-					}
-					updatefirebaseData("Drift", data)
-				end
+				local data = {
+					["Drift"] = playerData.Drift,
+				}
 				updatefirebase()
+				updatefirebaseData("Drift", data)
 			end
 		end
 		driftState.lastScore = car.driftPoints
 	end
 end
-
 
 local function driftUI(textOffset)
 	local text
@@ -1808,7 +2004,8 @@ local statOn = {
 	[3] = "Busted",
 	[4] = "Sector",
 	[5] = "Overtake",
-	[6] = "Drift"
+	[6] = "Drift",
+	[7] = "Drug Delivery",
 }
 
 local iconsColorOn = {
@@ -1877,6 +2074,17 @@ local function drawText()
 		overtakeUI(textOffset)
 	elseif settings.current == 6 then
 		driftUI(textOffset)
+	elseif settings.current == 7 then
+		textSize = ui.measureDWriteText("123 km/h", settings.fontSize)
+		local avgSpeed = drugDelivery.avgSpeed
+		local color = rgbm(1, 1, 1, 0.9)
+		if drugDelivery.finalAvgSpeed > 1 then
+			avgSpeed = drugDelivery.finalAvgSpeed
+			if avgSpeed > 120 then color = rgbm(0, 1, 0, 1)
+			else color = rgbm(1, 0, 0, 1) end
+		end
+		avgSpeed = avgSpeed * settings.unitMult
+		ui.dwriteDrawText(string.format("%.1f ", avgSpeed) .. settings.unit, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), color)
     end
 	ui.popDWriteFont()
 end
@@ -1889,37 +2097,44 @@ local function drawImage()
 	iconsColorOn[2] = rgbm(0.99,0.99,0.99,1)
 	iconsColorOn[3] = rgbm(0.99,0.99,0.99,1)
 	iconsColorOn[4] = rgbm(0.99,0.99,0.99,1)
-	local uiStats = ac.getUI()
-
+	local uiState = ac.getUI()
+	local toolTipOn = false
 	ui.drawImage(hudCenter, vec2(0,0), imageSize)
+	if ui.rectHovered(vec2(0,0), vec2(imageSize.x, imageSize.y/2)) then toolTipOn = true end
 	if ui.rectHovered(imgPos.leftPos2, imgPos.leftPos1) then
 		ui.image(hudLeft, imageSize, settings.colorHud)
-		if uiStats.isMouseLeftKeyClicked then
+		if uiState.isMouseLeftKeyClicked then
 			if settings.current == 1 then settings.current = #statOn else settings.current = settings.current - 1 end
 		end
 	elseif ui.rectHovered(imgPos.rightPos2, imgPos.rightPos1) then
 		ui.image(hudRight, imageSize, settings.colorHud)
-		if uiStats.isMouseLeftKeyClicked then
+		if uiState.isMouseLeftKeyClicked then
 			if settings.current == #statOn then settings.current = 1 else settings.current = settings.current + 1 end
 		end
 	elseif ui.rectHovered(imgPos.theftPos2, imgPos.theftPos1) then
 		iconsColorOn[1] = settings.colorHud
-		if uiStats.isMouseLeftKeyClicked then
+		if uiState.isMouseLeftKeyClicked then
 			if stealingTime == 0 then
 				stealingTime = 30
-				ac.sendChatMessage("* Stealing a " .. string.gsub(ac.getCarName(0), "%W", " ") .. os.date(" %x *"))
-				stealMsgTime = 7
-				if sectorInfo.sectorIndex ~= 3 and sectorInfo.timerText == "00:00.00" then
-					sectorInfo.sectorIndex = 2
-                    sector = sectors[sectorInfo.sectorIndex]
-                    resetSectors()
-					settings.current = 4
+				if not drugDelivery.drawPickUp then
+					ac.sendChatMessage("* Stealing a " .. string.gsub(ac.getCarName(0), "%W", " ") .. os.date(" %x *"))
+					stealMsgTime = 7
+					if sectorInfo.sectorIndex ~= 3 and sectorInfo.timerText == "00:00.00" then
+						sectorInfo.sectorIndex = 2
+						sector = sectors[sectorInfo.sectorIndex]
+						resetSectors()
+						settings.current = 4
+					end
+				end
+				if drugDelivery.active and not drugDelivery.started then
+					ac.sendChatMessage(" has picked up the drugs at (" .. drugDelivery.pickUpName .. ") and is on the way to the drop off! (".. drugDelivery.dropOffName ..")")
+					drugDelivery.call = true
 				end
 			end
 		end
 	elseif ui.rectHovered(imgPos.ranksPos2, imgPos.ranksPos1) then
 		iconsColorOn[2] = settings.colorHud
-		if uiStats.isMouseLeftKeyClicked then
+		if uiState.isMouseLeftKeyClicked then
 			if leaderboardOpen then leaderboardOpen = false
 			else
 				if menuOpen then
@@ -1932,7 +2147,7 @@ local function drawImage()
 		end
 	elseif ui.rectHovered(imgPos.countdownPos2, imgPos.countdownPos1) then
 		iconsColorOn[3] = settings.colorHud
-		if not countDownState.countdownOn and uiStats.isMouseLeftKeyClicked then
+		if not countDownState.countdownOn and uiState.isMouseLeftKeyClicked then
 			if cooldownTime == 0 then
 				countdownTime = 5
 				cooldownTime = 30
@@ -1945,7 +2160,7 @@ local function drawImage()
 		end
 	elseif ui.rectHovered(imgPos.menuPos2, imgPos.menuPos1) then
 		iconsColorOn[4] = settings.colorHud
-		if uiStats.isMouseLeftKeyClicked then
+		if uiState.isMouseLeftKeyClicked then
 			if menuOpen then
 				menuOpen = false
 				onSettingsChange()
@@ -1963,6 +2178,10 @@ local function drawImage()
 	if countDownState.countdownOn then countdown() end
 	if stealingTime > 0 then stealingTime = stealingTime - ui.deltaTime()
 	elseif stealingTime < 0 then stealingTime = 0 end
+	if toolTipOn then ui.tooltip(function ()
+			ui.text("Click ALT to Bring up\nThe Welcome Menu")
+		end)
+	end
 end
 
 local function showMsgSteal()
@@ -1983,6 +2202,7 @@ end
 
 -------------------------------------------------------------------------------------------- Menu --------------------------------------------------------------------------------------------
 
+local firstLoad = true
 local initialized = false
 local menuSize = {vec2(windowWidth/5, windowHeight/4), vec2(windowWidth/6, windowHeight*2/3), vec2(windowWidth/3, windowHeight/3)}
 local currentTab = 1
@@ -2006,141 +2226,6 @@ local function leaderboardWindow()
 		ui.childWindow('childLeaderboard', vec2(windowWidth/2, windowHeight/2), true, function ()
 			showLeaderboard()
 			moveMenu()
-		end)
-	end)
-end
-
--------------------------------------------------------------------------------------------- Main script --------------------------------------------------------------------------------------------
-
-local welcomeMessages = {"\nWELCOME TO ASSETTO CORSA PURSUIT SERVER!",
-	"We're the first persistent Assetto Corsa server to combine a (Points System) with the driving experience. ",
-	"Earned points function like real-life currency, allowing you to buy and customize cars: ",
-	"► CRUSHING KILOMETERS ",
-	"This is the primary way to earn money on the server. ",
-	"Simply drive on the server, then confirm your milestones on Discord to receive points. ",
-	"All the information is available in the: ",
-	"► STEALING CARS ",
-	"Click on the (THEFT) icon in the ACP essential app on your screen to steal a car. ",
-	"You must bring the car to Bob's scrapyard within a certain time limit. The timer starts after the Bank. ",
-	"So, click (THEFT) and run!",
-	"Find more information in the: ",
-	"► STREET RACING ",
-	"Challenge another player by double-tapping the horn button while you're behind them. ",
-	"They will receive a warning message and can accept your challenge by double-tapping their horn as well. ",
-	"Learn more in the: ",
-	"► HORIZON FESTIVAL ",
-	"The Horizon Festival keeps track of your criminal activities in the metropolis and ranks them on a leaderboard. ",
-	"The higher you rank in the various competitions, the more points you'll earn on this ULTIMATE leaderboard! ",
-	"Being on the Horizon Leaderboard unlocks special prizes like cars. ",
-	"Find additional details in the: ",
-	"If you're experiencing a 99% CPU WARNING, try loading one of these presets: ",
-	"Visit our Official Discord and check out the Server FAQ for more information: "}
-
-local function welcomeMessageUI()
-	ui.sameLine(windowWidth/10)
-	ui.beginGroup()
-	ui.popDWriteFont()
-	ui.pushDWriteFont("Orbitron;Weight=BLACK")
-	ui.dwriteTextWrapped(welcomeMessages[1], 50, rgbm.colors.orange)
-	local titleSize = ui.measureDWriteText(welcomeMessages[1], 50)
-	ui.popDWriteFont()
-	ui.pushDWriteFont("Orbitron;Weight=REGULAR")
-	ui.newLine(50)
-	ui.dwriteTextWrapped(welcomeMessages[2], 25, rgbm.colors.white)
-	ui.dwriteTextWrapped(welcomeMessages[3], 25, rgbm.colors.white)
-	ui.sameLine()
-	if 2362 < cspVersion then
-		if ui.dwriteTextHyperlink('CAR DEALER CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1076123906362056784") end
-	else
-		if ui.textHyperlink('ACP POINTS SYSTEM') then os.openURL("https://discord.com/channels/358562025032646659/1059795376879714364") end
-	end
-	ui.newLine()
-	ui.dwriteTextWrapped(welcomeMessages[4], 40, rgbm.colors.white)
-	ui.beginSubgroup(windowWidth/50)
-	ui.dwriteTextWrapped(welcomeMessages[5], 25, rgbm.colors.white)
-	ui.dwriteTextWrapped(welcomeMessages[6], 25, rgbm.colors.white)
-	ui.dwriteTextWrapped(welcomeMessages[7], 25, rgbm.colors.white)
-	ui.sameLine()
-	if 2362 < cspVersion then
-		if ui.dwriteTextHyperlink('DRIVEN-KM CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1076123906362056784") end
-	else
-		if ui.textHyperlink('DRIVEN-KM CHANNEL') then os.openURL("https://discord.com/channels/358562025032646659/1059795376879714364") end
-	end
-	ui.endSubgroup()
-	ui.newLine()
-	ui.dwriteTextWrapped(welcomeMessages[8], 40, rgbm.colors.white)
-	ui.beginSubgroup(windowWidth/50)
-	ui.dwriteTextWrapped(welcomeMessages[9], 25, rgbm.colors.white)
-	ui.dwriteTextWrapped(welcomeMessages[10], 25, rgbm.colors.white)
-	ui.dwriteTextWrapped(welcomeMessages[11], 25, rgbm.colors.white)
-	ui.dwriteTextWrapped(welcomeMessages[12], 25, rgbm.colors.white)
-	ui.sameLine()
-	if 2362 < cspVersion then
-		if ui.dwriteTextHyperlink('CAR-THEFT CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1076123906362056784") end
-	else
-		if ui.textHyperlink('CAR-THEFT CHANNEL') then os.openURL("https://discord.com/channels/358562025032646659/1059795376879714364") end
-	end
-	ui.endSubgroup()
-	ui.newLine()
-	ui.dwriteTextWrapped(welcomeMessages[13], 40, rgbm.colors.white)
-	ui.beginSubgroup(windowWidth/50)
-	ui.dwriteTextWrapped(welcomeMessages[14], 25, rgbm.colors.white)
-	ui.dwriteTextWrapped(welcomeMessages[15], 25, rgbm.colors.white)
-	ui.dwriteTextWrapped(welcomeMessages[16], 25, rgbm.colors.white)
-	ui.sameLine()
-	if 2362 < cspVersion then
-		if ui.dwriteTextHyperlink('STREET RACING CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1076123906362056784") end
-	else
-		if ui.textHyperlink('STREET RACING CHANNEL') then os.openURL("https://discord.com/channels/358562025032646659/1059795376879714364") end
-	end
-	ui.endSubgroup()
-	ui.newLine()
-	ui.dwriteTextWrapped(welcomeMessages[17], 40, rgbm.colors.white)
-	ui.beginSubgroup(windowWidth/50)
-	ui.dwriteTextWrapped(welcomeMessages[18], 25, rgbm.colors.white)
-	ui.dwriteTextWrapped(welcomeMessages[19], 25, rgbm.colors.white)
-	ui.dwriteTextWrapped(welcomeMessages[20], 25, rgbm.colors.white)
-	ui.dwriteTextWrapped(welcomeMessages[21], 25, rgbm.colors.white)
-	ui.sameLine()
-	if 2362 < cspVersion then
-		if ui.dwriteTextHyperlink('HORIZON CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1127619394328076318") end
-	else
-		if ui.textHyperlink('HORIZON CHANNEL') then os.openURL("https://discord.com/channels/358562025032646659/1127619394328076318") end
-	end
-	ui.endSubgroup()
-	ui.newLine()
-	ui.dwriteTextWrapped(welcomeMessages[22], 25, rgbm.colors.white)
-	ui.sameLine()
-	if 2362 < cspVersion then
-		if ui.dwriteTextHyperlink('FPS BOOST CHANNEL', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1053427131222343811") end
-	else
-		if ui.textHyperlink('FPS BOOST CHANNEL') then os.openURL("https://discord.com/channels/358562025032646659/1053427131222343811") end
-	end
-	ui.dwriteTextWrapped(welcomeMessages[23], 25, rgbm.colors.white)
-	ui.sameLine()
-	if 2362 < cspVersion then
-		if ui.dwriteTextHyperlink('DISCORD | FAQ', 25, rgbm.colors.orange) then os.openURL("https://discord.com/channels/358562025032646659/1062186611091185784") end
-	else
-		if ui.textHyperlink('DISCORD | FAQ') then os.openURL("https://discord.com/channels/358562025032646659/1062186611091185784") end
-	end
-	ui.newLine(50)
-	ui.newLine()
-	ui.sameLine(windowWidth/20)
-	if ui.button('Close', vec2(windowWidth/2, windowHeight/15)) then welcomeClosed = true end
-	ui.endGroup()
-end
-
-local function welcomeWindow()
-	ui.transparentWindow('WelcomeWindow', vec2(windowWidth/10, windowHeight/100), vec2(windowWidth-windowWidth/5, windowHeight-windowHeight/50), true, function ()
-		ui.childWindow('childWelcome', vec2(), true, function ()
-			ui.drawRectFilled(vec2(), vec2(windowWidth-windowWidth/5, windowHeight-windowHeight/50), rgbm(0, 0, 0, 0.8), 20)
-			if cspVersion >= cspMinVersion then welcomeMessageUI()
-			else
-				ui.dwriteTextWrapped("You are using an old version of CSP. Please update CSP to the latest version to use the ACP Essential APP.", 25, rgbm.colors.white)
-				ui.newLine()
-				ui.sameLine(windowWidth/20)
-				if ui.button('Close', vec2(windowWidth/2, windowHeight/20)) then welcomeClosed = true end
-			end
 		end)
 	end)
 end
@@ -2174,15 +2259,239 @@ local function cpuOccupancyWindow()
 	end)
 end
 
-
 --------------------------------------------------------------------------------- Welcome Menu ---------------------------------------------------------------------------------
+
+local imgToDraw = {
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1216926407288946838/leftArrowOff.png?ex=66022a08&is=65efb508&hm=3c3a4922acc388d2eacf1c4740425a18bad87269f610478c8d044757660562b5&",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1216926409268793424/rightArrowOff.png?ex=66022a09&is=65efb509&hm=4d0521bcfa3e709c955c952f66af0895c3dcea0d4f4f81e99d17881bd7109387&",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1216926408362692748/leftBoxOff.png?ex=66022a09&is=65efb509&hm=01325e02f151181d496e8043b373b67e5f33d261f72b9775447eeff474b16a30&",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1216926405942710413/centerBoxOff.png?ex=66022a08&is=65efb508&hm=54032b021c7774a41d33adf0dfdd524cc4335d7b3b96b639b6e25227ea7b4b66&",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1216926410480812133/rightBoxOff.png?ex=66022a09&is=65efb509&hm=8bcdec19dc391ef4a858aee8b07f2bd7daf9cf21c35f6377547daa013be3dafc&",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1216930010829422742/ACPmenu.png?ex=66022d64&is=65efb864&hm=de478042ed39b38543e88719f9b6cfac039cf842b09abf7c18814ab758ef2467&",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1216930011383074878/ACPlogo.png?ex=66022d64&is=65efb864&hm=16ccd5d05ce877252b5f8efdf256ba1495327e2567f671ff0ec702bf9934b3bf&"
+}
+
+local imgColor = {
+	rgbm.colors.white,
+	rgbm.colors.white,
+	rgbm.colors.white,
+	rgbm.colors.white,
+	rgbm.colors.white,
+	settings.colorHud,
+	rgbm.colors.white,
+}
+
+-- Position for interaction with the image
+-- Position is based on the image size of 2560x1440
+local imgPos_ = {
+	{vec2(70, 650), vec2(320, 910)},
+	{vec2(2230, 650), vec2(2490, 910)},
+	{vec2(357, 325), vec2(920, 1234)},
+	{vec2(993, 325), vec2(1557, 1234)},
+	{vec2(1633, 325), vec2(2195, 1234)},
+	{vec2(31, 106), vec2(2535, 1370)},
+	{vec2(2437, 48), vec2(2510, 100)},
+}
+
+local welcomeWindow = {
+	size = vec2(16 * windowHeight / 9, windowHeight),
+	topLeft = vec2(0, 0),
+	topRight = vec2(windowWidth, 0),
+	offset = vec2(0, 0),
+	scale = 0.9,
+	font = nil,
+	fontBold = nil,
+	closeIMG = "https://acstuff.ru/images/icons_24/cancel.png",
+	fontSize = windowHeight/35,
+}
+
+function scalePositions()
+	local urlFont = "https://cdn.discordapp.com/attachments/1130004696984203325/1147805949944406127/EUROSTARBLACKEXTENDED.zip"
+	web.loadRemoteAssets(urlFont, function (success, path)
+		if success == nil then
+			welcomeWindow.fontBold = ui.DWriteFont("Eurostar Black Extended", path):weight(ui.DWriteFont.Weight.Bold)
+			welcomeWindow.font = ui.DWriteFont("Eurostar Black Extended", path):weight(ui.DWriteFont.Weight.SemiBold)
+		end
+	end)
+	local xScale = windowWidth / 2560
+	local yScale = windowHeight / 1440
+	local minScale = math.min(xScale, yScale)
+
+	welcomeWindow.size = welcomeWindow.size * welcomeWindow.scale
+	welcomeWindow.offset = vec2((windowWidth - welcomeWindow.size.x) / 2, (windowHeight - welcomeWindow.size.y) / 2)
+	minScale = minScale * welcomeWindow.scale
+	for i = 1, #imgPos_ do
+		imgPos_[i][1] = imgPos_[i][1] * minScale
+		imgPos_[i][2] = imgPos_[i][2] * minScale
+	end
+	welcomeWindow.topLeft = imgPos_[6][1] + welcomeWindow.offset + welcomeWindow.size/100
+	welcomeWindow.topRight = vec2(imgPos_[6][2].x - welcomeWindow.size.x/100, imgPos_[6][1].y + welcomeWindow.size.y/100) + welcomeWindow.offset
+end
+
+
+local imgSet = {
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1216928397121425458/aboutacp.jpg?ex=66022be3&is=65efb6e3&hm=06384c0fc953caa7b12e31a8872ff53093fb6ae83352eede3955a49640f90105&",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1216928399180959834/earnmoney.jpg?ex=66022be3&is=65efb6e3&hm=ad3b252b200b21b51ad12a6bc5467e994cd0111ca075bec2bf47dc3f921ff6a2&",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1216928399545733151/leaderboard.jpg?ex=66022be3&is=65efb6e3&hm=e6243497afb1f4b8a087e9f92de6f2f88636d1bcd16fa265f2d5eafb02f2c0e3&",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1216928397482262568/bank.jpg?ex=66022be3&is=65efb6e3&hm=e81bbf7a5c9af805f69afe3e68166e2ca5d4f68637b27618c8ecff092450ba8e&",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1216928396412715089/police.jpg?ex=66022be3&is=65efb6e3&hm=72aa463af74834e13b9735e6b7a1ccb3cd27ff7ddfdc9a26efce68923bd241ec&",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1216928397876531230/buycars.jpg?ex=66022be3&is=65efb6e3&hm=7e85b2b54dad83b6dd4f8aa82b32f0f5b0a63cdd767092a2cd9f02a96e9a4c29&",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1216928396790206586/tuning.jpg?ex=66022be3&is=65efb6e3&hm=daaf3e5fced505fecefe870bec8f13dd45838ea66026cb9bed26e99384c5898a&",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1216928398320996362/cartheft.jpg?ex=66022be3&is=65efb6e3&hm=034e59a32be6cfb98971d3b0c99ed4ed7a98cfb9070227c1d1312e2cbee94c4b&",
+	"https://cdn.discordapp.com/attachments/1130004696984203325/1216928398748942387/drugdealer.jpg?ex=66022be3&is=65efb6e3&hm=d1695349cd5f6e9015d8b08471e328847cd06e8a7fc227e981b07c91c0e8ffc8&",
+}
+
+local imgLink = {
+	"https://discord.com/channels/358562025032646659/1062186611091185784",--FAQ
+	"https://discord.com/channels/358562025032646659/1147217487524528138",--earn
+	"https://discord.com/channels/358562025032646659/1127619394328076318",--leaderboard
+	"https://discord.com/channels/358562025032646659/1075578309443858522",--bank
+	"https://discord.com/channels/358562025032646659/1095681142197325975",--police
+	"https://discord.com/channels/358562025032646659/1076123906362056784",--car
+	"https://discord.com/channels/358562025032646659/1079799948306034708",--tuning
+	"https://discord.com/channels/358562025032646659/1096470595392241704",--car theft
+	"",
+}
+
+local imgDisplayed = {1,2,3,4,5,6,7,8,9,}
+
+local function drugShowInfo(i)
+	local leftCorner = vec2(imgPos_[i+2][1].x, imgPos_[i+2][1].y) + vec2(welcomeWindow.size.x/100, welcomeWindow.size.y/10)
+	local textPos = leftCorner + welcomeWindow.size/100
+	ui.drawRectFilled(leftCorner,  vec2(imgPos_[i+2][2].x - welcomeWindow.size.x/100 , leftCorner.y + ui.measureDWriteText("Locations names are the same\nas the teleports in the mini map.\nDelivery : \n \nPick Up :  \nDrop Off :  " .. drugDelivery.dropOffName, settings.fontSize).y*2), rgbm(0, 0, 0, 0.8))
+	ui.popDWriteFont()
+	ui.pushDWriteFont("Orbitron;Weight=BLACK")
+	ui.dwriteDrawText("Location names are the same\nas teleports in the mini map.", welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+	textPos.y = textPos.y + ui.measureDWriteText("Locations names are the same\nas the teleports in the mini map.", welcomeWindow.fontSize*0.6).y*2
+	ui.dwriteDrawText("Delivery : " .. os.date("%a the %d"), welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+	textPos.x = textPos.x  + ui.measureDWriteText("Delivery : " .. os.date("%a the %d"), welcomeWindow.fontSize*0.6).x
+	if os.date("%d") == "01" then
+		ui.dwriteDrawText(" st", welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+	elseif os.date("%d") == "02" then
+		ui.dwriteDrawText(" nd", welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+	elseif os.date("%d") == "03" then
+		ui.dwriteDrawText(" rd", welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+	else
+		ui.dwriteDrawText("th", welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+	end
+	textPos.x = textPos.x - ui.measureDWriteText(os.date("%a the %d"), welcomeWindow.fontSize*0.6).x
+	textPos.y = textPos.y + ui.measureDWriteText("Delivery : " .. os.date("%a the %d"), welcomeWindow.fontSize*0.6).y
+	ui.dwriteDrawText("of " .. os.date("%B"), welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+	textPos.x = textPos.x - ui.measureDWriteText("Delivery : ", welcomeWindow.fontSize*0.6).x
+	textPos.y = textPos.y + ui.measureDWriteText("Delivery :  " .. os.date("%x"), welcomeWindow.fontSize*0.6).y*2
+	ui.dwriteDrawText("Pick Up :  " .. drugDelivery.pickUpName, welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+	textPos.y = textPos.y + ui.measureDWriteText("Pick Up :  " .. drugDelivery.pickUpName, welcomeWindow.fontSize*0.6).y*2
+	ui.dwriteDrawText("Drop Off :  " .. drugDelivery.dropOffName, welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+	ui.popDWriteFont()
+end
+
+local function drawMenuText()
+	ui.popDWriteFont()
+	ui.pushDWriteFont(welcomeWindow.font)
+	ui.dwriteDrawText("WELCOME BACK,", welcomeWindow.fontSize*0.6, welcomeWindow.topLeft, rgbm.colors.white)
+	ui.popDWriteFont()
+	ui.pushDWriteFont(welcomeWindow.fontBold)
+	ui.dwriteDrawText(ac.getDriverName(0), welcomeWindow.fontSize, vec2(welcomeWindow.topLeft.x, welcomeWindow.topLeft.y + ui.measureDWriteText("WELCOME BACK,", welcomeWindow.fontSize*0.6).y), settings.colorHud)
+	ui.popDWriteFont()
+	ui.pushDWriteFont(welcomeWindow.font)
+	ui.dwriteDrawText("CURRENT CAR", welcomeWindow.fontSize*0.6, vec2(welcomeWindow.topRight.x - ui.measureDWriteText("CURRENT CAR", welcomeWindow.fontSize*0.6).x, welcomeWindow.topRight.y), rgbm.colors.white)
+	ui.popDWriteFont()
+	ui.pushDWriteFont(welcomeWindow.fontBold)
+	ui.dwriteDrawText(string.gsub(string.gsub(ac.getCarName(0), "%W", " "), "  ", ""), welcomeWindow.fontSize, vec2(welcomeWindow.topRight.x - ui.measureDWriteText(string.gsub(string.gsub(ac.getCarName(0), "%W", " "), "  ", ""), welcomeWindow.fontSize).x - ui.measureDWriteText(carVersion, welcomeWindow.fontSize*0.8).x, welcomeWindow.topRight.y + ui.measureDWriteText("CURRENT CAR", welcomeWindow.fontSize*0.6).y), settings.colorHud)
+	ui.popDWriteFont()
+	ui.pushDWriteFont(welcomeWindow.font)
+	ui.dwriteDrawText(carVersion, welcomeWindow.fontSize*0.7, vec2(welcomeWindow.topRight.x - ui.measureDWriteText(carVersion, welcomeWindow.fontSize*0.7).x, welcomeWindow.topRight.y + ui.measureDWriteText("CURRENT CAR", welcomeWindow.fontSize).y*0.85), rgbm.colors.white)
+	ui.popDWriteFont()
+end
+
+local function drawMenuImage()
+	local iconCloseColor = rgbm.colors.white
+	local toolTipOn = false
+	for i = 1, #imgColor - 1 do
+		if i == #imgColor - 1 then imgColor[i] = settings.colorHud
+		else imgColor[i] = rgbm.colors.white end
+	end
+	imgToDraw[1] = "https://cdn.discordapp.com/attachments/1130004696984203325/1216926407288946838/leftArrowOff.png?ex=66022a08&is=65efb508&hm=3c3a4922acc388d2eacf1c4740425a18bad87269f610478c8d044757660562b5&"
+	imgToDraw[2] = "https://cdn.discordapp.com/attachments/1130004696984203325/1216926409268793424/rightArrowOff.png?ex=66022a09&is=65efb509&hm=4d0521bcfa3e709c955c952f66af0895c3dcea0d4f4f81e99d17881bd7109387&"
+	imgToDraw[3] = "https://cdn.discordapp.com/attachments/1130004696984203325/1216926408362692748/leftBoxOff.png?ex=66022a09&is=65efb509&hm=01325e02f151181d496e8043b373b67e5f33d261f72b9775447eeff474b16a30&"
+	imgToDraw[4] = "https://cdn.discordapp.com/attachments/1130004696984203325/1216926405942710413/centerBoxOff.png?ex=66022a08&is=65efb508&hm=54032b021c7774a41d33adf0dfdd524cc4335d7b3b96b639b6e25227ea7b4b66&"
+	imgToDraw[5] = "https://cdn.discordapp.com/attachments/1130004696984203325/1216926410480812133/rightBoxOff.png?ex=66022a09&is=65efb509&hm=8bcdec19dc391ef4a858aee8b07f2bd7daf9cf21c35f6377547daa013be3dafc&"
+	ui.transparentWindow('welcomeIMG', welcomeWindow.offset, welcomeWindow.size, true, function ()
+		ui.childWindow('welcomeIMGChild', welcomeWindow.size, true, function ()
+			local uiState = ac.getUI()
+			ui.drawRectFilled(imgPos_[6][1], imgPos_[6][2], rgbm(0, 0, 0, 0.6))
+			ui.drawRectFilled(imgPos_[7][1], imgPos_[7][2], rgbm(0, 0, 0, 0.6))
+			if ui.rectHovered(imgPos_[1][1], imgPos_[1][2]) then
+				imgColor[1] = settings.colorHud
+				imgToDraw[1] = "https://cdn.discordapp.com/attachments/1130004696984203325/1216926407775621150/leftArrowOn.png?ex=66022a09&is=65efb509&hm=510f9e184692b394fa5376b4f7024669f98025d8ab76b00a7ef2d9a6ab06ddef&"
+				if uiState.isMouseLeftKeyClicked then
+					for i = 1, #imgDisplayed do
+						if imgDisplayed[i] == 1 then
+							imgDisplayed[i] = #imgSet
+						else
+							imgDisplayed[i] = imgDisplayed[i] - 1
+						end
+					end
+				end
+			elseif ui.rectHovered(imgPos_[2][1], imgPos_[2][2]) then
+				imgColor[2] = settings.colorHud
+				imgToDraw[2] = "https://cdn.discordapp.com/attachments/1130004696984203325/1216926409713258577/rightArrowOn.png?ex=66022a09&is=65efb509&hm=79a86d882ab2d662a28180b746e9ed9d16cdf836d1b424e222c8d25803417416&"
+				if uiState.isMouseLeftKeyClicked then
+					for i = 1, #imgDisplayed do
+						if imgDisplayed[i] == #imgSet then
+							imgDisplayed[i] = 1
+						else
+							imgDisplayed[i] = imgDisplayed[i] + 1
+						end
+					end
+				end
+			elseif ui.rectHovered(imgPos_[3][1], imgPos_[3][2]) then
+				toolTipOn = true
+				imgColor[3] = settings.colorHud
+				imgToDraw[3] = "https://cdn.discordapp.com/attachments/1130004696984203325/1216926408836644965/leftBoxOn.png?ex=66022a09&is=65efb509&hm=a9d6bf5d3cdbc648e8fc09866532e10b26520877e41c542b2811acedf0d88a57&"
+				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(imgLink[imgDisplayed[1]]) end
+			elseif ui.rectHovered(imgPos_[4][1], imgPos_[4][2]) then
+				toolTipOn = true
+				imgColor[4] = settings.colorHud
+				imgToDraw[4] = "https://cdn.discordapp.com/attachments/1130004696984203325/1216926406613667842/centerBoxOn.png?ex=66022a08&is=65efb508&hm=3a72c0e129fe271b5d969383c39a572da68873f497525389ee8bef6334ac6501&"
+				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(imgLink[imgDisplayed[2]]) end
+			elseif ui.rectHovered(imgPos_[5][1], imgPos_[5][2]) then
+				toolTipOn = true
+				imgColor[5] = settings.colorHud
+				imgToDraw[5] = "https://cdn.discordapp.com/attachments/1130004696984203325/1216926410959097976/rightBoxOn.png?ex=66022a09&is=65efb509&hm=5e564f149ff74e83082e22c2d3935453aeff41356c32062f13f2538c18b78018&"
+				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(imgLink[imgDisplayed[3]]) end
+			elseif ui.rectHovered(imgPos_[7][1], imgPos_[7][2]) then
+				iconCloseColor = settings.colorHud
+				if uiState.isMouseLeftKeyClicked then welcomeClosed = true end
+			end
+				ui.drawImage(welcomeWindow.closeIMG, imgPos_[7][1]+vec2(10,10), imgPos_[7][2]-vec2(10,10), iconCloseColor)
+			for i = 1, #imgToDraw do ui.drawImage(imgToDraw[i], vec2(0,0), welcomeWindow.size, imgColor[i]) end
+			for i = 1, 3 do
+				if imgDisplayed[i] == 9 then
+					ui.drawImage(imgSet[imgDisplayed[i]], imgPos_[i+2][1], imgPos_[i+2][2], rgbm(1,1,1,1))
+					drugShowInfo(i)
+				else ui.drawImage(imgSet[imgDisplayed[i]], imgPos_[i+2][1], imgPos_[i+2][2], rgbm(1,1,1,1)) end
+			end
+		end)
+	end)
+	if toolTipOn then ui.tooltip(function ()
+			ui.text("CTRL + Left Click to open Discord link\nWhere you can find more information")
+		end)
+	end
+end
+
+local function drawMenuWelcome()
+	drawMenuImage()
+	drawMenuText()
+end
 
 -------------------------------------------------------------------------------- UPDATE --------------------------------------------------------------------------------
 
-local firstLoad = true
+
 
 function script.drawUI()
-	if not welcomeClosed then welcomeWindow()
+	if ui.keyboardButtonPressed(ui.KeyIndex.Menu) then welcomeClosed = not welcomeClosed end
+	if not welcomeClosed then drawMenuWelcome()
 	--elseif cpu99occupancy and showCPUoccupancy then cpuOccupancyWindow()
 	elseif initialized then
 		if cspVersion < cspMinVersion then return end
@@ -2190,16 +2499,16 @@ function script.drawUI()
 			updatePos()
 			firstLoad = false
 		end
-		if online.chased then showStarsPursuit() end	
+		if online.chased then showStarsPursuit() end
 		hudUI()
 		onlineEventMessageUI()
 		raceUI()
+		drugDeliveryUI()
 		if menuOpen then
 			ui.toolWindow('Menu', settings.menuPos, menuSize[currentTab], true, function ()
-				ui.childWindow('childMenu', menuSize[currentTab], true, function ()
+				ui.childWindow('childMenu', menuSize[currentTab], true, ui.WindowFlags.MenuBar, function ()
 					menu()
 					moveMenu()
-					
 				end)
 			end)
 		end
@@ -2239,10 +2548,11 @@ function script.update(dt)
 		if carID == valideCar[1] or carID == valideCar[2] or carID == valideCar[3] or cspVersion < cspMinVersion then return end
 		loadSettings()
 		initLines()
-		verifyClass()
 		initialized = true
 		getFirebase()
 		loadLeaderboard()
+		initDrugRoute()
+		scalePositions()
 		initOverTake()
 		initPoliceCarIndex()
 	else
@@ -2250,25 +2560,31 @@ function script.update(dt)
 		raceUpdate(dt)
 		overtakeUpdate(dt)
 		driftUpdate(dt)
+		drugDeliveryUpdate(dt)
 		hidePolice()
+		if sim.cpuOccupancy > 90 and showCPUoccupancy then cpu99occupancy = true end
 	end
 end
+
+ac.onCarJumped(0, function (carid)
+	if carID ~= valideCar[1] and carID ~= valideCar[2] and carID ~= valideCar[3] then
+		ac.log("Car Jumped")
+		resetSectors()
+		if drugDelivery.started then
+			ac.sendChatMessage(" has crashed and lost the drugs!")
+		end
+		resetDrugDelivery()
+		if online.chased and online.officer then
+			acpPolice{message = "TP", messageType = 0, yourIndex = online.officer.sessionID}
+		end
+	end
+end)
 
 ac.onClientConnected(function (carIndex)
 	local newCar = ac.getCarID(carIndex)
 	ac.log("New Car : " .. newCar)
 	if newCar == valideCar[1] or newCar == valideCar[2] or newCar == valideCar[3] then
 		ac.hideCarLabels(carIndex)
-	end
-end)
-
-ac.onCarJumped(0, function (carid)
-	if carID ~= valideCar[1] and carID ~= valideCar[2] and carID ~= valideCar[3] then
-		ac.log("Car Jumped")
-		resetSectors()
-		if online.chased and online.officer then
-			acpPolice{message = "TP", messageType = 0, yourIndex = online.officer.sessionID}
-		end
 	end
 end)
 
@@ -2293,8 +2609,11 @@ function script.draw3D()
     render.setCullMode(render.CullMode.None)
 	render.setDepthMode(render.DepthMode.Normal)
 	if initialized and settings.current == 4 then
-		local lineToRender = sector.pointsData[sectorInfo.checkpoints]
-		if sectorInfo.drawLine then render.debugLine(lineToRender[1], lineToRender[2], rgbm(0,100,0,1)) end
+		if sectorInfo.drawLine then render.debugLine(sector.pointsData[sectorInfo.checkpoints][1], sector.pointsData[sectorInfo.checkpoints][2], rgbm(0,100,0,1)) end
+	end
+	if initialized then
+		if drugDelivery.drawPickUp then render.circle(drugDelivery.pickUp, vec3(0,1,0), 4, rgbm(0,1,0,1))
+		elseif drugDelivery.drawDropOff then render.circle(drugDelivery.dropOff, vec3(0,1,0), 4, rgbm(0,1,0,1)) end
 	end
 end
 
