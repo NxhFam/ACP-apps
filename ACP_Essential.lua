@@ -2178,10 +2178,7 @@ local function drawImage()
 	if countDownState.countdownOn then countdown() end
 	if stealingTime > 0 then stealingTime = stealingTime - ui.deltaTime()
 	elseif stealingTime < 0 then stealingTime = 0 end
-	if toolTipOn then ui.tooltip(function ()
-			ui.text("Click ALT to Bring up\nThe Welcome Menu")
-		end)
-	end
+	if toolTipOn then ui.setTooltip("Click ALT to Bring up\nThe Welcome Menu")end
 end
 
 local function showMsgSteal()
@@ -2474,10 +2471,7 @@ local function drawMenuImage()
 			end
 		end)
 	end)
-	if toolTipOn then ui.tooltip(function ()
-			ui.text("CTRL + Left Click to open Discord link\nWhere you can find more information")
-		end)
-	end
+	if toolTipOn then ui.setTooltip("CTRL + Left Click to open Discord link\nWhere you can find more information") end
 end
 
 local function drawMenuWelcome()
@@ -2491,10 +2485,9 @@ end
 
 function script.drawUI()
 	if ui.keyboardButtonPressed(ui.KeyIndex.Menu) then welcomeClosed = not welcomeClosed end
-	-- if not welcomeClosed then drawMenuWelcome()
-	-- --elseif cpu99occupancy and showCPUoccupancy then cpuOccupancyWindow()
-	-- else
-	if initialized then
+	if not welcomeClosed then
+		drawMenuWelcome()
+	elseif initialized then
 		if cspVersion < cspMinVersion then return end
 		if firstLoad then
 			updatePos()
