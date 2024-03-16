@@ -15,7 +15,7 @@ local fontMultiplier = windowHeight/1440
 
 local firstload = true
 local cspAboveP218 = cspVersion >= 2363
-
+ac.log("Police script")
 if not(carID == valideCar[1] or carID == valideCar[2] or carID == valideCar[3]) or cspVersion < cspMinVersion then return end
 
 local msgArrest = {
