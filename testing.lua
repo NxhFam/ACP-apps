@@ -2444,8 +2444,8 @@ local function drawMenuImage()
 end
 
 local function drawMenuWelcome()
-	drawMenuImage()
-	drawMenuText()
+	try(drawMenuImage, printError)
+	try(drawMenuText, printError)
 end
 
 -------------------------------------------------------------------------------- UPDATE --------------------------------------------------------------------------------
