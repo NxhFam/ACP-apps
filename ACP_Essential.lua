@@ -1,3 +1,6 @@
+ac.log("Essential script")
+
+
 local steamID = ac.getUserSteamID()
 
 local class = 'C'
@@ -18,7 +21,6 @@ local playerData = {}
 local welcomeClosed = false
 local welcomeCrashed = false
 
-ac.log("Essential script")
 if carID == valideCar[1] or carID == valideCar[2] or carID == valideCar[3] or cspVersion < cspMinVersion then return end
 
 local carVersion = "Rental"
