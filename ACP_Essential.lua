@@ -1,13 +1,11 @@
 local steamID = ac.getUserSteamID()
 
-
 local class = 'C'
 local timeRequirement = 150
 local sim = ac.getSim()
 local car = ac.getCar(0)
 local windowWidth = sim.windowWidth/ac.getUI().uiScale
 local windowHeight = sim.windowHeight/ac.getUI().uiScale
-local is16_9 = windowWidth/windowHeight == 16/9
 local menuOpen = false
 local leaderboardOpen = false
 local cspVersion = ac.getPatchVersionCode()
@@ -17,8 +15,8 @@ local fontMultiplier = windowHeight/1440
 local carID = ac.getCarID(0)
 local wheels = car.wheels
 local playerData = {}
-local cpu99occupancy = false
-local showCPUoccupancy = true
+local welcomeClosed = false
+
 
 if carID == valideCar[1] or carID == valideCar[2] or carID == valideCar[3] or cspVersion < cspMinVersion then return end
 
@@ -275,8 +273,6 @@ local nodes = { ['Arrests'] = 'Arrestations',
 				['Drift'] = 'Drift',
 				['Overtake'] = 'Overtake',
 				['Getaway'] = 'Most Wanted'}
-
-local welcomeClosed = false
 
 local leaderboard = {}
 local leaderboardName = 'Class C - H1'
@@ -2230,34 +2226,34 @@ local function leaderboardWindow()
 	end)
 end
 
-local function cpuOccupancyWindow()
-	ui.transparentWindow('CPU99Window', vec2(windowWidth/6, windowHeight/100), vec2(windowWidth-windowWidth/3, windowHeight/6), true, function ()
-		ui.childWindow('childCPU99', vec2(), true, function ()
-			ui.drawRectFilled(vec2(), vec2(windowWidth-windowWidth/3, windowHeight/8), rgbm(0, 0, 0, 0.8), 10)
-			ui.popDWriteFont()
-			ui.pushDWriteFont("Orbitron;Weight=BLACK")
-			ui.sameLine((windowWidth*2/3-ui.measureDWriteText("CPU OCCUPANCY 99%", 40).x)/2)
-			ui.dwriteTextWrapped("CPU OCCUPANCY 99%", 40, rgbm.colors.red)
-			ui.popDWriteFont()
-			ui.pushDWriteFont("Orbitron;Weight=REGULAR")
-			ui.newLine()
-			ui.sameLine((windowWidth*2/3-ui.measureDWriteText("If your car is warping around the track, is because your CPU is not able to keep up with the game.", 25).x)/2)
-			ui.dwriteTextWrapped("If your car is warping around the track, is because your CPU is not able to keep up with the game.", 25, rgbm.colors.white)
-			ui.newLine()
-			ui.sameLine((windowWidth*2/3-ui.measureDWriteText("Close all unnecessary programs and Download one of our graphics preset from Discord FPS BOOST CHANNEL", 25).x)/2)
-			ui.dwriteTextWrapped("Close all unnecessary programs and Download one of our graphics preset from Discord", 25, rgbm.colors.white)
-			ui.sameLine()
-			if 2362 < cspVersion then
-				if ui.dwriteTextHyperlink('FPS BOOST CHANNEL', 25, rgbm.colors.red) then os.openURL("https://discord.com/channels/358562025032646659/1053427131222343811") end
-			else
-				if ui.textHyperlink('FPS BOOST CHANNEL') then os.openURL("https://discord.com/channels/358562025032646659/1053427131222343811") end
-			end
-			ui.newLine()
-			ui.sameLine(windowWidth/6)
-			if ui.button('Close', vec2(windowWidth/3, windowHeight/40)) then showCPUoccupancy = false end
-		end)
-	end)
-end
+-- local function cpuOccupancyWindow()
+-- 	ui.transparentWindow('CPU99Window', vec2(windowWidth/6, windowHeight/100), vec2(windowWidth-windowWidth/3, windowHeight/6), true, function ()
+-- 		ui.childWindow('childCPU99', vec2(), true, function ()
+-- 			ui.drawRectFilled(vec2(), vec2(windowWidth-windowWidth/3, windowHeight/8), rgbm(0, 0, 0, 0.8), 10)
+-- 			ui.popDWriteFont()
+-- 			ui.pushDWriteFont("Orbitron;Weight=BLACK")
+-- 			ui.sameLine((windowWidth*2/3-ui.measureDWriteText("CPU OCCUPANCY 99%", 40).x)/2)
+-- 			ui.dwriteTextWrapped("CPU OCCUPANCY 99%", 40, rgbm.colors.red)
+-- 			ui.popDWriteFont()
+-- 			ui.pushDWriteFont("Orbitron;Weight=REGULAR")
+-- 			ui.newLine()
+-- 			ui.sameLine((windowWidth*2/3-ui.measureDWriteText("If your car is warping around the track, is because your CPU is not able to keep up with the game.", 25).x)/2)
+-- 			ui.dwriteTextWrapped("If your car is warping around the track, is because your CPU is not able to keep up with the game.", 25, rgbm.colors.white)
+-- 			ui.newLine()
+-- 			ui.sameLine((windowWidth*2/3-ui.measureDWriteText("Close all unnecessary programs and Download one of our graphics preset from Discord FPS BOOST CHANNEL", 25).x)/2)
+-- 			ui.dwriteTextWrapped("Close all unnecessary programs and Download one of our graphics preset from Discord", 25, rgbm.colors.white)
+-- 			ui.sameLine()
+-- 			if 2362 < cspVersion then
+-- 				if ui.dwriteTextHyperlink('FPS BOOST CHANNEL', 25, rgbm.colors.red) then os.openURL("https://discord.com/channels/358562025032646659/1053427131222343811") end
+-- 			else
+-- 				if ui.textHyperlink('FPS BOOST CHANNEL') then os.openURL("https://discord.com/channels/358562025032646659/1053427131222343811") end
+-- 			end
+-- 			ui.newLine()
+-- 			ui.sameLine(windowWidth/6)
+-- 			if ui.button('Close', vec2(windowWidth/3, windowHeight/40)) then showCPUoccupancy = false end
+-- 		end)
+-- 	end)
+-- end
 
 --------------------------------------------------------------------------------- Welcome Menu ---------------------------------------------------------------------------------
 
@@ -2480,9 +2476,13 @@ local function drawMenuImage()
 	end
 end
 
+local function printError(err)
+	ac.log("Error: " .. err)
+end
+
 local function drawMenuWelcome()
-	drawMenuImage()
-	drawMenuText()
+	try(drawMenuImage, printError)
+	try(drawMenuText, printError)
 end
 
 -------------------------------------------------------------------------------- UPDATE --------------------------------------------------------------------------------
@@ -2491,10 +2491,9 @@ end
 
 function script.drawUI()
 	if ui.keyboardButtonPressed(ui.KeyIndex.Menu) then welcomeClosed = not welcomeClosed end
-	-- if not welcomeClosed then drawMenuWelcome()
-	-- --elseif cpu99occupancy and showCPUoccupancy then cpuOccupancyWindow()
-	-- else
-	if initialized then
+	if not welcomeClosed then
+		drawMenuWelcome()
+	elseif initialized then
 		if cspVersion < cspMinVersion then return end
 		if firstLoad then
 			updatePos()
@@ -2546,6 +2545,7 @@ end
 
 function script.update(dt)
 	if not initialized then
+		ac.log("ACP Essential APP")
 		if carID == valideCar[1] or carID == valideCar[2] or carID == valideCar[3] or cspVersion < cspMinVersion then return end
 		loadSettings()
 		initLines()
@@ -2563,7 +2563,6 @@ function script.update(dt)
 		driftUpdate(dt)
 		drugDeliveryUpdate(dt)
 		hidePolice()
-		if sim.cpuOccupancy > 90 and showCPUoccupancy then cpu99occupancy = true end
 	end
 end
 
