@@ -1,3 +1,5 @@
+ac.log("Police script")
+
 local sim = ac.getSim()
 local car = ac.getCar(0)
 local valideCar = {"chargerpolice_acpursuit", "crown_police", "bk_for_f450_21"}
