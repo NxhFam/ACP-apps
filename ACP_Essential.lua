@@ -1,6 +1,4 @@
 ac.log("Essential script")
-
-
 local steamID = ac.getUserSteamID()
 
 local class = 'C'
@@ -19,7 +17,6 @@ local carID = ac.getCarID(0)
 local wheels = car.wheels
 local playerData = {}
 local welcomeClosed = false
-local welcomeCrashed = false
 
 if carID == valideCar[1] or carID == valideCar[2] or carID == valideCar[3] or cspVersion < cspMinVersion then return end
 
@@ -2298,20 +2295,35 @@ local welcomeWindow = {
 	topRight = vec2(windowWidth, 0),
 	offset = vec2(0, 0),
 	scale = 0.9,
-	font = nil,
-	fontBold = nil,
+	fontBold = ui.DWriteFont("Orbitron;Weight=BLACK"),
+	font = ui.DWriteFont("Orbitron;Weight=REGULAR"),
 	closeIMG = "https://acstuff.ru/images/icons_24/cancel.png",
 	fontSize = windowHeight/35,
 }
 
-function scalePositions()
-	local urlFont = "https://cdn.discordapp.com/attachments/1130004696984203325/1147805949944406127/EUROSTARBLACKEXTENDED.zip"
-	web.loadRemoteAssets(urlFont, function (success, path)
-		if success == nil then
-			welcomeWindow.fontBold = ui.DWriteFont("Eurostar Black Extended", path):weight(ui.DWriteFont.Weight.Bold)
-			welcomeWindow.font = ui.DWriteFont("Eurostar Black Extended", path):weight(ui.DWriteFont.Weight.SemiBold)
+-- local function printError(err)
+-- 	ac.log("Error: " .. err)
+-- 	fontLoadingFailed = true
+-- end
+
+local function loadFont()
+	local urlFont = "https://cdn.discordapp.com/attachment/1130004696984203325/1218567361892847708/EUROSTARBLACKEXTENDED.zip?ex=6608224a&is=65f5ad4a&hm=9e63bb730630e53c5f273e1e66f67684231380f71327793af6cb4603b141b989&"
+
+    web.loadRemoteAssets(urlFont, function (err, folder)
+		if err then
+			print("Error loading font: " .. err)
+			welcomeWindow.fontBold = ui.DWriteFont("Orbitron;Weight=BLACK")
+			welcomeWindow.font = ui.DWriteFont("Orbitron;Weight=REGULAR")
+		else
+			welcomeWindow.fontBold = ui.DWriteFont("Eurostar Black Extended", folder):weight(ui.DWriteFont.Weight.Bold)
+			welcomeWindow.font = ui.DWriteFont("Eurostar Black Extended", folder):weight(ui.DWriteFont.Weight.SemiBold)
 		end
 	end)
+end
+
+local function scalePositions()
+	welcomeWindow.fontBold = ui.DWriteFont("Orbitron;Weight=BLACK")
+	welcomeWindow.font = ui.DWriteFont("Orbitron;Weight=REGULAR")
 	local xScale = windowWidth / 2560
 	local yScale = windowHeight / 1440
 	local minScale = math.min(xScale, yScale)
@@ -2479,14 +2491,9 @@ local function drawMenuImage()
 	end
 end
 
-local function printError(err)
-	ac.log("Error: " .. err)
-	welcomeCrashed = true
-end
-
 local function drawMenuWelcome()
-	try(drawMenuImage, printError)
-	try(drawMenuText, printError)
+	drawMenuImage()
+	drawMenuText()
 end
 
 -------------------------------------------------------------------------------- UPDATE --------------------------------------------------------------------------------
@@ -2495,7 +2502,7 @@ end
 
 function script.drawUI()
 	if ui.keyboardButtonPressed(ui.KeyIndex.Menu) then welcomeClosed = not welcomeClosed end
-	if not welcomeClosed and not welcomeCrashed then
+	if not welcomeClosed then
 		drawMenuWelcome()
 	elseif initialized then
 		if cspVersion < cspMinVersion then return end
@@ -2549,6 +2556,7 @@ end
 
 function script.update(dt)
 	if not initialized then
+		ac.log("ACP Essential APP")
 		if carID == valideCar[1] or carID == valideCar[2] or carID == valideCar[3] or cspVersion < cspMinVersion then return end
 		loadSettings()
 		initLines()
