@@ -1,6 +1,4 @@
 ac.log("Essential script")
-
-
 local steamID = ac.getUserSteamID()
 
 local class = 'C'
@@ -11,12 +9,16 @@ local windowWidth = sim.windowWidth/ac.getUI().uiScale
 local windowHeight = sim.windowHeight/ac.getUI().uiScale
 local menuOpen = false
 local leaderboardOpen = false
+local cspVersion = ac.getPatchVersionCode()
+local cspMinVersion = 2144
+local valideCar = {"chargerpolice_acpursuit", "crown_police", "bk_for_f450_21"}
 local fontMultiplier = windowHeight/1440
 local carID = ac.getCarID(0)
 local wheels = car.wheels
 local playerData = {}
 local welcomeClosed = false
-local welcomeCrashed = false
+
+if carID == valideCar[1] or carID == valideCar[2] or carID == valideCar[3] or cspVersion < cspMinVersion then return end
 
 local carVersion = "Rental"
 
@@ -314,6 +316,8 @@ local settingsJSON = {
 	starsPos = vec2(windowWidth, 0),
 }
 
+
+ui.setAsynchronousImagesLoading(true)
 local imageSize = vec2(0,0)
 
 local imgPos = {}
@@ -1191,7 +1195,7 @@ local function doubleTrouble()
 	for i = ac.getSim().carsCount - 1, 0, -1 do
 		local carPlayer = ac.getCar(i)
 		if carPlayer.isConnected and (not carPlayer.isHidingLabels) then
-			if carPlayer.index ~= car.index then
+			if carPlayer.index ~= car.index and ac.getCarID(i) ~= valideCar[1] and ac.getCarID(i) ~= valideCar[2] and ac.getCarID(i) ~= valideCar[3] then
 				table.insert(players, carPlayer)
 			end
 		end
@@ -2222,6 +2226,35 @@ local function leaderboardWindow()
 	end)
 end
 
+-- local function cpuOccupancyWindow()
+-- 	ui.transparentWindow('CPU99Window', vec2(windowWidth/6, windowHeight/100), vec2(windowWidth-windowWidth/3, windowHeight/6), true, function ()
+-- 		ui.childWindow('childCPU99', vec2(), true, function ()
+-- 			ui.drawRectFilled(vec2(), vec2(windowWidth-windowWidth/3, windowHeight/8), rgbm(0, 0, 0, 0.8), 10)
+-- 			ui.popDWriteFont()
+-- 			ui.pushDWriteFont("Orbitron;Weight=BLACK")
+-- 			ui.sameLine((windowWidth*2/3-ui.measureDWriteText("CPU OCCUPANCY 99%", 40).x)/2)
+-- 			ui.dwriteTextWrapped("CPU OCCUPANCY 99%", 40, rgbm.colors.red)
+-- 			ui.popDWriteFont()
+-- 			ui.pushDWriteFont("Orbitron;Weight=REGULAR")
+-- 			ui.newLine()
+-- 			ui.sameLine((windowWidth*2/3-ui.measureDWriteText("If your car is warping around the track, is because your CPU is not able to keep up with the game.", 25).x)/2)
+-- 			ui.dwriteTextWrapped("If your car is warping around the track, is because your CPU is not able to keep up with the game.", 25, rgbm.colors.white)
+-- 			ui.newLine()
+-- 			ui.sameLine((windowWidth*2/3-ui.measureDWriteText("Close all unnecessary programs and Download one of our graphics preset from Discord FPS BOOST CHANNEL", 25).x)/2)
+-- 			ui.dwriteTextWrapped("Close all unnecessary programs and Download one of our graphics preset from Discord", 25, rgbm.colors.white)
+-- 			ui.sameLine()
+-- 			if 2362 < cspVersion then
+-- 				if ui.dwriteTextHyperlink('FPS BOOST CHANNEL', 25, rgbm.colors.red) then os.openURL("https://discord.com/channels/358562025032646659/1053427131222343811") end
+-- 			else
+-- 				if ui.textHyperlink('FPS BOOST CHANNEL') then os.openURL("https://discord.com/channels/358562025032646659/1053427131222343811") end
+-- 			end
+-- 			ui.newLine()
+-- 			ui.sameLine(windowWidth/6)
+-- 			if ui.button('Close', vec2(windowWidth/3, windowHeight/40)) then showCPUoccupancy = false end
+-- 		end)
+-- 	end)
+-- end
+
 --------------------------------------------------------------------------------- Welcome Menu ---------------------------------------------------------------------------------
 
 local imgToDraw = {
@@ -2262,20 +2295,35 @@ local welcomeWindow = {
 	topRight = vec2(windowWidth, 0),
 	offset = vec2(0, 0),
 	scale = 0.9,
-	font = nil,
-	fontBold = nil,
+	fontBold = ui.DWriteFont("Orbitron;Weight=BLACK"),
+	font = ui.DWriteFont("Orbitron;Weight=REGULAR"),
 	closeIMG = "https://acstuff.ru/images/icons_24/cancel.png",
 	fontSize = windowHeight/35,
 }
 
-function scalePositions()
-	local urlFont = "https://cdn.discordapp.com/attachments/1130004696984203325/1147805949944406127/EUROSTARBLACKEXTENDED.zip"
-	web.loadRemoteAssets(urlFont, function (success, path)
-		if success == nil then
-			welcomeWindow.fontBold = ui.DWriteFont("Eurostar Black Extended", path):weight(ui.DWriteFont.Weight.Bold)
-			welcomeWindow.font = ui.DWriteFont("Eurostar Black Extended", path):weight(ui.DWriteFont.Weight.SemiBold)
+-- local function printError(err)
+-- 	ac.log("Error: " .. err)
+-- 	fontLoadingFailed = true
+-- end
+
+local function loadFont()
+	local urlFont = "https://cdn.discordapp.com/attachment/1130004696984203325/1218567361892847708/EUROSTARBLACKEXTENDED.zip?ex=6608224a&is=65f5ad4a&hm=9e63bb730630e53c5f273e1e66f67684231380f71327793af6cb4603b141b989&"
+
+    web.loadRemoteAssets(urlFont, function (err, folder)
+		if err then
+			print("Error loading font: " .. err)
+			welcomeWindow.fontBold = ui.DWriteFont("Orbitron;Weight=BLACK")
+			welcomeWindow.font = ui.DWriteFont("Orbitron;Weight=REGULAR")
+		else
+			welcomeWindow.fontBold = ui.DWriteFont("Eurostar Black Extended", folder):weight(ui.DWriteFont.Weight.Bold)
+			welcomeWindow.font = ui.DWriteFont("Eurostar Black Extended", folder):weight(ui.DWriteFont.Weight.SemiBold)
 		end
 	end)
+end
+
+local function scalePositions()
+	welcomeWindow.fontBold = ui.DWriteFont("Orbitron;Weight=BLACK")
+	welcomeWindow.font = ui.DWriteFont("Orbitron;Weight=REGULAR")
 	local xScale = windowWidth / 2560
 	local yScale = windowHeight / 1440
 	local minScale = math.min(xScale, yScale)
@@ -2444,8 +2492,8 @@ local function drawMenuImage()
 end
 
 local function drawMenuWelcome()
-	try(drawMenuImage, printError)
-	try(drawMenuText, printError)
+	drawMenuImage()
+	drawMenuText()
 end
 
 -------------------------------------------------------------------------------- UPDATE --------------------------------------------------------------------------------
@@ -2454,9 +2502,10 @@ end
 
 function script.drawUI()
 	if ui.keyboardButtonPressed(ui.KeyIndex.Menu) then welcomeClosed = not welcomeClosed end
-	if not welcomeClosed and not welcomeCrashed then
+	if not welcomeClosed then
 		drawMenuWelcome()
 	elseif initialized then
+		if cspVersion < cspMinVersion then return end
 		if firstLoad then
 			updatePos()
 			firstLoad = false
@@ -2478,8 +2527,37 @@ function script.drawUI()
 	end
 end
 
+local policeCarIndex = {0, 0, 0, 0, 0, 0}
+
+local function initPoliceCarIndex()
+	local j = 1
+	for i = ac.getSim().carsCount - 1, 0, -1 do
+		local playerCarID = ac.getCarID(i)
+		if playerCarID == valideCar[1] or playerCarID == valideCar[2] or carID == valideCar[3] then
+			policeCarIndex[j] = i
+			j = j + 1
+		end
+	end
+end
+
+local function hidePolice()
+	local hideRange = 100
+	for i = 1, 6 do
+		local player = ac.getCar(policeCarIndex[i])
+		if player.isConnected then
+			if player.position.x > car.position.x - hideRange and player.position.z > car.position.z - hideRange and player.position.x < car.position.x + hideRange and player.position.z < car.position.z + hideRange then
+				ac.hideCarLabels(i, false)
+			else
+				ac.hideCarLabels(i, true)
+			end
+		end
+	end
+end
+
 function script.update(dt)
 	if not initialized then
+		ac.log("ACP Essential APP")
+		if carID == valideCar[1] or carID == valideCar[2] or carID == valideCar[3] or cspVersion < cspMinVersion then return end
 		loadSettings()
 		initLines()
 		initialized = true
@@ -2488,14 +2566,54 @@ function script.update(dt)
 		initDrugRoute()
 		scalePositions()
 		initOverTake()
+		initPoliceCarIndex()
 	else
 		sectorUpdate()
 		raceUpdate(dt)
 		overtakeUpdate(dt)
 		driftUpdate(dt)
 		drugDeliveryUpdate(dt)
+		hidePolice()
 	end
 end
+
+ac.onCarJumped(0, function (carid)
+	if carID ~= valideCar[1] and carID ~= valideCar[2] and carID ~= valideCar[3] then
+		ac.log("Car Jumped")
+		resetSectors()
+		if drugDelivery.started then
+			ac.sendChatMessage(" has crashed and lost the drugs!")
+		end
+		resetDrugDelivery()
+		if online.chased and online.officer then
+			acpPolice{message = "TP", messageType = 0, yourIndex = online.officer.sessionID}
+		end
+	end
+end)
+
+ac.onClientConnected(function (carIndex)
+	local newCar = ac.getCarID(carIndex)
+	ac.log("New Car : " .. newCar)
+	if newCar == valideCar[1] or newCar == valideCar[2] or newCar == valideCar[3] then
+		ac.hideCarLabels(carIndex)
+	end
+end)
+
+ac.onChatMessage(function (message, senderCarIndex, senderSessionID)
+	if carID ~= valideCar[1] and carID ~= valideCar[2] and carID ~= valideCar[3] and online.chased and online.officer then
+		if (senderSessionID == online.officer.sessionID and string.find(message, 'lost')) then
+			if not playerData.Getaway then playerData.Getaway = 0 end
+			playerData.Getaway = playerData.Getaway + 1
+			online.chased = false
+			online.officer = nil
+			local data = {
+				["Getaway"] = playerData.Getaway,
+			}
+			updatefirebase()
+			updatefirebaseData("Getaway", data)
+		end
+	end
+end)
 
 function script.draw3D()
 	render.setBlendMode(render.BlendMode.AlphaBlend)
@@ -2510,4 +2628,6 @@ function script.draw3D()
 	end
 end
 
-ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
+if carID ~= valideCar[1] and carID ~= valideCar[2] and carID ~= valideCar[3] and cspVersion >= cspMinVersion then
+	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
+end
