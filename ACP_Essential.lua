@@ -16,6 +16,7 @@ local carID = ac.getCarID(0)
 local wheels = car.wheels
 local playerData = {}
 local welcomeClosed = false
+local welcomeCrashed = false
 
 
 if carID == valideCar[1] or carID == valideCar[2] or carID == valideCar[3] or cspVersion < cspMinVersion then return end
@@ -2478,6 +2479,7 @@ end
 
 local function printError(err)
 	ac.log("Error: " .. err)
+	welcomeCrashed = true
 end
 
 local function drawMenuWelcome()
@@ -2491,7 +2493,7 @@ end
 
 function script.drawUI()
 	if ui.keyboardButtonPressed(ui.KeyIndex.Menu) then welcomeClosed = not welcomeClosed end
-	if not welcomeClosed then
+	if not welcomeClosed and not welcomeCrashed then
 		drawMenuWelcome()
 	elseif initialized then
 		if cspVersion < cspMinVersion then return end
