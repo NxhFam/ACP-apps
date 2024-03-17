@@ -2577,7 +2577,7 @@ function script.update(dt)
 	end
 end
 
-ac.onCarJumped(0, function (carid)
+ac.onCarJumped(0, function (carIndex)
 	if carID ~= valideCar[1] and carID ~= valideCar[2] and carID ~= valideCar[3] then
 		ac.log("Car Jumped")
 		resetSectors()
@@ -2597,6 +2597,13 @@ ac.onClientConnected(function (carIndex)
 	if newCar == valideCar[1] or newCar == valideCar[2] or newCar == valideCar[3] then
 		ac.hideCarLabels(carIndex)
 	end
+	initPoliceCarIndex()
+end)
+
+ac.onClientDisconnected(function (carIndex)
+	local newCar = ac.getCarID(carIndex)
+	ac.log("Car Disconnected : " .. newCar)
+	ac.hideCarLabels(carIndex, false)
 end)
 
 ac.onChatMessage(function (message, senderCarIndex, senderSessionID)
