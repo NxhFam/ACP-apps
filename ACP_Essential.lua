@@ -322,14 +322,16 @@ local imageSize = vec2(0,0)
 
 local imgPos = {}
 
-local hudBase = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929774619070505/hudBase.png?ex=66022d2b&is=65efb82b&hm=0b22866ffeb7daff5c43b95d2526b6909d68a5fb04a4eb160a1e325432403355&"
-local hudLeft = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929776015773806/hudLeft.png?ex=66022d2c&is=65efb82c&hm=78b3a29eb7b7942b932c07c79c65c299e65bc2ac37f3b3d5ad99ec84c1c758f8&"
-local hudRight = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929776502046812/hudRight.png?ex=66022d2c&is=65efb82c&hm=680f627876c5eef9eacffd6ff8f4477cbd6cabc4f9672003b1fce4482a5f2073&"
-local hudCenter = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929775386361926/hudCenter.png?ex=66022d2b&is=65efb82b&hm=039a94f66d5f34f3eddab5c874ccf35c6301649b56348ef2577e7858e8b89302&"
-local hudCountdown = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929777102098483/iconCountdown.png?ex=66022d2c&is=65efb82c&hm=dd52012e7ce69c4e915d0694a85c86c285e922147b981fb14743a7c24dbb3ab6&"
-local hudMenu = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929777848680529/iconMenu.png?ex=66022d2c&is=65efb82c&hm=c863501e4bf19378e3e312da0f63c3fe0b4b832108dbdec9dadd416a1afebd06&"
-local hudRanks = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929774090322091/iconRanks.png?ex=66022d2b&is=65efb82b&hm=c62899dfe2df4f312bda946e552bcba435296a553da0d85d1b6cbfdad43de383&"
-local hudTheft = "https://cdn.discordapp.com/attachments/1130004696984203325/1216929778444009512/iconTheft.png?ex=66022d2c&is=65efb82c&hm=12c0c08f077927f0058357035ec040a3127450d3a5b73be4de288b0a93f58f1b&"
+local hudImg = {
+	base = "https://i.postimg.cc/ZKbvKVkP/hudBase.png",
+	center = "https://i.postimg.cc/fyZtdvVN/hud-Center.png",
+	left = "https://i.postimg.cc/y8WJ0x8k/hudLeft.png",
+	right = "https://i.postimg.cc/d0yLSfdF/hudRight.png",
+	countdown = "https://i.postimg.cc/FHqYpvYG/icon-Countdown.png",
+	menu = "https://i.postimg.cc/2ywq7BWB/iconMenu.png",
+	ranks = "https://i.postimg.cc/66LGXFP5/icon-Ranks.png",
+	theft = "https://i.postimg.cc/9FLR4ZV6/icon-Theft.png",
+}
 
 local sectors  = {
     {
@@ -2095,15 +2097,15 @@ local function drawImage()
 	iconsColorOn[4] = rgbm(0.99,0.99,0.99,1)
 	local uiState = ac.getUI()
 	local toolTipOn = false
-	ui.drawImage(hudCenter, vec2(0,0), imageSize)
+	ui.drawImage(hudImg.center, vec2(0,0), imageSize)
 	if ui.rectHovered(vec2(0,0), vec2(imageSize.x, imageSize.y/2)) then toolTipOn = true end
 	if ui.rectHovered(imgPos.leftPos2, imgPos.leftPos1) then
-		ui.image(hudLeft, imageSize, settings.colorHud)
+		ui.image(hudImg.left, imageSize, settings.colorHud)
 		if uiState.isMouseLeftKeyClicked then
 			if settings.current == 1 then settings.current = #statOn else settings.current = settings.current - 1 end
 		end
 	elseif ui.rectHovered(imgPos.rightPos2, imgPos.rightPos1) then
-		ui.image(hudRight, imageSize, settings.colorHud)
+		ui.image(hudImg.right, imageSize, settings.colorHud)
 		if uiState.isMouseLeftKeyClicked then
 			if settings.current == #statOn then settings.current = 1 else settings.current = settings.current + 1 end
 		end
@@ -2166,11 +2168,11 @@ local function drawImage()
 			end
 		end
 	end
-	ui.image(hudBase, imageSize, settings.colorHud)
-	ui.drawImage(hudTheft, vec2(0,0), imageSize, iconsColorOn[1])
-	ui.drawImage(hudRanks, vec2(0,0), imageSize, iconsColorOn[2])
-	ui.drawImage(hudCountdown, vec2(0,0), imageSize, iconsColorOn[3])
-	ui.drawImage(hudMenu, vec2(0,0), imageSize, iconsColorOn[4])
+	ui.image(hudImg.base, imageSize, settings.colorHud)
+	ui.drawImage(hudImg.theft, vec2(0,0), imageSize, iconsColorOn[1])
+	ui.drawImage(hudImg.ranks, vec2(0,0), imageSize, iconsColorOn[2])
+	ui.drawImage(hudImg.countdown, vec2(0,0), imageSize, iconsColorOn[3])
+	ui.drawImage(hudImg.menu, vec2(0,0), imageSize, iconsColorOn[4])
 	if countDownState.countdownOn then countdown() end
 	if stealingTime > 0 then stealingTime = stealingTime - ui.deltaTime()
 	elseif stealingTime < 0 then stealingTime = 0 end
@@ -2226,46 +2228,24 @@ local function leaderboardWindow()
 	end)
 end
 
--- local function cpuOccupancyWindow()
--- 	ui.transparentWindow('CPU99Window', vec2(windowWidth/6, windowHeight/100), vec2(windowWidth-windowWidth/3, windowHeight/6), true, function ()
--- 		ui.childWindow('childCPU99', vec2(), true, function ()
--- 			ui.drawRectFilled(vec2(), vec2(windowWidth-windowWidth/3, windowHeight/8), rgbm(0, 0, 0, 0.8), 10)
--- 			ui.popDWriteFont()
--- 			ui.pushDWriteFont("Orbitron;Weight=BLACK")
--- 			ui.sameLine((windowWidth*2/3-ui.measureDWriteText("CPU OCCUPANCY 99%", 40).x)/2)
--- 			ui.dwriteTextWrapped("CPU OCCUPANCY 99%", 40, rgbm.colors.red)
--- 			ui.popDWriteFont()
--- 			ui.pushDWriteFont("Orbitron;Weight=REGULAR")
--- 			ui.newLine()
--- 			ui.sameLine((windowWidth*2/3-ui.measureDWriteText("If your car is warping around the track, is because your CPU is not able to keep up with the game.", 25).x)/2)
--- 			ui.dwriteTextWrapped("If your car is warping around the track, is because your CPU is not able to keep up with the game.", 25, rgbm.colors.white)
--- 			ui.newLine()
--- 			ui.sameLine((windowWidth*2/3-ui.measureDWriteText("Close all unnecessary programs and Download one of our graphics preset from Discord FPS BOOST CHANNEL", 25).x)/2)
--- 			ui.dwriteTextWrapped("Close all unnecessary programs and Download one of our graphics preset from Discord", 25, rgbm.colors.white)
--- 			ui.sameLine()
--- 			if 2362 < cspVersion then
--- 				if ui.dwriteTextHyperlink('FPS BOOST CHANNEL', 25, rgbm.colors.red) then os.openURL("https://discord.com/channels/358562025032646659/1053427131222343811") end
--- 			else
--- 				if ui.textHyperlink('FPS BOOST CHANNEL') then os.openURL("https://discord.com/channels/358562025032646659/1053427131222343811") end
--- 			end
--- 			ui.newLine()
--- 			ui.sameLine(windowWidth/6)
--- 			if ui.button('Close', vec2(windowWidth/3, windowHeight/40)) then showCPUoccupancy = false end
--- 		end)
--- 	end)
--- end
-
 --------------------------------------------------------------------------------- Welcome Menu ---------------------------------------------------------------------------------
 
-local imgToDraw = {
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1216926407288946838/leftArrowOff.png?ex=66022a08&is=65efb508&hm=3c3a4922acc388d2eacf1c4740425a18bad87269f610478c8d044757660562b5&",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1216926409268793424/rightArrowOff.png?ex=66022a09&is=65efb509&hm=4d0521bcfa3e709c955c952f66af0895c3dcea0d4f4f81e99d17881bd7109387&",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1216926408362692748/leftBoxOff.png?ex=66022a09&is=65efb509&hm=01325e02f151181d496e8043b373b67e5f33d261f72b9775447eeff474b16a30&",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1216926405942710413/centerBoxOff.png?ex=66022a08&is=65efb508&hm=54032b021c7774a41d33adf0dfdd524cc4335d7b3b96b639b6e25227ea7b4b66&",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1216926410480812133/rightBoxOff.png?ex=66022a09&is=65efb509&hm=8bcdec19dc391ef4a858aee8b07f2bd7daf9cf21c35f6377547daa013be3dafc&",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1216930010829422742/ACPmenu.png?ex=66022d64&is=65efb864&hm=de478042ed39b38543e88719f9b6cfac039cf842b09abf7c18814ab758ef2467&",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1216930011383074878/ACPlogo.png?ex=66022d64&is=65efb864&hm=16ccd5d05ce877252b5f8efdf256ba1495327e2567f671ff0ec702bf9934b3bf&"
+local welcomeImg = {
+	base = "https://i.postimg.cc/pX9rTTVC/baseacp.png",
+	logo = "https://i.postimg.cc/brZysCPr/logoacp.png",
+	leftBoxOff = "https://i.postimg.cc/MTKK8Zry/left-Box-Off.png",
+	leftBoxOn = "https://i.postimg.cc/xdPT7Ngf/left-Box-On.png",
+	centerBoxOff = "https://i.postimg.cc/G2qtBTs7/center-Box-Off.png",
+	centerBoxOn = "https://i.postimg.cc/2j93rvY3/center-Box-On.png",
+	rightBoxOff = "https://i.postimg.cc/kXtMCpwh/right-Box-Off.png",
+	rightBoxOn = "https://i.postimg.cc/13hm3rjR/right-Box-On.png",
+	leftArrowOff = "https://i.postimg.cc/cLwJRbn8/left-Arrow-Off.png",
+	leftArrowOn = "https://i.postimg.cc/B6YZZWdR/left-Arrow-On.png",
+	rightArrowOff = "https://i.postimg.cc/cLRsgtpR/right-Arrow-Off.png",
+	rightArrowOn = "https://i.postimg.cc/BbRqDTZg/right-Arrow-On.png",
 }
+
+local imgToDraw = { welcomeImg.leftArrowOff, welcomeImg.rightArrowOff, welcomeImg.leftBoxOff, welcomeImg.centerBoxOff, welcomeImg.rightBoxOff, welcomeImg.base, welcomeImg.logo}
 
 local imgColor = {
 	rgbm.colors.white,
@@ -2301,10 +2281,6 @@ local welcomeWindow = {
 	fontSize = windowHeight/35,
 }
 
--- local function printError(err)
--- 	ac.log("Error: " .. err)
--- 	fontLoadingFailed = true
--- end
 
 local function loadFont()
 	local urlFont = "https://cdn.discordapp.com/attachment/1130004696984203325/1218567361892847708/EUROSTARBLACKEXTENDED.zip?ex=6608224a&is=65f5ad4a&hm=9e63bb730630e53c5f273e1e66f67684231380f71327793af6cb4603b141b989&"
@@ -2339,17 +2315,16 @@ local function scalePositions()
 	welcomeWindow.topRight = vec2(imgPos_[6][2].x - welcomeWindow.size.x/100, imgPos_[6][1].y + welcomeWindow.size.y/100) + welcomeWindow.offset
 end
 
-
 local imgSet = {
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1216928397121425458/aboutacp.jpg?ex=66022be3&is=65efb6e3&hm=06384c0fc953caa7b12e31a8872ff53093fb6ae83352eede3955a49640f90105&",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1216928399180959834/earnmoney.jpg?ex=66022be3&is=65efb6e3&hm=ad3b252b200b21b51ad12a6bc5467e994cd0111ca075bec2bf47dc3f921ff6a2&",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1216928399545733151/leaderboard.jpg?ex=66022be3&is=65efb6e3&hm=e6243497afb1f4b8a087e9f92de6f2f88636d1bcd16fa265f2d5eafb02f2c0e3&",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1216928397482262568/bank.jpg?ex=66022be3&is=65efb6e3&hm=e81bbf7a5c9af805f69afe3e68166e2ca5d4f68637b27618c8ecff092450ba8e&",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1216928396412715089/police.jpg?ex=66022be3&is=65efb6e3&hm=72aa463af74834e13b9735e6b7a1ccb3cd27ff7ddfdc9a26efce68923bd241ec&",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1216928397876531230/buycars.jpg?ex=66022be3&is=65efb6e3&hm=7e85b2b54dad83b6dd4f8aa82b32f0f5b0a63cdd767092a2cd9f02a96e9a4c29&",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1216928396790206586/tuning.jpg?ex=66022be3&is=65efb6e3&hm=daaf3e5fced505fecefe870bec8f13dd45838ea66026cb9bed26e99384c5898a&",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1216928398320996362/cartheft.jpg?ex=66022be3&is=65efb6e3&hm=034e59a32be6cfb98971d3b0c99ed4ed7a98cfb9070227c1d1312e2cbee94c4b&",
-	"https://cdn.discordapp.com/attachments/1130004696984203325/1216928398748942387/drugdealer.jpg?ex=66022be3&is=65efb6e3&hm=d1695349cd5f6e9015d8b08471e328847cd06e8a7fc227e981b07c91c0e8ffc8&",
+	"https://i.postimg.cc/5tW6DVV3/aboutacp.jpg",
+	"https://i.postimg.cc/MHLG5k51/earnmoney.jpg",
+	"https://i.postimg.cc/4yydp46J/leaderboard.jpg",
+	"https://i.postimg.cc/T3DKkPZ1/bank.jpg",
+	"https://i.postimg.cc/15LtNQfQ/police.jpg",
+	"https://i.postimg.cc/WbKD6ZYx/buycars.jpg",
+	"https://i.postimg.cc/sfLftrPh/tuning.jpg",
+	"https://i.postimg.cc/bv0shBYj/cartheft.jpg",
+	"https://i.postimg.cc/Jn1t45tH/drugdealer.jpg",
 }
 
 local imgLink = {
@@ -2422,11 +2397,11 @@ local function drawMenuImage()
 		if i == #imgColor - 1 then imgColor[i] = settings.colorHud
 		else imgColor[i] = rgbm.colors.white end
 	end
-	imgToDraw[1] = "https://cdn.discordapp.com/attachments/1130004696984203325/1216926407288946838/leftArrowOff.png?ex=66022a08&is=65efb508&hm=3c3a4922acc388d2eacf1c4740425a18bad87269f610478c8d044757660562b5&"
-	imgToDraw[2] = "https://cdn.discordapp.com/attachments/1130004696984203325/1216926409268793424/rightArrowOff.png?ex=66022a09&is=65efb509&hm=4d0521bcfa3e709c955c952f66af0895c3dcea0d4f4f81e99d17881bd7109387&"
-	imgToDraw[3] = "https://cdn.discordapp.com/attachments/1130004696984203325/1216926408362692748/leftBoxOff.png?ex=66022a09&is=65efb509&hm=01325e02f151181d496e8043b373b67e5f33d261f72b9775447eeff474b16a30&"
-	imgToDraw[4] = "https://cdn.discordapp.com/attachments/1130004696984203325/1216926405942710413/centerBoxOff.png?ex=66022a08&is=65efb508&hm=54032b021c7774a41d33adf0dfdd524cc4335d7b3b96b639b6e25227ea7b4b66&"
-	imgToDraw[5] = "https://cdn.discordapp.com/attachments/1130004696984203325/1216926410480812133/rightBoxOff.png?ex=66022a09&is=65efb509&hm=8bcdec19dc391ef4a858aee8b07f2bd7daf9cf21c35f6377547daa013be3dafc&"
+	imgToDraw[1] = welcomeImg.leftArrowOff
+	imgToDraw[2] = welcomeImg.rightArrowOff
+	imgToDraw[3] = welcomeImg.leftBoxOff
+	imgToDraw[4] = welcomeImg.centerBoxOff
+	imgToDraw[5] = welcomeImg.rightBoxOff
 	ui.transparentWindow('welcomeIMG', welcomeWindow.offset, welcomeWindow.size, true, function ()
 		ui.childWindow('welcomeIMGChild', welcomeWindow.size, true, function ()
 			local uiState = ac.getUI()
@@ -2434,7 +2409,7 @@ local function drawMenuImage()
 			ui.drawRectFilled(imgPos_[7][1], imgPos_[7][2], rgbm(0, 0, 0, 0.6))
 			if ui.rectHovered(imgPos_[1][1], imgPos_[1][2]) then
 				imgColor[1] = settings.colorHud
-				imgToDraw[1] = "https://cdn.discordapp.com/attachments/1130004696984203325/1216926407775621150/leftArrowOn.png?ex=66022a09&is=65efb509&hm=510f9e184692b394fa5376b4f7024669f98025d8ab76b00a7ef2d9a6ab06ddef&"
+				imgToDraw[1] = welcomeImg.leftArrowOn
 				if uiState.isMouseLeftKeyClicked then
 					for i = 1, #imgDisplayed do
 						if imgDisplayed[i] == 1 then
@@ -2446,7 +2421,7 @@ local function drawMenuImage()
 				end
 			elseif ui.rectHovered(imgPos_[2][1], imgPos_[2][2]) then
 				imgColor[2] = settings.colorHud
-				imgToDraw[2] = "https://cdn.discordapp.com/attachments/1130004696984203325/1216926409713258577/rightArrowOn.png?ex=66022a09&is=65efb509&hm=79a86d882ab2d662a28180b746e9ed9d16cdf836d1b424e222c8d25803417416&"
+				imgToDraw[2] = welcomeImg.rightArrowOn
 				if uiState.isMouseLeftKeyClicked then
 					for i = 1, #imgDisplayed do
 						if imgDisplayed[i] == #imgSet then
@@ -2459,17 +2434,17 @@ local function drawMenuImage()
 			elseif ui.rectHovered(imgPos_[3][1], imgPos_[3][2]) then
 				toolTipOn = true
 				imgColor[3] = settings.colorHud
-				imgToDraw[3] = "https://cdn.discordapp.com/attachments/1130004696984203325/1216926408836644965/leftBoxOn.png?ex=66022a09&is=65efb509&hm=a9d6bf5d3cdbc648e8fc09866532e10b26520877e41c542b2811acedf0d88a57&"
+				imgToDraw[3] = welcomeImg.leftBoxOn
 				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(imgLink[imgDisplayed[1]]) end
 			elseif ui.rectHovered(imgPos_[4][1], imgPos_[4][2]) then
 				toolTipOn = true
 				imgColor[4] = settings.colorHud
-				imgToDraw[4] = "https://cdn.discordapp.com/attachments/1130004696984203325/1216926406613667842/centerBoxOn.png?ex=66022a08&is=65efb508&hm=3a72c0e129fe271b5d969383c39a572da68873f497525389ee8bef6334ac6501&"
+				imgToDraw[4] = welcomeImg.centerBoxOn
 				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(imgLink[imgDisplayed[2]]) end
 			elseif ui.rectHovered(imgPos_[5][1], imgPos_[5][2]) then
 				toolTipOn = true
 				imgColor[5] = settings.colorHud
-				imgToDraw[5] = "https://cdn.discordapp.com/attachments/1130004696984203325/1216926410959097976/rightBoxOn.png?ex=66022a09&is=65efb509&hm=5e564f149ff74e83082e22c2d3935453aeff41356c32062f13f2538c18b78018&"
+				imgToDraw[5] = welcomeImg.rightBoxOn
 				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(imgLink[imgDisplayed[3]]) end
 			elseif ui.rectHovered(imgPos_[7][1], imgPos_[7][2]) then
 				iconCloseColor = settings.colorHud
