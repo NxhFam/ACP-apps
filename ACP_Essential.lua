@@ -1,4 +1,5 @@
-ac.log("Essential script")
+ac.log("Disabled during development")
+return
 local steamID = ac.getUserSteamID()
 
 local class = 'C'
@@ -1640,6 +1641,7 @@ local requiredSpeed = 80
 
 -- This function is called before event activates. Once it returns true, it’ll run:
 function script.prepare(dt)
+    return
     ac.debug("speed", car.speedKmh)
     return car.speedKmh > 60
 end
@@ -2476,6 +2478,7 @@ end
 
 
 function script.drawUI()
+	return
 	if ui.keyboardButtonPressed(ui.KeyIndex.Menu) then welcomeClosed = not welcomeClosed end
 	if not welcomeClosed then
 		drawMenuWelcome()
@@ -2530,6 +2533,7 @@ local function hidePolice()
 end
 
 function script.update(dt)
+	return
 	if not initialized then
 		ac.log("ACP Essential APP")
 		if carID == valideCar[1] or carID == valideCar[2] or carID == valideCar[3] or cspVersion < cspMinVersion then return end
@@ -2598,6 +2602,7 @@ ac.onChatMessage(function (message, senderCarIndex, senderSessionID)
 end)
 
 function script.draw3D()
+	return
 	render.setBlendMode(render.BlendMode.AlphaBlend)
     render.setCullMode(render.CullMode.None)
 	render.setDepthMode(render.DepthMode.Normal)
