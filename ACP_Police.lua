@@ -1,3 +1,5 @@
+ac.log("Disabled during development")
+return
 ac.log("Police script")
 
 local sim = ac.getSim()
@@ -380,7 +382,7 @@ local playerData = {}
 
 ---------------------------------------------------------------------------------------------- Firebase ----------------------------------------------------------------------------------------------
 
-local urlAppScript = 'https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec'
+local urlAppScript = 'https://google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec'
 local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/'
 local firebaseUrlData = 'https://acp-server-97674-default-rtdb.firebaseio.com/PlayersData/'
 local firebaseUrlsettings = 'https://acp-server-97674-default-rtdb.firebaseio.com/Settings'
@@ -1134,6 +1136,7 @@ end
 ---------------------------------------------------------------------------------------------- updates ----------------------------------------------------------------------------------------------
 
 function script.drawUI()
+	return
 	if carID ~= valideCar[1] and carID ~= valideCar[2] and carID ~= valideCar[3] or cspVersion < cspMinVersion then return end
 	if initialized and settings.policeSize then
 		if firstload then
@@ -1166,6 +1169,7 @@ ac.onCarJumped(0, function (carid)
 end)
 
 function script.update(dt)
+	return
 	if carID ~= valideCar[1] and carID ~= valideCar[2] and carID ~= valideCar[3] or cspVersion < cspMinVersion then return end
 	if not initialized then
 		loadsettings()
