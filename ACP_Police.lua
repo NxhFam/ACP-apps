@@ -1019,8 +1019,7 @@ local function radarUpdate()
 	local previousSize = #playersInRange
 	local j = 1
 	for i, c in ac.iterateCars.serverSlots() do
-	  ac.debug(c:name(), c.position)
-	  if not isPoliceCar(c:id()) then
+	  if not c.isHidingLabels and not isPoliceCar(c:id()) then
 			if c.position.x > car.position.x - RADAR_RANGE and c.position.z > car.position.z - RADAR_RANGE and c.position.x < car.position.x + RADAR_RANGE and c.position.z < car.position.z + RADAR_RANGE then
 			playersInRange[j] = {}
 			playersInRange[j].player = c
