@@ -25,7 +25,10 @@ if DRIVER_NATION_CODE == "USA" or DRIVER_NATION_CODE == "GBR" then
 	UNIT_MULT = 0.621371
 end
 
-local POLICE_CAR = const({ "chargerpolice_acpursuit", "crown_police" })
+local POLICE_CAR = { "chargerpolice_acpursuit", "crown_police" }
+if localTesting then
+	POLICE_CAR = { "supra_acp24" }
+end
 
 -- URL --
 local GOOGLE_APP_SCRIPT_URL = const(
@@ -118,9 +121,6 @@ local CAMERAS = const({
 		fov = 60,
 	},
 })
-
-
-local firstload = true
 
 local MSG_ARREST = const({
 	"`NAME` has been arrested for Speeding. The individual was driving a `CAR`.",
@@ -1013,23 +1013,20 @@ local function hidePlayers()
 	end
 end
 
-local function radarUpdate()
-	if firstload and not pursuit.suspect then return end
-	local radarRange = 250
-	local previousSize = #playersInRange
+local RADAR_RANGE = 250
 
+local function radarUpdate()
+	local previousSize = #playersInRange
 	local j = 1
-	for i = ac.getSim().carsCount - 1, 0, -1 do
-		local playerCar = ac.getCar(i)
-		if playerCar and playerCar.isConnected and ac.getCarBrand(i) ~= "traffic" then
-			if not isPoliceCar(ac.getCarID(i)) then
-				if playerCar.position.x > car.position.x - radarRange and playerCar.position.z > car.position.z - radarRange and playerCar.position.x < car.position.x + radarRange and playerCar.position.z < car.position.z + radarRange then
-					playersInRange[j] = {}
-					playersInRange[j].player = playerCar
-					playersInRange[j].text = ac.getDriverName(playerCar.index) .. string.format(" - %d ", playerCar.speedKmh * settings.unitMult) .. settings.unit
-					j = j + 1
-					if j == 9 then break end
-				end
+	for i, c in ac.iterateCars.serverSlots() do
+	  ac.debug(c:name(), c.position)
+	  if not isPoliceCar(c:id()) then
+			if c.position.x > car.position.x - RADAR_RANGE and c.position.z > car.position.z - RADAR_RANGE and c.position.x < car.position.x + RADAR_RANGE and c.position.z < car.position.z + RADAR_RANGE then
+			playersInRange[j] = {}
+			playersInRange[j].player = c
+			playersInRange[j].text = ac.getDriverName(c.index) .. string.format(" - %d ", c.speedKmh * settings.unitMult) .. settings.unit
+			j = j + 1
+			if j == 9 then break end
 			end
 		end
 	end
@@ -1232,11 +1229,6 @@ end
 
 function script.drawUI()
 	if not shouldRun() then return end
-
-	if firstload then
-		firstload = false
-		initsettings()
-	end
 	radarUI()
 	if pursuit.suspect then showStarsPursuit() end
 	showPursuitMsg()
