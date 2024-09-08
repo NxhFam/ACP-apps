@@ -5,7 +5,7 @@ local wheels = car.wheels or error()
 local uiState = ac.getUI()
 ui.setAsynchronousImagesLoading(true)
 
-local localTesting = false
+local localTesting = true
 local initialisation = true
 
 -- Constants --
@@ -154,6 +154,8 @@ local function isPoliceCar(carID)
 	end
 	return false
 end
+
+if isPoliceCar(CAR_ID) then return end
 
 local carVersion = "Rental"
 
@@ -2294,12 +2296,10 @@ local function drawHudImages()
 				if not drugDelivery.drawPickUp then
 					ac.sendChatMessage("* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. os.date(" %x *"))
 					stealMsgTime = 7
-					-- if sectorInfo.sectorIndex ~= 3 and sectorInfo.timerText == "00:00.00" then
-					-- 	sectorInfo.sectorIndex = 2
-					-- 	sector = sectors[sectorInfo.sectorIndex]
-					-- 	resetSectors()
-					-- 	settings.current = 4
-					-- end
+					if sectorManager.sector.name ~= "BOBs SCRAPYARD" and sectorManager.sector.name ~= "DOUBLE TROUBLE" then
+						sectorManager:setSector('BOBs SCRAPYARD')
+						settings.current = 4
+					end
 				end
 				if drugDelivery.active and not drugDelivery.started then
 					ac.sendChatMessage(" has picked up the drugs at (" .. drugDelivery.pickUpName .. ") and is on the way to the drop off! (" .. drugDelivery.dropOffName .. ")")
