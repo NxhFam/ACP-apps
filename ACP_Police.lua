@@ -1025,7 +1025,7 @@ local function radarUpdate()
 			if not isPoliceCar(ac.getCarID(i)) then
 				if playerCar.position.x > car.position.x - radarRange and playerCar.position.z > car.position.z - radarRange and playerCar.position.x < car.position.x + radarRange and playerCar.position.z < car.position.z + radarRange then
 					playersInRange[j] = {}
-					playersInRange[j].player = player
+					playersInRange[j].player = playerCar
 					playersInRange[j].text = ac.getDriverName(playerCar.index) .. string.format(" - %d ", playerCar.speedKmh * settings.unitMult) .. settings.unit
 					j = j + 1
 					if j == 9 then break end
