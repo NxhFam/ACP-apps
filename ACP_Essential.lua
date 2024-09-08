@@ -6,6 +6,7 @@ local uiState = ac.getUI()
 ui.setAsynchronousImagesLoading(true)
 
 local localTesting = false
+ac.log('Local testing:', localTesting)
 local initialisation = true
 
 -- Constants --
