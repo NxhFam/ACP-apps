@@ -1,329 +1,70 @@
-ac.log("Disabled during development")
-return
-local steamID = ac.getUserSteamID()
-
-local class = 'C'
-local timeRequirement = 150
 local sim = ac.getSim()
-local car = ac.getCar(0)
-local windowWidth = sim.windowWidth/ac.getUI().uiScale
-local windowHeight = sim.windowHeight/ac.getUI().uiScale
-local menuOpen = false
-local leaderboardOpen = false
-local cspVersion = ac.getPatchVersionCode()
-local cspMinVersion = 2144
-local valideCar = {"chargerpolice_acpursuit", "crown_police", "bk_for_f450_21"}
-local fontMultiplier = windowHeight/1440
-local carID = ac.getCarID(0)
-local wheels = car.wheels
-local playerData = {}
-local welcomeClosed = false
-
-if carID == valideCar[1] or carID == valideCar[2] or carID == valideCar[3] or cspVersion < cspMinVersion then return end
-
-local carVersion = "Rental"
-
-local stockHash256 = {
-    "49f0d0e1683d338c719cc5c5cb29bd2562e766eeb12f9f333075482625621dfb",
-    "008461cbca3bbbe5469edafd97d3beba31d73293f793bd595319ca34196e1443",
-    "0d5a20c2e936f9aab941e5c2ee450daf6322cdd8f18d1a44ac4687d048b59d77",
-    "6f56567669dfa90bb67fbc7be102f4508457af3990015a70160ba3cb26887993",
-    "3b41c5f96b59f862a176dcfb365a453f46e695a37829a16d0d05d899548463dd",
-    "c651de6887419c2c103cc1cd2b0bac8df9a20e3f81254a7737008095372642b4",
-    "236578882256b20a3b9698c9bec510da21c9a9da52324c06b22f3712e8b8ab49",
-    "58be1d2dd3de57fa33a6233eeac61cdb2267c3d3130866eb8ae86196e1791e9b",
-    "68d4063b0e71df24850c8bf6d9928eeafe5a917bee49775a49b6fbc86daef322",
-    "06d7e9d3cb2a9bbaf21c9bbeda7654d68fdd3ef9b58852b769f03aff775ae35b",
-    "f069f3cbd41fe0a4caa5799e75d2503682aa82b45085680390f370b7ead4e8fc",
-    "57b813694499530b1550c208762c24c119654696c03f0ce1fffd229816468f7e",
-    "8c54420f3c1818387c535417ed1f2b74a1d2781a3072c78cb8fac945cb8732d9",
-}
-
-local tunedHash256 = {
-    "3ab92c7b2643885126106f0954946b9826b055a7eb12463c679e4062fee9e3a2",
-    "b3555528f97ebff84b48a8bcfedb21372b6a3e98bae75a421c0c084819497a56",
-    "c8f88adeacd0421984cf04d4ee25f79696d16590b4adbe113455a2a9b0bd0f95",
-    "404b4999855761d4875e35ee25b8a03d4d72d65e9dd696e9f154942af40ec83f",
-    "2a4c6a0c8c4b13b191dd1309b9423265f302c6add266b714701e16c77d3a7ae4",
-    "e43fa68ad0768ae4d88380e6bc6aca218162d0ba9c8e8a1afac1aac9c2035546",
-    "a73c494f6a6d262bb0aacba68947ad2c1fcfa9a49ea586b8865a098e2e9a7760",
-    "286ff2d6ed38c8ed1212079d91865be65a6587200b364d363258380eb6221346",
-    "e589eb21e899c7e661de9072aa5e80c6266f7ca144184a00cb5442743672a9c3",
-    "5dcdc1fafcf76c3684da7d3dee09ec10a077c57073f8bc6cb035d3f0fe1ac23f",
-    "992ae5200fe88a458733a3ab0a973a0a76c62c4b3057f351f50c4b636c2a5333",
-    "00e5386e6a5ba94b950f35391128e2ba7409f47023af411a0aeb0232a5437431",
-    "2a6a1f1ce7ecf5cb8fbe81a9b10f468f28b5dbbad373000a3ea2c774d26e4093",
-}
-
-local driftHash256 = {
-    "fe04aab967c373de4580271d88e9f26d2ba463a29ccc03a30d1fd3e708265c07",
-    "2907ae504e794d36a9fed6eed317527ba10eb2b9c040d70634d37c5968c460f7",
-    "b5d95b03324aa04a4f8330f79869295a31bcf984bbabfa7d1b3387a477b9b99f",
-    "fb2cd39d5d8311e1abc8e9d8ca156faa046d9f4e6b017fafb4ed2dc2629d8267",
-    "9d452cec475af6a7aa99daa047948e874250f1e724962a4fa45934f65b2345f0",
-    "91d494330244fb95867039588303eb21a863dc62b68342e840a9df5cfb7c5845",
-    "76dde11d01c607befca128b269bdd659268fef564309ca43991fa2dd265b5bdd",
-    "e47b0704f3a64ccde3d48e4396a01663dd1b809aa620b071fa1ec734f2a35830",
-    "25ba03f4babc88184b86f37d6022423a547f08971e990341a3bf54addf2f64b5",
-    "9010ddea5fbf187a52afa7a6e7d31d2dd4adf8a2c3a49d7bd1736cb758cfa665",
-    "6467223e5a187bc7d5bd400557446e76a6bc47e08603fd86ea6eaff946e1f6a7",
-}
-
-local function checkHash256()
-	local carDataPath = ac.getFolder(ac.FolderID.ContentCars) .. '/' .. ac.getCarID(0) .. '/data.acd'
-    local carHash256 = ac.checksumSHA256(io.load(carDataPath))
-    
-    for i, hash in ipairs(stockHash256) do
-        if hash == carHash256 then
-            carVersion = "Stock"
-            break
-        end
-    end
-    for i, hash in ipairs(tunedHash256) do
-        if hash == carHash256 then
-            carVersion = "Tuned"
-            break
-        end
-    end
-    for i, hash in ipairs(driftHash256) do
-        if hash == carHash256 then
-            carVersion = "Drift"
-            break
-        end
-    end
-    table.clear(stockHash256)
-    table.clear(tunedHash256)
-    table.clear(driftHash256)
-end
-
-local highestScore = 0
-local driftState = {
-	bestScore = 0,
-	lastScore = 0,
-	valid = true,
-}
-
-------------------------------------------------------------------------- JSON Utils -------------------------------------------------------------------------
-
-local json = {}
-
--- Internal functions.
-
-local function kind_of(obj)
-  if type(obj) ~= 'table' then return type(obj) end
-  local i = 1
-  for _ in pairs(obj) do
-    if obj[i] ~= nil then i = i + 1 else return 'table' end
-  end
-  if i == 1 then return 'table' else return 'array' end
-end
-
-local function escape_str(s)
-  local in_char  = {'\\', '"', '/', '\b', '\f', '\n', '\r', '\t'}
-  local out_char = {'\\', '"', '/',  'b',  'f',  'n',  'r',  't'}
-  for i, c in ipairs(in_char) do
-    s = s:gsub(c, '\\' .. out_char[i])
-  end
-  return s
-end
-
--- Returns pos, did_find; there are two cases:
--- 1. Delimiter found: pos = pos after leading space + delim; did_find = true.
--- 2. Delimiter not found: pos = pos after leading space;     did_find = false.
--- This throws an error if err_if_missing is true and the delim is not found.
-local function skip_delim(str, pos, delim, err_if_missing)
-  pos = pos + #str:match('^%s*', pos)
-  if str:sub(pos, pos) ~= delim then
-    if err_if_missing then
-      error('Expected ' .. delim .. ' near position ' .. pos)
-    end
-    return pos, false
-  end
-  return pos + 1, true
-end
-
--- Expects the given pos to be the first character after the opening quote.
--- Returns val, pos; the returned pos is after the closing quote character.
-local function parse_str_val(str, pos, val)
-  val = val or ''
-  local early_end_error = 'End of input found while parsing string.'
-  if pos > #str then error(early_end_error) end
-  local c = str:sub(pos, pos)
-  if c == '"'  then return val, pos + 1 end
-  if c ~= '\\' then return parse_str_val(str, pos + 1, val .. c) end
-  -- We must have a \ character.
-  local esc_map = {b = '\b', f = '\f', n = '\n', r = '\r', t = '\t'}
-  local nextc = str:sub(pos + 1, pos + 1)
-  if not nextc then error(early_end_error) end
-  return parse_str_val(str, pos + 2, val .. (esc_map[nextc] or nextc))
-end
-
--- Returns val, pos; the returned pos is after the number's final character.
-local function parse_num_val(str, pos)
-  local num_str = str:match('^-?%d+%.?%d*[eE]?[+-]?%d*', pos)
-  local val = tonumber(num_str)
-  if not val then error('Error parsing number at position ' .. pos .. '.') end
-  return val, pos + #num_str
-end
-
-
--- Public values and functions.
-
-function json.stringify(obj, as_key)
-  local s = {}  -- We'll build the string as an array of strings to be concatenated.
-  local kind = kind_of(obj)  -- This is 'array' if it's an array or type(obj) otherwise.
-  if kind == 'array' then
-    if as_key then error('Can\'t encode array as key.') end
-    s[#s + 1] = '['
-    for i, val in ipairs(obj) do
-      if i > 1 then s[#s + 1] = ', ' end
-      s[#s + 1] = json.stringify(val)
-    end
-    s[#s + 1] = ']'
-  elseif kind == 'table' then
-    if as_key then error('Can\'t encode table as key.') end
-    s[#s + 1] = '{'
-    for k, v in pairs(obj) do
-      if #s > 1 then s[#s + 1] = ', ' end
-      s[#s + 1] = json.stringify(k, true)
-      s[#s + 1] = ':'
-      s[#s + 1] = json.stringify(v)
-    end
-    s[#s + 1] = '}'
-  elseif kind == 'string' then
-    return '"' .. escape_str(obj) .. '"'
-  elseif kind == 'number' then
-    if as_key then return '"' .. tostring(obj) .. '"' end
-    return tostring(obj)
-  elseif kind == 'boolean' then
-    return tostring(obj)
-  elseif kind == 'nil' then
-    return 'null'
-  else
-    error('Unjsonifiable type: ' .. kind .. '.')
-  end
-  return table.concat(s)
-end
-
-json.null = {}  -- This is a one-off table to represent the null value.
-
-function json.parse(str, pos, end_delim)
-  pos = pos or 1
-  if pos > #str then error('Reached unexpected end of input.') end
-  local pos = pos + #str:match('^%s*', pos)  -- Skip whitespace.
-  local first = str:sub(pos, pos)
-  if first == '{' then  -- Parse an object.
-    local obj, key, delim_found = {}, true, true
-    pos = pos + 1
-    while true do
-      key, pos = json.parse(str, pos, '}')
-      if key == nil then return obj, pos end
-      if not delim_found then error('Comma missing between object items.') end
-      pos = skip_delim(str, pos, ':', true)  -- true -> error if missing.
-      obj[key], pos = json.parse(str, pos)
-      pos, delim_found = skip_delim(str, pos, ',')
-    end
-  elseif first == '[' then  -- Parse an array.
-    local arr, val, delim_found = {}, true, true
-    pos = pos + 1
-    while true do
-      val, pos = json.parse(str, pos, ']')
-      if val == nil then return arr, pos end
-      if not delim_found then error('Comma missing between array items.') end
-      arr[#arr + 1] = val
-      pos, delim_found = skip_delim(str, pos, ',')
-    end
-  elseif first == '"' then  -- Parse a string.
-    return parse_str_val(str, pos + 1)
-  elseif first == '-' or first:match('%d') then  -- Parse a number.
-    return parse_num_val(str, pos)
-  elseif first == end_delim then  -- End of an object or array.
-    return nil, pos + 1
-  else  -- Parse true, false, or null.
-    local literals = {['true'] = true, ['false'] = false, ['null'] = json.null}
-    for lit_str, lit_val in pairs(literals) do
-      local lit_end = pos + #lit_str - 1
-      if str:sub(pos, lit_end) == lit_str then return lit_val, lit_end + 1 end
-    end
-    local pos_info_str = 'position ' .. pos .. ': ' .. str:sub(pos, pos + 10)
-    error('Invalid json syntax starting at ' .. pos_info_str)
-  end
-end
-
---return json of playerData with only the data needed for the leaderboard
--- data are keys of the playerData table
-local function dataStringify(data)
-	local str = '{"' .. ac.getUserSteamID() .. '": '
-	local name = ac.getDriverName(0)
-	data['Name'] = name
-	str = str .. json.stringify(data) .. '}'
-	return str
-end
-
-
---------------firebase--------------
-local urlAppScript = 'https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec'
-local firebaseUrl = 'https://acp-server-97674-default-rtdb.firebaseio.com/'
-local firebaseUrlData = 'https://acp-server-97674-default-rtdb.firebaseio.com/PlayersData/'
-local firebaseUrlLeaderboards = 'https://acp-server-97674-default-rtdb.firebaseio.com/Leaderboards/'
-local nodes = { ['Arrests'] = 'Arrestations',
-				['H1'] = 'Class C - H1',
-				['STRace'] = 'Street Racing',
-				['Theft'] = 'Car Thefts',
-				['VV'] = 'Velocity Vendetta',
-				['Drift'] = 'Drift',
-				['Overtake'] = 'Overtake',
-				['Getaway'] = 'Most Wanted'}
-
-local leaderboard = {}
-local leaderboardName = 'Class C - H1'
-local leaderboardNames = {'Class C - H1', 'Velocity Vendetta', 'Street Racing', 'Car Thefts', 'Arrestations','HORIZON', 'Drift', 'Overtake', 'Most Wanted'}
-
-local settings = {
-	essentialSize = 20,
-	policeSize = 20,
-	hudOffsetX = 0,
-	hudOffsetY = 0,
-	fontSize = 20,
-	current = 1,
-	colorHud = rgbm(1,0,0,1),
-	timeMsg = 10,
-	msgOffsetY = 10,
-	msgOffsetX = windowWidth/2,
-	fontSizeMSG = 30,
-	menuPos = vec2(0, 0),
-	unit = "km/h",
-	unitMult = 1,
-	starsSize = 20,
-	starsPos = vec2(windowWidth, 0),
-}
-
-local settingsJSON = {
-	essentialSize = 20,
-	policeSize = 20,
-	hudOffsetX = 0,
-	hudOffsetY = 0,
-	fontSize = 20,
-	current = 1,
-	colorHud = "1,0,0,1",
-	timeMsg = 10,
-	msgOffsetY = 10,
-	msgOffsetX = "1280",
-	fontSizeMSG = 30,
-	menuPos = vec2(0, 0),
-	unit = "km/h",
-	unitMult = 1,
-	starsSize = 20,
-	starsPos = vec2(windowWidth, 0),
-}
-
-
+local car = ac.getCar(0) or error()
+if not car then return end
+local wheels = car.wheels or error()
+local uiState = ac.getUI()
 ui.setAsynchronousImagesLoading(true)
-local imageSize = vec2(0,0)
 
-local imgPos = {}
+local localTesting = false
+local initialisation = true
 
-local hudImg = {
+-- Constants --
+local STEAMID = const(ac.getUserSteamID())
+local CSP_VERSION = const(ac.getPatchVersionCode())
+local CSP_MIN_VERSION = const(2253)
+local CAR_ID = const(ac.getCarID(0))
+local CAR_NAME = const(ac.getCarName(0))
+local DRIVER_NAME = const(ac.getDriverName(0))
+if CSP_VERSION < CSP_MIN_VERSION then return end
+
+local DRIVER_NATION_CODE = const(ac.getDriverNationCode(0))
+local UNIT = "km/h"
+local UNIT_MULT = 1
+if DRIVER_NATION_CODE == "USA" or DRIVER_NATION_CODE == "GBR" then
+	UNIT = "mph"
+	UNIT_MULT = 0.621371
+end
+
+local POLICE_CAR = const({ "chargerpolice_acpursuit", "crown_police" })
+
+-- URL --
+local GOOGLE_APP_SCRIPT_URL = const(
+	'https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec')
+local FIREBASE_URL = const('https://acp-server-97674-default-rtdb.firebaseio.com/')
+
+-- UI --
+local WINDOW_WIDTH = const(sim.windowWidth / uiState.uiScale)
+local WIDTH_DIV = const({
+	_2 = WINDOW_WIDTH / 2,
+	_3 = WINDOW_WIDTH / 3,
+	_4 = WINDOW_WIDTH / 4,
+	_5 = WINDOW_WIDTH / 5,
+	_6 = WINDOW_WIDTH / 6,
+	_10 = WINDOW_WIDTH / 10,
+	_12 = WINDOW_WIDTH / 12,
+	_15 = WINDOW_WIDTH / 15,
+	_20 = WINDOW_WIDTH / 20,
+	_25 = WINDOW_WIDTH / 25,
+	_32 = WINDOW_WIDTH / 32,
+})
+
+local WINDOW_HEIGHT = const(sim.windowHeight / uiState.uiScale)
+local HEIGHT_DIV = const({
+	_2 = WINDOW_HEIGHT / 2,
+	_3 = WINDOW_HEIGHT / 3,
+	_4 = WINDOW_HEIGHT / 4,
+	_12 = WINDOW_HEIGHT / 12,
+	_20 = WINDOW_HEIGHT / 20,
+	_40 = WINDOW_HEIGHT / 40,
+	_50 = WINDOW_HEIGHT / 50,
+	_60 = WINDOW_HEIGHT / 60,
+	_70 = WINDOW_HEIGHT / 70,
+	_80 = WINDOW_HEIGHT / 80,
+})
+
+local FONT_MULT = const(WINDOW_HEIGHT / 1440)
+
+local HUD_IMG = const({
 	base = "https://i.postimg.cc/ZKbvKVkP/hudBase.png",
 	center = "https://i.postimg.cc/fyZtdvVN/hud-Center.png",
 	left = "https://i.postimg.cc/y8WJ0x8k/hudLeft.png",
@@ -332,33 +73,995 @@ local hudImg = {
 	menu = "https://i.postimg.cc/2ywq7BWB/iconMenu.png",
 	ranks = "https://i.postimg.cc/66LGXFP5/icon-Ranks.png",
 	theft = "https://i.postimg.cc/9FLR4ZV6/icon-Theft.png",
+})
+
+local WELCOME_NAV_IMG = const({
+	base = "https://i.postimg.cc/pX9rTTVC/baseacp.png",
+	logo = "https://i.postimg.cc/brZysCPr/logoacp.png",
+	leftBoxOff = "https://i.postimg.cc/MTKK8Zry/left-Box-Off.png",
+	leftBoxOn = "https://i.postimg.cc/xdPT7Ngf/left-Box-On.png",
+	centerBoxOff = "https://i.postimg.cc/G2qtBTs7/center-Box-Off.png",
+	centerBoxOn = "https://i.postimg.cc/2j93rvY3/center-Box-On.png",
+	rightBoxOff = "https://i.postimg.cc/kXtMCpwh/right-Box-Off.png",
+	rightBoxOn = "https://i.postimg.cc/13hm3rjR/right-Box-On.png",
+	leftArrowOff = "https://i.postimg.cc/cLwJRbn8/left-Arrow-Off.png",
+	leftArrowOn = "https://i.postimg.cc/B6YZZWdR/left-Arrow-On.png",
+	rightArrowOff = "https://i.postimg.cc/cLRsgtpR/right-Arrow-Off.png",
+	rightArrowOn = "https://i.postimg.cc/BbRqDTZg/right-Arrow-On.png",
+})
+
+local WELCOME_CARD_IMG = const({
+	"https://i.postimg.cc/5tW6DVV3/aboutacp.jpg",
+	"https://i.postimg.cc/MHLG5k51/earnmoney.jpg",
+	"https://i.postimg.cc/4yydp46J/leaderboard.jpg",
+	"https://i.postimg.cc/T3DKkPZ1/bank.jpg",
+	"https://i.postimg.cc/15LtNQfQ/police.jpg",
+	"https://i.postimg.cc/WbKD6ZYx/buycars.jpg",
+	"https://i.postimg.cc/sfLftrPh/tuning.jpg",
+	"https://i.postimg.cc/bv0shBYj/cartheft.jpg",
+	"https://i.postimg.cc/Jn1t45tH/drugdealer.jpg",
+})
+
+local WELCOME_CARD_LINK = const({
+	"https://discord.com/channels/358562025032646659/1062186611091185784", --FAQ
+	"https://discord.com/channels/358562025032646659/1147217487524528138", --earn
+	"https://discord.com/channels/358562025032646659/1127619394328076318", --leaderboard
+	"https://discord.com/channels/358562025032646659/1075578309443858522", --bank
+	"https://discord.com/channels/358562025032646659/1095681142197325975", --police
+	"https://discord.com/channels/358562025032646659/1076123906362056784", --car
+	"https://discord.com/channels/358562025032646659/1079799948306034708", --tuning
+	"https://discord.com/channels/358562025032646659/1096470595392241704", --car theft
+	"",
+})
+
+local WELCOME_CARD_IMG_POS = const({
+	{ vec2(70, 650),   vec2(320, 910) },
+	{ vec2(2230, 650), vec2(2490, 910) },
+	{ vec2(357, 325),  vec2(920, 1234) },
+	{ vec2(993, 325),  vec2(1557, 1234) },
+	{ vec2(1633, 325), vec2(2195, 1234) },
+	{ vec2(31, 106),   vec2(2535, 1370) },
+	{ vec2(2437, 48),  vec2(2510, 100) },
+})
+
+-- Gate related --
+local GATE_HEIGHT_OFFSET = const(0.2)
+local white = const(rgbm.colors.white)
+local gateColor = const(rgbm(0, 100, 0, 10))
+
+-- basic directionnal vectors --
+local vUp = const(vec3(0, 1, 0))
+local vDown = const(vec3(0, -1, 0))
+
+local menuStates = {
+	welcome = true,
+	main = false,
+	leaderboard = false,
 }
 
-local sectors  = {
-    {
-        name = 'H1',
-		pointsData = {{vec3(-742.9, 138.9, 3558.7), vec3(-729.8, 138.9, 3542.8)},
-					{vec3(3008.2, 73, 1040.3), vec3(2998.8, 73, 1017.3)}},
-        length = 26.3,
-    },
-    {
-        name = 'BOBs SCRAPYARD',
-		pointsData = {{vec3(-742.9, 139, 3558.7), vec3(-729.8, 139, 3542.8)},
-					{vec3(-3537.4, 23.8, -199.8), vec3(-3544.4, 23.8, -212.2)}},
-        length = 6.35,
-    },
-    {
-        name = 'DOUBLE TROUBLE',
-		pointsData = {{vec3(-742.9, 139, 3558.7), vec3(-729.8, 139, 3542.8)},
-					{vec3(-3537.4, 23.8, -199.8), vec3(-3544.4, 23.8, -212.2)}},
-        length = 6.35,
-    },
-	{
-		name = 'Velocity Vendetta',
-		pointsData = {{vec3(-3944.9,-184.7,10004.4), vec3(-3951.9,-184.7,10007.2)},
-					{vec3(-5774.6,-349.1,10183.9), vec3(-5776.7,-349.2,10173.8)},
-					{vec3(-3977.2,-147.5,9537.4), vec3(-3969.2,-147.6,9540.2)}},
-		length = 4,
+local dataLoaded = {}
+dataLoaded['Settings'] = false
+dataLoaded['Leaderboard'] = false
+dataLoaded['PlayerData'] = false
+dataLoaded['Sectors'] = false
+
+---@param carID string
+local function isPoliceCar(carID)
+	for _, carName in ipairs(POLICE_CAR) do
+		if carID == carName then
+			return true
+		end
+	end
+	return false
+end
+
+local carVersion = "Rental"
+
+local function checkHash256()
+	local carDataPath = ac.getFolder(ac.FolderID.ContentCars) .. '/' .. ac.getCarID(0) .. '/data.acd'
+	if not carDataPath or not io.exists(carDataPath) then
+		return
+	end
+	local carHash256 = ac.checksumSHA256(io.load(carDataPath))
+end
+
+local highestScore = 0
+
+--return json of playerData with only the data needed for the leaderboard
+-- data are keys of the playerData table
+local function dataStringify(data)
+	local str = '{"' .. STEAMID .. '": '
+	local name = DRIVER_NAME
+	data['Name'] = name
+	str = str .. JSON.stringify(data) .. '}'
+	return str
+end
+
+--------------firebase--------------
+local nodes = {
+	['Arrests'] = 'Arrestations',
+	['H1'] = 'Class C - H1',
+	['STRace'] = 'Street Racing',
+	['Theft'] = 'Car Thefts',
+	['VV'] = 'Velocity Vendetta',
+	['Overtake'] = 'Overtake',
+	['Getaway'] = 'Most Wanted'
+}
+
+--------- Utils ------------
+---@param keys string[]
+---@param t table
+local function hasKeys(keys, t)
+	for i = 1, #keys do
+		if not t[keys[i]] then
+			ac.error('Missing key:', keys[i])
+			return false
+		end
+	end
+	return true
+end
+
+---@param number number
+---@param decimal integer
+---@return number
+local function truncate(number, decimal)
+	local power = 10 ^ decimal
+	return math.floor(number * power) / power
+end
+
+
+---@param t table
+local function tableToVec3(t)
+	return vec3(t[1], t[2], t[3])
+end
+
+---@param t table
+local function tableToVec2(t)
+	return vec2(t[1], t[2])
+end
+
+---@param t table
+local function tableToRGBM(t)
+	return rgbm(t[1], t[2], t[3], t[4])
+end
+
+---@param err string
+---@param response WebResponse
+---@return boolean
+local function canProcessRequest(err, response)
+	if err then
+		ac.error('Failed to process request:', err)
+		return false
+	end
+	return response.status == 200 and response.body ~= ''
+end
+
+---@param response WebResponse
+---@return boolean
+local function hasExistingData(response)
+	return response.status == 200 and response.body ~= 'null'
+end
+
+---@param v vec3
+---@return vec3
+local function snapToTrack(v)
+	if physics.raycastTrack(v, vDown, 20, v) == -1 then
+		physics.raycastTrack(v, vUp, 20, v)
+	end
+	return v
+end
+
+local DEFAULT_SETTINGS = const({
+	essentialSize = 20,
+	policeSize = 20,
+	hudOffset = vec2(0, 0),
+	fontSize = 20,
+	current = 1,
+	colorHud = rgbm(1, 0, 0, 1),
+	timeMsg = 10,
+	msgOffset = vec2(WIDTH_DIV._2, 10),
+	fontSizeMSG = 30,
+	menuPos = vec2(0, 0),
+	unit = UNIT,
+	unitMult = UNIT_MULT,
+	starsSize = 20,
+	starsPos = vec2(WINDOW_WIDTH, 0),
+})
+
+---@class Settings
+---@field essentialSize number
+---@field policeSize number
+---@field hudOffset vec2
+---@field fontSize number
+---@field current number
+---@field colorHud rgbm
+---@field timeMsg number
+---@field msgOffset vec2
+---@field fontSizeMSG number
+---@field menuPos vec2
+---@field unit string
+---@field unitMult number
+---@field starsSize number
+---@field starsPos vec2
+local Settings = class('Settings')
+
+---@return Settings
+function Settings.new()
+	local settings = table.clone(DEFAULT_SETTINGS, true)
+	setmetatable(settings, { __index = Settings })
+	return settings
+end
+
+---@param data table
+---@return Settings
+function Settings.tryParse(data)
+	local hudOffset = data.hudOffset and tableToVec2(data.hudOffset) or vec2(0, 0)
+	local colorHud = data.colorHud and tableToRGBM(data.colorHud) or rgbm(1, 0, 0, 1)
+	local msgOffset = data.msgOffset and tableToVec2(data.msgOffset) or vec2(WIDTH_DIV._2, 10)
+	local menuPos = data.menuPos and tableToVec2(data.menuPos) or vec2(0, 0)
+	local starsPos = data.starsPos and tableToVec2(data.starsPos) or vec2(WINDOW_WIDTH, 0)
+	local settings = {
+		essentialSize = data.essentialSize or 20,
+		policeSize = data.policeSize or 20,
+		hudOffset = hudOffset,
+		fontSize = data.fontSize or 20,
+		current = data.current or 1,
+		colorHud = colorHud,
+		timeMsg = data.timeMsg or 10,
+		msgOffset = msgOffset,
+		fontSizeMSG = data.fontSizeMSG or 30,
+		menuPos = menuPos,
+		unit = data.unit or UNIT,
+		unitMult = data.unitMult or UNIT_MULT,
+		starsSize = data.starsSize or 20,
+		starsPos = starsPos,
+	}
+	setmetatable(settings, { __index = Settings })
+	return settings
+end
+
+---@param url string
+---@param callback function
+function Settings.fetch(url, callback)
+	if localTesting then
+		local currentPath = ac.getFolder(ac.FolderID.ScriptOrigin)
+		local file = io.open(currentPath .. '/settingsResponse.json', 'r')
+		if not file then
+			ac.error('Failed to open response.json')
+			callback(Settings.new())
+			return
+		end
+		local data = JSON.parse(file:read('*a'))
+		file:close()
+		local settings = Settings.tryParse(data)
+		callback(settings)
+	else
+		web.get(url, function(err, response)
+			if canProcessRequest(err, response) then
+				if hasExistingData(response) then
+					local data = JSON.parse(response.body)
+					if data then
+						local settings = Settings.tryParse(data)
+						callback(settings)
+					else
+						ac.error('Failed to parse settings data.')
+						callback(Settings.new())
+					end
+				else
+					callback(Settings.new())
+				end
+			else
+				ac.error('Failed to fetch settings:', err)
+				callback(Settings.new())
+			end
+		end)
+	end
+end
+
+---@param callback function
+function Settings.allocate(callback)
+	local url = FIREBASE_URL .. 'Settings/' .. STEAMID .. '.json'
+	ac.log('Loading settings')
+	Settings.fetch(url, function(settings)
+		callback(settings)
+	end)
+end
+
+---@return table
+function Settings:export()
+	local data = {}
+	if self.essentialSize ~= DEFAULT_SETTINGS.essentialSize then
+		data.essentialSize = self.essentialSize
+	end
+	if self.policeSize ~= DEFAULT_SETTINGS.policeSize then
+		data.policeSize = self.policeSize
+	end
+	if self.hudOffset ~= DEFAULT_SETTINGS.hudOffset then
+		data.hudOffset = { self.hudOffset.x, self.hudOffset.y }
+	end
+	if self.fontSize ~= DEFAULT_SETTINGS.fontSize then
+		data.fontSize = self.fontSize
+	end
+	if self.current ~= DEFAULT_SETTINGS.current then
+		data.current = self.current
+	end
+	if self.colorHud ~= DEFAULT_SETTINGS.colorHud then
+		data.colorHud = { self.colorHud.r, self.colorHud.g, self.colorHud.b, self.colorHud.mult }
+	end
+	if self.timeMsg ~= DEFAULT_SETTINGS.timeMsg then
+		data.timeMsg = self.timeMsg
+	end
+	if self.msgOffset ~= DEFAULT_SETTINGS.msgOffset then
+		data.msgOffset = { self.msgOffset.x, self.msgOffset.y }
+	end
+	if self.fontSizeMSG ~= DEFAULT_SETTINGS.fontSizeMSG then
+		data.fontSizeMSG = self.fontSizeMSG
+	end
+	if self.menuPos ~= DEFAULT_SETTINGS.menuPos then
+		data.menuPos = { self.menuPos.x, self.menuPos.y }
+	end
+	if self.unit ~= DEFAULT_SETTINGS.unit then
+		data.unit = self.unit
+	end
+	if self.unitMult ~= DEFAULT_SETTINGS.unitMult then
+		data.unitMult = self.unitMult
+	end
+	if self.starsSize ~= DEFAULT_SETTINGS.starsSize then
+		data.starsSize = self.starsSize
+	end
+	if self.starsPos ~= DEFAULT_SETTINGS.starsPos then
+		data.starsPos = { self.starsPos.x, self.starsPos.y }
+	end
+	return data
+end
+
+function Settings:save()
+	if localTesting then return end
+	local str = '{"' .. STEAMID .. '": ' .. JSON.stringify(self:export()) .. '}'
+	web.request('PATCH', FIREBASE_URL .. "Settings.json", str, function(err, response)
+		if err then
+			ac.error(err)
+			return
+		end
+	end)
+end
+
+---@class Gate
+---@field pos vec3
+---@field dir vec3
+---@field point1 vec3
+---@field point2 vec3
+---@field width number
+---@field cross vec3
+---@field id integer
+local Gate = class('Gate')
+
+---@param data table
+---@return Gate|nil
+function Gate.tryParse(data)
+	local keys = { 'pos', 'dir', 'width', 'id' }
+	if not hasKeys(keys, data) then
+		ac.log('Missing required keys in gate data.')
+		return nil
+	end
+
+	local pos = tableToVec3(data.pos)
+	local dir = tableToVec3(data.dir)
+	dir = vec3(dir.x, 0, dir.z):normalize()
+
+	return {
+		pos = pos,
+		dir = dir,
+		cross = vec3(dir.z, 0, -dir.x),
+		point1 = snapToTrack(pos + vec3(dir.z, 0, -dir.x) * data.width / 2):add(vec3(0, GATE_HEIGHT_OFFSET, 0)),
+		point2 = snapToTrack(pos - vec3(dir.z, 0, -dir.x) * data.width / 2):add(vec3(0, GATE_HEIGHT_OFFSET, 0)),
+		width = data.width,
+		id = data.id,
+	}
+end
+
+---@param data table
+---@return Gate|nil
+function Gate.allocate(data)
+	local gate = Gate.tryParse(data)
+	if not gate then
+		ac.error('Failed to allocate gate')
+		return nil
+	end
+	return gate
+end
+
+function Gate:print()
+	ac.error('Gate:\npos:', self.pos, 'dir:', self.dir)
+end
+
+---@return boolean
+function Gate:isTooFar()
+	return self.pos:distanceSquared(car.position) > self.width * 3
+end
+
+---@return boolean
+function Gate:isCrossed()
+	if self:isTooFar() then
+		return false
+	end
+	local carHalfWidth = car.aabbSize.z / 2
+
+	local isCrossing = vec2.intersect(vec2(self.point1.x, self.point1.z), vec2(self.point2.x, self.point2.z),
+		vec2(car.position.x - carHalfWidth, car.position.z - carHalfWidth),
+		vec2(car.position.x + carHalfWidth, car.position.z + carHalfWidth))
+	local goingThrough = self.dir:dot(car.look) > 0
+	if isCrossing and goingThrough then
+		return true
+	end
+	return false
+end
+
+---@class Sector
+---@field name string
+---@field startTime number
+---@field time string
+---@field timeLimit number
+---@field timeColor rgbm
+---@field startDistance number
+---@field distanceDriven number
+---@field lenght number
+---@field gateCount integer
+---@field gateIndex integer
+---@field gates Gate[]
+local Sector = class('Sector')
+
+---@param data table
+---@return Sector|nil
+function Sector.tryParse(data)
+	local keys = { 'timeLimit', 'length', 'gates' }
+	if not hasKeys(keys, data) then
+		ac.error('Missing required keys in sector data.')
+		return nil
+	end
+	local gates = {}
+	for i, gateData in ipairs(data.gates) do
+		local gate = Gate(gateData)
+		if not gate then
+			ac.error('Failed to parse gate:', i)
+			return nil
+		end
+		table.insert(gates, gate)
+	end
+
+	local sector = {
+		gateCount = #gates,
+		gateIndex = 1,
+		startTime = 0,
+		time = '00:00.000',
+		timeLimit = data.timeLimit,
+		timeColor = rgbm.colors.white,
+		startDistance = 0,
+		distanceDriven = 0,
+		lenght = data.length,
+		gates = gates,
+	}
+	setmetatable(sector, { __index = Sector })
+	return sector
+end
+
+---@param url string
+---@param callback function
+function Sector.fetch(url, callback)
+	if localTesting then
+		local currentPath = ac.getFolder(ac.FolderID.ScriptOrigin)
+		local filename = url:match('.+/(.+)$')
+		local file = io.open(currentPath .. '/sector' .. filename, 'r')
+		if not file then
+			ac.error('Failed to open response.json')
+			callback(nil)
+			return
+		end
+		local data = JSON.parse(file:read('*a'))
+		file:close()
+		local sector = Sector.tryParse(data)
+		callback(sector)
+	else
+		web.get(url, function(err, response)
+			if canProcessRequest(err, response) then
+				local data = JSON.parse(response.body)
+				if data then
+					local sector = Sector.tryParse(data)
+					callback(sector)
+				else
+					ac.error('Failed to parse sector data.')
+					callback(nil)
+				end
+			else
+				callback(nil)
+			end
+		end)
+	end
+end
+
+---@param name string
+---@param callback function
+function Sector.allocate(name, callback)
+	local url = FIREBASE_URL .. 'Sectors/' .. name .. '.json'
+	Sector.fetch(url, function(sector)
+		if not sector then
+			ac.error('Failed to allocate sector:', name)
+		else
+			sector.name = name
+		end
+		callback(sector)
+	end)
+end
+
+function Sector:reset()
+	self.gateIndex = 1
+	self.startTime = 0
+	self.time = '00:00.000'
+	self.timeColor = rgbm.colors.white
+	self.startDistance = 0
+	self.distanceDriven = 0
+end
+
+function Sector:starting()
+	if self.gateIndex == 2 then
+		self.time = '00:00.000'
+		self.startTime = os.preciseClock()
+		self.startDistance = car.distanceDrivenTotalKm
+	end
+end
+
+---@return boolean
+function Sector:isFinished()
+	return self.gateIndex > self.gateCount and self.distanceDriven > self.lenght
+end
+
+---@return boolean
+function Sector:hasStarted()
+	return self.startTime > 0
+end
+
+function Sector:updateDistanceDriven()
+	if self.startDistance > 0 then
+		self.distanceDriven = truncate(car.distanceDrivenTotalKm - self.startDistance, 3)
+	end
+end
+
+function Sector:updateTime()
+	if self.startTime > 0 then
+		local time = os.preciseClock() - self.startTime
+		local minutes = math.floor(time / 60)
+		local seconds = math.floor(time % 60)
+		local milliseconds = math.floor((time % 1) * 1000)
+		self.time = ('%02d:%02d.%03d'):format(minutes, seconds, milliseconds)
+	end
+end
+
+function Sector:isUnderTimeLimit()
+	if self.timeLimit > 0 then
+		return os.preciseClock() - self.startTime > self.timeLimit
+	end
+	return false
+end
+
+function Sector:updateTimeColor()
+	if self:hasStarted() and self:isUnderTimeLimit() then
+		self.timeColor = rgbm(1, 0, 0, 1)
+	end
+	if self:isFinished() then
+		self.timeColor = rgbm(0, 1, 0, 1)
+	end
+end
+
+function Sector:update()
+	self:updateDistanceDriven()
+	self:updateTime()
+	self:updateTimeColor()
+	if self.gateIndex > self.gateCount then
+		return
+	end
+	if self.gates[self.gateIndex]:isCrossed() then
+		self.gateIndex = self.gateIndex + 1
+		self:starting()
+		self:updateTimeColor()
+	end
+end
+
+---@class SectorStats
+---@field name string
+---@field records table<string, number>
+local SectorStats = class('SectorStats')
+
+---@param name string
+---@param data table
+---@return SectorStats
+function SectorStats.tryParse(name, data)
+	local records = {}
+	for carName, time in pairs(data) do
+		records[carName] = time
+	end
+	local sectorStats = {
+		name = name,
+		records = records,
+	}
+	setmetatable(sectorStats, { __index = SectorStats })
+	return sectorStats
+end
+
+---@param name string
+---@param data table
+---@return SectorStats|nil
+function SectorStats.allocate(name, data)
+	if type(data) == 'table' then
+		local sectorStats = SectorStats.tryParse(name, data)
+		if not sectorStats then
+			ac.error('Failed to allocate sector stat')
+			return nil
+		end
+		return sectorStats
+	end
+	if type(data) == 'number' then
+		local records = {}
+		records[CAR_NAME] = data
+		local sectorStats = {
+			name = name,
+			records = records,
+		}
+		return sectorStats
+	end
+	ac.error('Failed to allocate sector stat')
+	return nil
+end
+
+---@param time number
+function SectorStats:addRecord(time)
+	if not self.records[CAR_NAME] or self.records[CAR_NAME] > time then
+		self.records[CAR_NAME] = time
+	end
+end
+
+---@return table
+function SectorStats:export()
+	local records = {}
+	for carName, time in pairs(self.records) do
+		records[carName] = truncate(time, 3)
+	end
+	return {
+		[self.name] = records
+	}
+end
+
+---@class Player
+---@field name string
+---@field sectors SectorStats[]
+---@field arrests integer
+---@field getaways integer
+---@field thefts integer
+---@field overtake integer
+---@field wins integer
+---@field losses integer
+local Player = class('Player')
+
+---@return Player
+function Player.new()
+	local player = {
+		name = DRIVER_NAME,
+		sectors = {},
+		arrests = 0,
+		getaways = 0,
+		thefts = 0,
+		overtake = 0,
+		wins = 0,
+		losses = 0,
+	}
+	setmetatable(player, { __index = Player })
+	return player
+end
+
+---@param data table
+---@return Player
+function Player.tryParse(data)
+	if not data then
+		return Player.new()
+	end
+	local sectors = {}
+	if data.sectors then
+		for sectorName, sectorData in pairs(data.sectors) do
+			local sector = SectorStats(sectorName, sectorData)
+			if sector then
+				table.insert(sectors, sector)
+			end
+		end
+	end
+	local player = {
+		name = DRIVER_NAME,
+		sectors = sectors,
+		arrests = data.arrests or 0,
+		getaways = data.getaways or 0,
+		thefts = data.thefts or 0,
+		overtake = data.overtake or 0,
+		wins = data.wins or 0,
+		losses = data.losses or 0,
+	}
+	setmetatable(player, { __index = Player })
+	return player
+end
+
+---@param url string
+---@param callback function
+function Player.fetch(url, callback)
+	if localTesting then
+		local currentPath = ac.getFolder(ac.FolderID.ScriptOrigin)
+		local file = io.open(currentPath .. '/playerResponse.json', 'r')
+		if not file then
+			ac.error('Failed to open playerResponse.json')
+			callback(Player.new())
+			return
+		end
+		local data = JSON.parse(file:read('*a'))
+		file:close()
+		local player = Player.tryParse(data)
+		callback(player)
+		ac.log('Loaded From File')
+	else
+		web.get(url, function(err, response)
+			if canProcessRequest(err, response) then
+				if hasExistingData(response) then
+					local data = JSON.parse(response.body)
+					if data then
+						local player = Player.tryParse(data)
+						callback(player)
+					else
+						ac.error('Failed to parse player data.')
+						callback(Player.new())
+					end
+				else
+					callback(Player.new())
+				end
+			else
+				ac.error('Failed to fetch player:', err)
+				callback(Player.new())
+			end
+		end)
+	end
+end
+
+---@param callback function
+function Player.allocate(callback)
+	local url = FIREBASE_URL .. 'Players/' .. STEAMID .. '.json'
+	Player.fetch(url, function(player)
+		callback(player)
+	end)
+end
+
+---@return table
+function Player:export()
+	local data = { name = self.name }
+
+	if self.arrests > 0 then
+		data.arrests = self.arrests
+	end
+	if self.getaways > 0 then
+		data.getaways = self.getaways
+	end
+	if self.thefts > 0 then
+		data.thefts = self.thefts
+	end
+	if self.overtake > 0 then
+		data.overtake = self.overtake
+	end
+	if self.wins > 0 then
+		data.wins = self.wins
+	end
+	if self.losses > 0 then
+		data.losses = self.losses
+	end
+
+	local sectors = {}
+	for _, sector in ipairs(self.sectors) do
+		local sectorData = sector:export()
+		for key, value in pairs(sectorData) do
+			sectors[key] = value
+		end
+	end
+	if next(sectors) then
+		data.sectors = sectors
+	end
+	return data
+end
+
+function Player:save()
+	if localTesting then return end
+	local str = '{"' .. STEAMID .. '": ' .. JSON.stringify(self:export()) .. '}'
+	web.request('PATCH', FIREBASE_URL .. "Players.json", str, function(err, response)
+		if err then
+			ac.error(err)
+			return
+		end
+	end)
+end
+
+function Player:addSectorRecord(sectorName, time)
+	---@type SectorStats | nil
+	local sector = nil
+	for _, s in ipairs(self.sectors) do
+		if s.name == sectorName then
+			sector = s
+			break
+		end
+	end
+	if not sector then
+		sector = SectorStats(sectorName, time)
+		if not sector then return end
+		table.insert(self.sectors, sector)
+	end
+	sector:addRecord(time)
+end
+
+---@type Player | nil
+local player = nil
+
+---@type Settings | nil
+local settings = nil
+
+---@type Sector[]
+local sectors = {}
+
+local function getSectorByName(name)
+	for _, sector in ipairs(sectors) do
+		if sector.name == name then
+			return sector
+		end
+	end
+	return nil
+end
+
+---@class SectorManager
+---@field sector Sector
+---@field started boolean
+---@field finished boolean
+---@field isDuo boolean
+local SectorManager = class('SectorManager')
+
+---@return SectorManager
+function SectorManager.new()
+	local sm = {
+		sector = nil,
+		started = false,
+		finished = false,
+		isDuo = false,
+	}
+	setmetatable(sm, { __index = SectorManager })
+	return sm
+end
+
+---@return SectorManager
+function SectorManager.allocate()
+	return SectorManager.new()
+end
+
+function SectorManager:reset()
+	if self.sector.name == "DOUBLE TROUBLE" then
+		self.isDuo = true
+	else
+		self.isDuo = false
+	end
+	self.started = false
+	self.finished = false
+	self.sector:reset()
+end
+
+---@param name string
+function SectorManager:setSector(name)
+	local sector = getSectorByName(name)
+	if sector then
+		self.sector = sector
+		self:reset()
+	end
+end
+
+---@type SectorManager
+local sectorManager = SectorManager()
+
+local duo = {
+	teammate = nil,
+	request = false,
+	onlineSender = nil,
+	teammateHasFinished = false,
+	waiting = false,
+	playerName = "Online Players",
+}
+
+local acpEvent = ac.OnlineEvent({
+	message = ac.StructItem.string(110),
+	messageType = ac.StructItem.int16(),
+	yourIndex = ac.StructItem.int16(),
+}, function(sender, data)
+	if not sender then return end
+	if data.yourIndex == car.sessionID and data.messageType == 5 and data.message == "Request" then
+		duo.request = true
+		duo.onlineSender = sender
+	elseif data.yourIndex == car.sessionID and data.messageType == 5 and data.message == "Accept" then
+		duo.teammate = sender
+		duo.request = false
+	elseif duo.teammate and data.yourIndex == car.sessionID and sender.index == duo.teammate.index and data.messageType == 5 and data.message == "Finished" then
+		duo.teammateHasFinished = true
+	elseif duo.teammate and data.yourIndex == car.sessionID and sender.index == duo.teammate.index and data.messageType == 5 and data.message == "Cancel" then
+		duo.teammate = nil
+		duo.request = false
+		sectorManager:setSector('BOBs SCRAPYARD')
+	end
+end)
+
+function SectorManager:duoFinished()
+	if duo.teammate then
+		if duo.teammateHasFinished then
+			ac.sendChatMessage(" has finished " .. self.sector.name .. " in " .. self.sector.time .. "!")
+		else
+			acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
+		end
+	end
+end
+
+function SectorManager:printToChat()
+	if self.isDuo then
+		if duo.teammate then
+			if duo.teammateHasFinished then
+				ac.sendChatMessage(" has finished " .. self.sector.name .. " in " .. self.sector.time .. "!")
+			else
+				acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
+			end
+		end
+	else
+		if self.sector:isUnderTimeLimit() then
+			if self.sector.name == "BOBs SCRAPYARD" then
+				ac.sendChatMessage(" has failed to steal a " .. string.gsub(CAR_NAME, "%W", " ") .. " under the time limit!")
+			else
+				ac.sendChatMessage(" has failed to finish " .. self.sector.name .. " under the time limit!")
+			end
+		else
+			if self.sector.name == "BOBs SCRAPYARD" then
+				ac.sendChatMessage(" has successfully stolen a " .. string.gsub(CAR_NAME, "%W", " ") .. " and got away with it!")
+			else
+				ac.sendChatMessage(" has finished " .. self.sector.name .. " in " .. self.sector.time .. "!")
+			end
+		end
+	end
+end
+
+function SectorManager:hasTeammateFinished()
+	if self.isDuo and duo.teammate and duo.teammateHasFinished then
+		return true
+	end
+	return false
+end
+
+local canRun = false
+local function shouldRun()
+	if canRun then return true end
+	local isDataLoaded = dataLoaded['Settings'] and dataLoaded['PlayerData'] and dataLoaded['Sectors']
+	local hasNecessaryData = settings and player and sectors and sectorManager.sector
+	local hasMinVersion = CSP_VERSION >= CSP_MIN_VERSION
+	if isDataLoaded and hasMinVersion and hasNecessaryData and not isPoliceCar(CAR_ID) then
+		canRun = true
+	end
+	return canRun
+end
+
+local hud = {
+	size = vec2(0, 0),
+	pos = {
+		countdown1 = vec2(0, 0),
+		countdown2 = vec2(0, 0),
+		menu1 = vec2(0, 0),
+		menu2 = vec2(0, 0),
+		ranks1 = vec2(0, 0),
+		ranks2 = vec2(0, 0),
+		theft1 = vec2(0, 0),
+		theft2 = vec2(0, 0),
+		left1 = vec2(0, 0),
+		left2 = vec2(0, 0),
+		right1 = vec2(0, 0),
+		right2 = vec2(0, 0),
 	},
 }
 
@@ -386,31 +1089,31 @@ local drugAccessPointsName = {
 }
 
 local drugAccessPoints = {
-	[1] = vec3(779.2,96.9,2225.4),
-	[2] = vec3(-78.9,100.3,2906.2),
-	[3] = vec3(-902.2,144.1,3494.8),
-	[4] = vec3(-2029.1,99.9,3522.9),
-	[5] = vec3(-2357,97.2,3147.6),
-	[6] = vec3(-2605.8,94.9,2863.1),
-	[7] = vec3(-4021.3,60,65.4),
-	[8] = vec3(-2952.5,-28.5,-593.4),
-	[9] = vec3(-2154.1,-14.3,-1928.1),
-	[10] = vec3(-2317.3,-23.2,-2443),
-	[11] = vec3(-1084.8,-121.5,-3029.7),
-	[12] = vec3(-152.9,-120.3,-3427.6),
-	[13] = vec3(913.1,-77.8,-2670.6),
-	[14] = vec3(2751.9,23.2,-2169.7),
-	[15] = vec3(4231.5,135.1,-2789.3),
-	[16] = vec3(4942.5,101.7,-2367),
-	[17] = vec3(4890.5,69.9,-1525.5),
-	[18] = vec3(4556.7,62.3,-1031.8),
-	[19] = vec3(3147.5,55.9,214.7),
-	[20] = vec3(1831.1,71.9,1621.5)
+	[1] = vec3(779.2, 96.9, 2225.4),
+	[2] = vec3(-78.9, 100.3, 2906.2),
+	[3] = vec3(-902.2, 144.1, 3494.8),
+	[4] = vec3(-2029.1, 99.9, 3522.9),
+	[5] = vec3(-2357, 97.2, 3147.6),
+	[6] = vec3(-2605.8, 94.9, 2863.1),
+	[7] = vec3(-4021.3, 60, 65.4),
+	[8] = vec3(-2952.5, -28.5, -593.4),
+	[9] = vec3(-2154.1, -14.3, -1928.1),
+	[10] = vec3(-2317.3, -23.2, -2443),
+	[11] = vec3(-1084.8, -121.5, -3029.7),
+	[12] = vec3(-152.9, -120.3, -3427.6),
+	[13] = vec3(913.1, -77.8, -2670.6),
+	[14] = vec3(2751.9, 23.2, -2169.7),
+	[15] = vec3(4231.5, 135.1, -2789.3),
+	[16] = vec3(4942.5, 101.7, -2367),
+	[17] = vec3(4890.5, 69.9, -1525.5),
+	[18] = vec3(4556.7, 62.3, -1031.8),
+	[19] = vec3(3147.5, 55.9, 214.7),
+	[20] = vec3(1831.1, 71.9, 1621.5)
 }
 
 local drugDelivery = {
-	pickUp = vec3(0,0,0),
-	dropOff = vec3(0,0,0),
+	pickUp = vec3(0, 0, 0),
+	dropOff = vec3(0, 0, 0),
 	pickUpName = "",
 	dropOffName = "",
 	active = false,
@@ -422,57 +1125,13 @@ local drugDelivery = {
 	distance = 0,
 	avgSpeed = 0,
 	finalAvgSpeed = 0,
-	damage = {0,0,0,0,0},
+	damage = { 0, 0, 0, 0, 0 },
 }
-
-local sector = nil
 
 ----------------------------------------------------------------------------------------------- Math -----------------------------------------------------------------------------------------------
 
-local function distance(youPos, midPos)
-	local l = youPos.x - midPos.x
-	local k = youPos.y - midPos.y
-	local n = l * l + k * k
-	local lo, hi = 0, n
-    while lo <= hi do
-        local mid = math.floor((lo + hi)/2)
-        if mid*mid <= n then
-            lo = mid + 1
-        else
-            hi = mid - 1
-        end
-    end
-    return hi
-end
-
-local function distanceSquared(p1, p2)
-	return (p1.x - p2.x)^2 + (p1.y - p2.y)^2
-end
-
 local function cross(vector1, vector2)
 	return vec2(vector1.x + vector2.x, vector1.y + vector2.y)
-end
-
-local function normalize(vector)
-    local magnitude = math.sqrt(vector.x^2 + vector.y^2)
-    if magnitude == 0 then
-        return vector
-    end
-	local temp = vector.x * -1
-	vector.x = vector.y
-	vector.y = temp
-    return vector / magnitude
-end
-
-local function regionAroundLine(line)
-	local region = {}
-	local offsetX = math.max(3 - math.abs(line.p1.x - line.p2.x), 1)
-	local offsetZ = math.max(3 - math.abs(line.p1.y - line.p2.y), 1)
-	region.x1 = math.min(line.p1.x, line.p2.x) - offsetX
-	region.x2 = math.max(line.p1.x, line.p2.x) + offsetX
-	region.z1 = math.min(line.p1.y, line.p2.y) - offsetZ
-	region.z2 = math.max(line.p1.y, line.p2.y) + offsetZ
-	return region
 end
 
 local function isPointInCircle(point, circle, radius)
@@ -482,80 +1141,44 @@ local function isPointInCircle(point, circle, radius)
 	return false
 end
 
-local function midPoint(p1, p2)
-	local point = vec3((p1.x + p2.x)/2, (p1.y + p2.y)/2, (p1.z + p2.z)/2)
-	local radius = distance(vec2(p1.x, p1.z), vec2(point.x, point.z))
-	return point, radius
-end
-
 -------------------------------------------------------------------------------------------- Init --------------------------------------------------------------------------------------------
 
 local starsUI = {
-	starsPos = vec2(windowWidth - (settings.starsSize or 20)/2, settings.starsSize or 20)/2,
-	starsSize = vec2(windowWidth - (settings.starsSize or 20)*2, (settings.starsSize or 20)*2),
-	startSpace = (settings.starsSize or 20)/4,
+	starsPos = vec2(0, 0),
+	starsSize = vec2(0, 0),
+	startSpace = 0,
 	full = "https://acstuff.ru/images/icons_24/star_full.png",
 	empty = "https://acstuff.ru/images/icons_24/star_empty.png",
 }
 
-local function resetStarsUI()
-	if settings.starsPos == nil then
-		settings.starsPos = vec2(windowWidth, 0)
-	end
-	if settings.starsSize == nil then
-		settings.starsSize = 20
-	end
-	starsUI.starsPos = vec2(settings.starsPos.x - settings.starsSize/2, settings.starsPos.y + settings.starsSize/2)
-	starsUI.starsSize = vec2(settings.starsPos.x - settings.starsSize*2, settings.starsPos.y + settings.starsSize*2)
-	starsUI.startSpace = settings.starsSize/1.5
+local function updateStarsPos()
+	starsUI.starsPos = vec2(settings.starsPos.x - settings.starsSize / 2, settings.starsPos.y + settings.starsSize / 2)
+	starsUI.starsSize = vec2(settings.starsPos.x - settings.starsSize * 2, settings.starsPos.y + settings.starsSize * 2)
+	starsUI.startSpace = settings.starsSize / 1.5
 end
 
-local function updatePos()
-	imageSize = vec2(windowHeight/80 * settings.essentialSize, windowHeight/80 * settings.essentialSize)
-	imgPos.theftPos1 = vec2(imageSize.x - imageSize.x/1.56, imageSize.y/1.9)
-	imgPos.theftPos2 = vec2(imageSize.x/4.6, imageSize.y/2.65)
-	imgPos.ranksPos1 = vec2(imageSize.x/1.97, imageSize.y/1.9)
-	imgPos.ranksPos2 = vec2(imageSize.x - imageSize.x/1.56, imageSize.y/2.65)
-	imgPos.countdownPos1 = vec2(imageSize.x/1.53, imageSize.y/1.9)
-	imgPos.countdownPos2 = vec2(imageSize.x - imageSize.x/2.04, imageSize.y/2.65)
-	imgPos.menuPos1 = vec2(imageSize.x - imageSize.x/4.9, imageSize.y/1.9)
-	imgPos.menuPos2 = vec2(imageSize.x/1.53, imageSize.y/2.65)
-	imgPos.leftPos1 = vec2(imageSize.x/8, imageSize.y/2.8)
-	imgPos.leftPos2 = vec2(0, imageSize.y/4.3)
-	imgPos.rightPos1 = vec2(imageSize.x, imageSize.y/2.8)
-	imgPos.rightPos2 = vec2(imageSize.x - imageSize.x/8, imageSize.y/4.3)
-	settings.fontSize = settings.essentialSize * fontMultiplier
-
-	resetStarsUI()
-end
-
-local function initLines()
-	settings.essentialSize = settings.essentialSize * windowHeight/1440
-	settings.fontSize = settings.essentialSize * windowHeight/1440
-	imageSize = vec2(windowHeight/80 * settings.essentialSize, windowHeight/80 * settings.essentialSize)
-	for i = 1, #sectors do
-		local lines = {}
-		for j = 1, #sectors[i].pointsData do
-            local line = {}
-            line.p1 = vec2(sectors[i].pointsData[j][1].x, sectors[i].pointsData[j][1].z)
-            line.p2 = vec2(sectors[i].pointsData[j][2].x, sectors[i].pointsData[j][2].z)
-            line.dir = normalize(line.p2 - line.p1)
-            line.region = regionAroundLine(line)
-			line.midPoint, line.radius = midPoint(sectors[i].pointsData[j][1], sectors[i].pointsData[j][2])
-            table.insert(lines, line)
-        end
-		sectors[i].lines = lines
-	end
-    sector = sectors[1]
-	updatePos()
-	checkHash256()
+local function updateHudPos()
+	hud.size = vec2(HEIGHT_DIV._80 * settings.essentialSize, HEIGHT_DIV._80 * settings.essentialSize)
+	hud.pos.theftPos1 = vec2(hud.size.x - hud.size.x / 1.56, hud.size.y / 1.9)
+	hud.pos.theftPos2 = vec2(hud.size.x / 4.6, hud.size.y / 2.65)
+	hud.pos.ranksPos1 = vec2(hud.size.x / 1.97, hud.size.y / 1.9)
+	hud.pos.ranksPos2 = vec2(hud.size.x - hud.size.x / 1.56, hud.size.y / 2.65)
+	hud.pos.countdownPos1 = vec2(hud.size.x / 1.53, hud.size.y / 1.9)
+	hud.pos.countdownPos2 = vec2(hud.size.x - hud.size.x / 2.04, hud.size.y / 2.65)
+	hud.pos.menuPos1 = vec2(hud.size.x - hud.size.x / 4.9, hud.size.y / 1.9)
+	hud.pos.menuPos2 = vec2(hud.size.x / 1.53, hud.size.y / 2.65)
+	hud.pos.leftPos1 = vec2(hud.size.x / 8, hud.size.y / 2.8)
+	hud.pos.leftPos2 = vec2(0, hud.size.y / 4.3)
+	hud.pos.rightPos1 = vec2(hud.size.x, hud.size.y / 2.8)
+	hud.pos.rightPos2 = vec2(hud.size.x - hud.size.x / 8, hud.size.y / 4.3)
+	settings.fontSize = settings.essentialSize * FONT_MULT
 end
 
 local function randNum(seed)
 	local date = os.date("%m%d%Y")
 	local num = 0
 	for i = 1, #date do
-		num = num + tonumber(date:sub(i,i))
+		num = num + tonumber(date:sub(i, i))
 	end
 	num = num + seed
 	num = num % 20
@@ -587,376 +1210,100 @@ end
 
 
 local function textWithBackground(text, sizeMult)
-	local textLenght = ui.measureDWriteText(text, settings.fontSizeMSG*sizeMult)
-	local rectPos1 = vec2(settings.msgOffsetX - textLenght.x/2, settings.msgOffsetY)
-	local rectPos2 = vec2(settings.msgOffsetX + textLenght.x/2, settings.msgOffsetY + settings.fontSizeMSG*sizeMult)
+	local textLenght = ui.measureDWriteText(text, settings.fontSizeMSG * sizeMult)
+	local rectPos1 = vec2(settings.msgOffset.x - textLenght.x / 2, settings.msgOffset.y)
+	local rectPos2 = vec2(settings.msgOffset.x + textLenght.x / 2, settings.msgOffset.y + settings.fontSizeMSG * sizeMult)
 	local rectOffset = vec2(10, 10)
 	if ui.time() % 1 < 0.5 then
-		ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, COLORSMSGBG, 10)
+		ui.drawRectFilled(rectPos1 - vec2(10, 0), rectPos2 + rectOffset, COLOR_MSG_BG, 10)
 	else
-		ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, rgbm(0,0,0,0.5), 10)
+		ui.drawRectFilled(rectPos1 - vec2(10, 0), rectPos2 + rectOffset, rgbm(0, 0, 0, 0.5), 10)
 	end
-	ui.dwriteDrawText(text, settings.fontSizeMSG*sizeMult, rectPos1, rgbm.colors.white)
+	ui.dwriteDrawText(text, settings.fontSizeMSG * sizeMult, rectPos1, rgbm.colors.white)
 end
 
 ----------------------------------------------------------------------------------------------- Firebase -----------------------------------------------------------------------------------------------
 
-
-local function stringToVec2(str)
-	if str == nil then return vec2(0, 0) end
-	local x = string.match(str, "([^,]+)")
-	local y = string.match(str, "[^,]+,(.+)")
-	return vec2(tonumber(x), tonumber(y))
-end
-
-local function vec2ToString(vec)
-	return tostring(vec.x) .. ',' .. tostring(vec.y)
-end
-
-local function stringToRGBM(str)
-	local r = string.match(str, "([^,]+)")
-	local g = string.match(str, "[^,]+,([^,]+)")
-	local b = string.match(str, "[^,]+,[^,]+,([^,]+)")
-	local m = string.match(str, "[^,]+,[^,]+,[^,]+,(.+)")
-	return rgbm(tonumber(r), tonumber(g), tonumber(b), tonumber(m))
-end
-
-local function rgbmToString(rgbm)
-	return tostring(rgbm.r) .. ',' .. tostring(rgbm.g) .. ',' .. tostring(rgbm.b) .. ',' .. tostring(rgbm.mult)
-end
-
-local function parsesettings(table)
-	settings.essentialSize = table.essentialSize
-	settings.policeSize = table.policeSize
-	settings.hudOffsetX = table.hudOffsetX
-	settings.hudOffsetY = table.hudOffsetY
-	settings.fontSize = table.fontSize
-	settings.current = table.current
-	settings.colorHud = stringToRGBM(table.colorHud)
-	settings.timeMsg = table.timeMsg
-	settings.msgOffsetY = table.msgOffsetY
-	settings.msgOffsetX = table.msgOffsetX
-	settings.fontSizeMSG = table.fontSizeMSG
-	settings.menuPos = stringToVec2(table.menuPos)
-	settings.unit = table.unit
-	settings.unitMult = table.unitMult
-	settings.starsSize = table.starsSize or 20
-	if table.starsPos == nil then
-		settings.starsPos = vec2(windowWidth, 0)
-	else
-		settings.starsPos = stringToVec2(table.starsPos)
-	end
-end
-
-local function addPlayerToDataBase()
-	local name = ac.getDriverName(0)
-	local str = '{"' .. steamID .. '": {"Name":"' .. name .. '","Getaway": 0,"Drift": 0,"Overtake": 0,"Wins": 0,"Losses": 0,"Busted": 0,"Arrests": 0,"Theft": 0,"Sectors": {"H1": {},"VV": {}}}}'
-	web.request('PATCH', firebaseUrl .. "Players.json", str, function(err, response)
-		if err then
-			print(err)
-			return
-		end
-	end)
-end
-
-local function addPlayersettingsToDataBase()
-	local str = '{"' .. steamID .. '": {"essentialSize":20,"policeSize":20,"hudOffsetX":0,"hudOffsetY":0,"fontSize":20,"current":1,"colorHud":"1,0,0,1","timeMsg":10,"msgOffsetY":10,"msgOffsetX":' .. windowWidth/2 .. ',"fontSizeMSG":30,"menuPos":"0,0","unit":"km/h","unitMult":1,"starsSize":20}}'
-	web.request('PATCH', firebaseUrl .. "Settings.json", str, function(err, response)
-		if err then
-			print(err)
-			return
-		end
-	end)
-end
-
-local function timeFormat(sec)
-	local timeFormated = ''
-	if sec < 600 then
-		timeFormated = '0' .. math.floor(sec/ 60) .. ':'
-	else
-		timeFormated = math.floor(sec / 60) .. ':'
-	end
-	if sec % 60 < 10 then
-		timeFormated = timeFormated .. '0' .. string.format("%.3f", sec % 60)
-	else
-		timeFormated = timeFormated .. string.format("%.3f", sec % 60)
-	end
-	return timeFormated
-end
-
-local function getFirebase()
-	local url = firebaseUrl .. "Players/" .. steamID .. '.json'
-	web.get(url, function(err, response)
-		if err then
-			print(err)
-			return
-		else
-			if response.body == 'null' then
-				addPlayerToDataBase(steamID)
-			else
-				local jString = response.body
-				playerData = json.parse(jString)
-				if playerData.Name ~= ac.getDriverName(0) then
-					playerData.Name = ac.getDriverName(0)
-				end
-				if not playerData.Drift then
-					playerData.Drift = 0
-				else
-					driftState.bestScore = playerData.Drift
-				end
-				if not playerData.Overtake then
-					playerData.Overtake = 0
-				else
-					highestScore = playerData.Overtake
-				end
-			end
-			ac.log('Player data loaded')
-		end
-	end)
-end
-
-local function loadSettings()
-	local url = firebaseUrl .. "Settings/" .. steamID .. '.json'
-	web.get(url, function(err, response)
-		if err then
-			print(err)
-			return
-		else
-			if response.body == 'null' then
-				addPlayersettingsToDataBase(steamID)
-			else
-				ac.log("settings loaded")
-				local jString = response.body
-				local table = json.parse(jString)
-				parsesettings(table)
-			end
-		end
-	end)
-end
-
-local function updateSettings()
-	local str = '{"' .. steamID .. '": ' .. json.stringify(settingsJSON) .. '}'
-	web.request('PATCH', firebaseUrl .. "Settings.json", str, function(err, response)
-		if err then
-			print(err)
-			return
-		end
-	end)
-	ac.log("Updated settings")
-end
-
 local function onSettingsChange()
-	settingsJSON.colorHud = rgbmToString(settings.colorHud)
-	settingsJSON.menuPos = vec2ToString(settings.menuPos)
-	settingsJSON.essentialSize = settings.essentialSize
-	settingsJSON.policeSize = settings.policeSize
-	settingsJSON.hudOffsetX = settings.hudOffsetX
-	settingsJSON.hudOffsetY = settings.hudOffsetY
-	settingsJSON.fontSize = settings.fontSize
-	settingsJSON.current = settings.current
-	settingsJSON.timeMsg = settings.timeMsg
-	settingsJSON.msgOffsetY  = settings.msgOffsetY
-	settingsJSON.msgOffsetX  = settings.msgOffsetX
-	settingsJSON.fontSizeMSG = settings.fontSizeMSG
-	settingsJSON.unit = settings.unit
-	settingsJSON.unitMult = settings.unitMult
-	settingsJSON.starsSize = settings.starsSize
-	settingsJSON.starsPos = vec2ToString(settings.starsPos)
-	updateSettings()
-end
-
-local function changeHeaderNames(name)
-	if name == 'Arrests' then
-		return 'Arrestations'
-	elseif name == 'Theft' then
-		return 'Cars Stolen'
-	else 
-		return name
-	end
-end
-
-local function parse_leaderboard(lb)
-	local header = {}
-	local leaderboard = {}
-	for k,v in pairs(lb) do
-		local entry = {}
-		for k2,v2 in pairs(v) do
-			k2 = changeHeaderNames(k2)
-			if k == 1 then table.insert(header, k2) end
-			if k2 == 'Time' then v2 = timeFormat(tonumber(v2)) end
-			entry[k2] = v2
-		end
-		table.insert(leaderboard, entry)
-	end
-	table.insert(leaderboard, 1, header)
-	return leaderboard
-end
-
-
-local function loadLeaderboard()
-	local url = firebaseUrlLeaderboards .. leaderboardName .. '.json'
-
-	web.get(url, function(err, response)
-		if err then
-			print(err)
-			return
-		else
-			if response.body == 'null' then
-				ac.log("No leaderboard found")
-			else
-				local jString = response.body
-				leaderboard = json.parse(jString)
-				leaderboard = parse_leaderboard(leaderboard)
-			end
-		end
-	end)
+	settings:save()
+	ac.log('Settings updated')
 end
 
 local function updateSheets(category)
 	local str = '{"category" : "' .. nodes[category] .. '"}'
-	web.post(urlAppScript, str, function(err, response)
+	web.post(GOOGLE_APP_SCRIPT_URL, str, function(err, response)
 		if err then
-			print(err)
+			ac.log(err)
 			return
 		else
-			print(response.body)
+			ac.log(response.body)
 		end
 	end)
 end
 
-local function updatefirebase()
-	local str = '{"' .. ac.getUserSteamID() .. '": ' .. json.stringify(playerData) .. '}'
-	web.request('PATCH', firebaseUrl  .. "Players" .. ".json", str, function(err, response)
-		if err then
-			print(err)
-			return
-		else
-			print(response.body)
-		end
-	end)
-end
+-- local function updatefirebaseData(node, data)
+-- 	local str = dataStringify(data)
+-- 	web.request('PATCH', FIREBASE_URL .. 'PlayersData/' .. node .. ".json", str, function(err, response)
+-- 		if err then
+-- 			ac.log(err)
+-- 			return
+-- 		else
+-- 			ac.log(response.body)
+-- 			updateSheets(node)
+-- 		end
+-- 	end)
+-- end
 
-local function updatefirebaseData(node, data)
-	local str = dataStringify(data)
-	web.request('PATCH', firebaseUrlData .. node .. ".json", str, function(err, response)
-		if err then
-			print(err)
-			return
-		else
-			print(response.body)
-			updateSheets(node)
-		end
-	end)
-end
-
-function updateSectorData(sectorName, time)
-	if sectorName == 'H1' then
-		if not playerData.Sectors then
-			playerData.Sectors = {
-				H1 = {
-					[carID] = {
-						Time = time,
-					},
-				},
-				VV = {},
-			}
-		end
-		if playerData.Sectors.H1 then
-			if not playerData.Sectors.H1[carID] then
-				playerData.Sectors.H1[carID] = {
-					Time = time,
-				}
-			end
-			if time < playerData.Sectors.H1[carID].Time then
-				playerData.Sectors.H1[carID].Time = time
-			end
-		else
-			playerData.Sectors.H1 = {
-				[carID] = {
-					Time = time,
-				},
-			}
-		end
-	elseif sectorName == 'VV' then
-		if not playerData.Sectors then
-			playerData.Sectors = {
-				H1 = {},
-				VV = {
-					Car = carID,
-					Time = time,
-				},
-			}
-		end
-		if playerData.Sectors.VV then
-			if time < playerData.Sectors.VV.Time then
-				playerData.Sectors.VV = {
-					Car = carID,
-					Time = time,
-				}
-			end
-		else
-			playerData.Sectors.VV = {
-				Car = carID,
-				Time = time,
-			}
-		end
-	end
-	local data
-	if sectorName == 'H1' then
-		data = playerData.Sectors[sectorName]
-	else
-		data = {
-			Car = carID,
-			Time = time,
-		}
-	end
-	updatefirebase()
-	updatefirebaseData(sectorName, data)
-end
-
-local boxHeight = windowHeight/70
+local boxHeight = HEIGHT_DIV._70
 
 local function displayInGrid()
-	local box1 = vec2(windowWidth/32, boxHeight)
+	local box1 = vec2(WIDTH_DIV._32, boxHeight)
 	local nbCol = #leaderboard[1]
-	local colWidth = (windowWidth/2 - windowWidth/32)/(nbCol)
+	local colWidth = (WIDTH_DIV._2 - WIDTH_DIV._32) / (nbCol)
 	ui.pushDWriteFont("Orbitron;Weight=Black")
 	ui.newLine()
-	ui.dwriteTextAligned("Pos", settings.fontSize/1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false, settings.colorHud)
+	ui.dwriteTextAligned("Pos", settings.fontSize / 1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false,
+		settings.colorHud)
 	for i = 1, nbCol do
-		local textLenght = ui.measureDWriteText(leaderboard[1][i], settings.fontSize/1.5).x
-		ui.sameLine(box1.x + colWidth/2 + colWidth*(i-1) - textLenght/2)
-		ui.dwriteTextWrapped(leaderboard[1][i], settings.fontSize/1.5, settings.colorHud)
+		local textLenght = ui.measureDWriteText(leaderboard[1][i], settings.fontSize / 1.5).x
+		ui.sameLine(box1.x + colWidth / 2 + colWidth * (i - 1) - textLenght / 2)
+		ui.dwriteTextWrapped(leaderboard[1][i], settings.fontSize / 1.5, settings.colorHud)
 	end
 	ui.newLine()
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=Regular")
 	for i = 2, #leaderboard do
 		local sufix = "th"
-		if i == 2 then sufix = "st"
-		elseif i == 3 then sufix = "nd"
-		elseif i == 4 then sufix = "rd" end
-		ui.dwriteTextAligned(i-1 .. sufix, settings.fontSize/2, ui.Alignment.Center, ui.Alignment.Center, box1, false, rgbm.colors.white)
+		if i == 2 then
+			sufix = "st"
+		elseif i == 3 then
+			sufix = "nd"
+		elseif i == 4 then
+			sufix = "rd"
+		end
+		ui.dwriteTextAligned(i - 1 .. sufix, settings.fontSize / 2, ui.Alignment.Center, ui.Alignment.Center, box1, false,
+			rgbm.colors.white)
 		for j = 1, #leaderboard[1] do
-			local textLenght = ui.measureDWriteText(leaderboard[i][leaderboard[1][j]], settings.fontSize/1.5).x
-			ui.sameLine(box1.x + colWidth/2 + colWidth*(j-1) - textLenght/2)
-			ui.dwriteTextWrapped(leaderboard[i][leaderboard[1][j]], settings.fontSize/1.5, rgbm.colors.white)
+			local textLenght = ui.measureDWriteText(leaderboard[i][leaderboard[1][j]], settings.fontSize / 1.5).x
+			ui.sameLine(box1.x + colWidth / 2 + colWidth * (j - 1) - textLenght / 2)
+			ui.dwriteTextWrapped(leaderboard[i][leaderboard[1][j]], settings.fontSize / 1.5, rgbm.colors.white)
 		end
 	end
 	ui.popDWriteFont()
-	local lineHeight = math.max(ui.itemRectMax().y, windowHeight/3)
-	ui.drawLine(vec2(box1.x, windowHeight/20), vec2(box1.x, lineHeight), rgbm.colors.white, 1)
-	for i = 1, nbCol-1 do
-		ui.drawLine(vec2(box1.x + colWidth*i, windowHeight/20), vec2(box1.x + colWidth*i, lineHeight), rgbm.colors.white, 2)
+	local lineHeight = math.max(ui.itemRectMax().y, HEIGHT_DIV._3)
+	ui.drawLine(vec2(box1.x, HEIGHT_DIV._20), vec2(box1.x, lineHeight), rgbm.colors.white, 1)
+	for i = 1, nbCol - 1 do
+		ui.drawLine(vec2(box1.x + colWidth * i, HEIGHT_DIV._20), vec2(box1.x + colWidth * i, lineHeight),
+			rgbm.colors.white, 2)
 	end
-	ui.drawLine(vec2(0, windowHeight/12), vec2(windowWidth/2, windowHeight/12), rgbm.colors.white, 1)
+	ui.drawLine(vec2(0, HEIGHT_DIV._12), vec2(WIDTH_DIV._2, HEIGHT_DIV._12), rgbm.colors.white, 1)
 end
 
 local function showLeaderboard()
-	ui.dummy(vec2(windowWidth/20, 0))
+	ui.dummy(vec2(WIDTH_DIV._20, 0))
 	ui.sameLine()
-	ui.setNextItemWidth(windowWidth/12)
-	ui.combo("leaderboard", leaderboardName, function ()
+	ui.setNextItemWidth(WIDTH_DIV._12)
+	ui.combo("leaderboard", leaderboardName, function()
 		for i = 1, #leaderboardNames do
 			if ui.selectable(leaderboardNames[i], leaderboardName == leaderboardNames[i]) then
 				leaderboardName = leaderboardNames[i]
@@ -964,19 +1311,38 @@ local function showLeaderboard()
 			end
 		end
 	end)
-	ui.sameLine(windowWidth/4 - 120)
-	if ui.button('Close', vec2(100, windowHeight/50)) then leaderboardOpen = false end
+	ui.sameLine(WIDTH_DIV._4 - 120)
+	if ui.button('Close', vec2(100, HEIGHT_DIV._50)) then menuStates.leaderboard = false end
 	ui.newLine()
 	displayInGrid()
 end
 
 ----------------------------------------------------------------------------------------------- settings -----------------------------------------------------------------------------------------------
+local PREVIEWS = const({ 'Message', 'Distance Bar', 'Stars' })
 
+local preview = {
+	msg = false,
+	distanceBar = false,
+	stars = false,
+}
+---@param buttonClicked string
+local function updatePreviewState(buttonClicked)
+	if buttonClicked == 'Message' then
+		preview.msg = not preview.msg
+		preview.distanceBar = false
+		preview.stars = false
+	elseif buttonClicked == 'Distance Bar' then
+		preview.distanceBar = not preview.distanceBar
+		preview.msg = false
+		preview.stars = false
+	elseif buttonClicked == 'Stars' then
+		preview.stars = not preview.stars
+		preview.msg = false
+		preview.distanceBar = false
+	end
+end
 
-local showPreviewMsg = false
-local showPreviewDistanceBar = false
-local showPreviewStars = false
-COLORSMSGBG = rgbm(0.5,0.5,0.5,0.5)
+COLOR_MSG_BG = rgbm(0.5, 0.5, 0.5, 0.5)
 
 local online = {
 	message = "",
@@ -988,10 +1354,10 @@ local online = {
 }
 
 local function showStarsPursuit()
-	local starsColor = rgbm(1, 1, 1, os.clock()%2 + 0.3)
-	resetStarsUI()
+	local starsColor = rgbm(1, 1, 1, os.clock() % 2 + 0.3)
+	updateStarsPos()
 	for i = 1, 5 do
-		if i > online.level/2 then
+		if i > online.level / 2 then
 			ui.drawImage(starsUI.empty, starsUI.starsPos, starsUI.starsSize, rgbm(1, 1, 1, 0.2))
 		else
 			ui.drawImage(starsUI.full, starsUI.starsPos, starsUI.starsSize, starsColor)
@@ -1002,153 +1368,107 @@ local function showStarsPursuit()
 end
 
 local function distanceBarPreview()
-	ui.transparentWindow("progressBar", vec2(0, 0), vec2(windowWidth, windowHeight), function ()
-	local playerInFront = "You are in front"
-	local text = math.floor(50) .. "m"
-	local textLenght = ui.measureDWriteText(text, 30)
-	ui.newLine()
-	ui.dummy(vec2(windowWidth/3, windowHeight/40))
-	ui.sameLine()
-	ui.beginRotation()
-	ui.progressBar(125/250, vec2(windowWidth/3,windowHeight/60), playerInFront)
-	ui.endRotation(90,vec2(settings.msgOffsetX - windowWidth/2 - textLenght.x/2,settings.msgOffsetY + textLenght.y/3))
-	ui.dwriteDrawText(text, 30, vec2(settings.msgOffsetX - textLenght.x/2 , settings.msgOffsetY), rgbm.colors.white)
+	ui.transparentWindow("progressBar", vec2(0, 0), vec2(WINDOW_WIDTH, WINDOW_HEIGHT), function()
+		local playerInFront = "You are in front"
+		local text = math.floor(50) .. "m"
+		local textLenght = ui.measureDWriteText(text, 30)
+		ui.newLine()
+		ui.dummy(vec2(WIDTH_DIV._3, HEIGHT_DIV._40))
+		ui.sameLine()
+		ui.beginRotation()
+		ui.progressBar(125 / 250, vec2(WIDTH_DIV._3, HEIGHT_DIV._60), playerInFront)
+		ui.endRotation(90, vec2(settings.msgOffset.x - WIDTH_DIV._2 - textLenght.x / 2, settings.msgOffset.y + textLenght.y / 3))
+		ui.dwriteDrawText(text, 30, vec2(settings.msgOffset.x - textLenght.x / 2, settings.msgOffset.y), rgbm.colors.white)
 	end)
 end
 
 local function previewMSG()
-	ui.transparentWindow("previewMSG", vec2(0, 0), vec2(windowWidth, windowHeight), function ()
-	ui.pushDWriteFont("Orbitron;Weight=Black")
-	local textSize = ui.measureDWriteText("Messages from Police when being chased", settings.fontSizeMSG)
-	local uiOffsetX = settings.msgOffsetX - textSize.x/2
-	local uiOffsetY = settings.msgOffsetY
-	ui.drawRectFilled(vec2(uiOffsetX - 5, uiOffsetY-5), vec2(uiOffsetX + textSize.x + 5, uiOffsetY + textSize.y + 5), COLORSMSGBG)
-	ui.dwriteDrawText("Messages from Police when being chased", settings.fontSizeMSG, vec2(uiOffsetX, uiOffsetY), settings.colorHud)
-	ui.popDWriteFont()
+	ui.transparentWindow("previewMSG", vec2(0, 0), vec2(WINDOW_WIDTH, WINDOW_HEIGHT), function()
+		ui.pushDWriteFont("Orbitron;Weight=Black")
+		local textSize = ui.measureDWriteText("Messages from Police when being chased", settings.fontSizeMSG)
+		local uiOffsetX = settings.msgOffset.x - textSize.x / 2
+		local uiOffsetY = settings.msgOffset.y
+		ui.drawRectFilled(vec2(uiOffsetX - 5, uiOffsetY - 5), vec2(uiOffsetX + textSize.x + 5, uiOffsetY + textSize.y + 5), COLOR_MSG_BG)
+		ui.dwriteDrawText("Messages from Police when being chased", settings.fontSizeMSG, vec2(uiOffsetX, uiOffsetY), settings.colorHud)
+		ui.popDWriteFont()
 	end)
 end
 
 local function previewStars()
-	ui.transparentWindow("PreviewStars", vec2(0, 0), vec2(windowWidth, windowHeight), function ()
+	ui.transparentWindow("PreviewStars", vec2(0, 0), vec2(WINDOW_WIDTH, WINDOW_HEIGHT), function()
 		showStarsPursuit()
 	end)
 end
-
 
 local function uiTab()
 	ui.text('On Screen Message : ')
 	settings.timeMsg = ui.slider('##' .. 'Time Msg On Screen', settings.timeMsg, 1, 15, 'Time Msg On Screen' .. ': %.0fs')
 	settings.fontSizeMSG = ui.slider('##' .. 'Font Size MSG', settings.fontSizeMSG, 10, 50, 'Font Size' .. ': %.0f')
-	settings.msgOffsetY = ui.slider('##' .. 'Msg On Screen Offset Y', settings.msgOffsetY, 0, windowHeight, 'Msg On Screen Offset Y' .. ': %.0f')
-	settings.msgOffsetX = ui.slider('##' .. 'Msg On Screen Offset X', settings.msgOffsetX, 0, windowWidth, 'Msg On Screen Offset X' .. ': %.0f')
-    ui.newLine()
+	settings.msgOffset.y = ui.slider('##' .. 'Msg On Screen Offset Y', settings.msgOffset.y, 0, WINDOW_HEIGHT, 'Msg On Screen Offset Y' .. ': %.0f')
+	settings.msgOffset.x = ui.slider('##' .. 'Msg On Screen Offset X', settings.msgOffset.x, 0, WINDOW_WIDTH, 'Msg On Screen Offset X' .. ': %.0f')
+	if ui.button('MSG Offset X to center') then settings.msgOffsetX = WIDTH_DIV._2 end
+	ui.newLine()
 	ui.text('Stars : ')
-	settings.starsPos.x = ui.slider('##' .. 'Stars Offset X', settings.starsPos.x, 0, windowWidth, 'Stars Offset X' .. ': %.0f')
-	settings.starsPos.y = ui.slider('##' .. 'Stars Offset Y', settings.starsPos.y, 0, windowHeight, 'Stars Offset Y' .. ': %.0f')
+	settings.starsPos.x = ui.slider('##' .. 'Stars Offset X', settings.starsPos.x, 0, WINDOW_WIDTH, 'Stars Offset X' .. ': %.0f')
+	settings.starsPos.y = ui.slider('##' .. 'Stars Offset Y', settings.starsPos.y, 0, WINDOW_HEIGHT, 'Stars Offset Y' .. ': %.0f')
 	settings.starsSize = ui.slider('##' .. 'Stars Size', settings.starsSize, 10, 50, 'Stars Size' .. ': %.0f')
 	ui.newLine()
 	ui.text('Preview : ')
-    if ui.button('Message') then
-        showPreviewMsg = not showPreviewMsg
-        showPreviewDistanceBar = false
-		showPreviewStars = false
-    end
-    ui.sameLine()
-    if ui.button('Distance Bar') then
-        showPreviewDistanceBar = not showPreviewDistanceBar
-        showPreviewMsg = false
-		showPreviewStars = false
-    end
-	ui.sameLine()
-	if ui.button('Stars') then
-		showPreviewStars = not showPreviewStars
-		showPreviewMsg = false
-		showPreviewDistanceBar = false
+	for i = 1, #PREVIEWS do
+		if ui.button(PREVIEWS[i]) then
+			updatePreviewState(PREVIEWS[i])
+		end
+		ui.sameLine()
 	end
-    if showPreviewMsg then previewMSG() end
-    if showPreviewDistanceBar then distanceBarPreview() end
-	if showPreviewStars then previewStars() end
+	if preview.msg then previewMSG() end
+	if preview.distanceBar then distanceBarPreview() end
+	if preview.stars then previewStars() end
 	ui.newLine()
-	if ui.button('MSG Offset X to center') then settings.msgOffsetX = windowWidth/2 end
 end
 
-
 local function settingsWindow()
-	imageSize = vec2(windowHeight/80 * settings.essentialSize, windowHeight/80 * settings.essentialSize)
+	hud.size = vec2(HEIGHT_DIV._80 * settings.essentialSize, HEIGHT_DIV._80 * settings.essentialSize)
 	ui.sameLine(10)
 	ui.beginGroup()
 	ui.newLine(15)
-	ui.text('HUD :')
-	ui.sameLine(windowWidth/6 - windowWidth/20)
-	if ui.button('Close', vec2(windowWidth/25, windowHeight/50)) then
-		menuOpen = false
+
+	ui.text('Unit : ')
+	ui.sameLine(160)
+	if ui.selectable('mph', settings.unit == 'mph',_, ui.measureText('km/h')) then
+		settings.unit = 'mph'
+		settings.unitMult = 0.621371
+	end
+	ui.sameLine(200)
+	if ui.selectable('km/h', settings.unit == 'km/h',_, ui.measureText('km/h')) then
+		settings.unit = 'km/h'
+		settings.unitMult = 1
+	end
+	ui.sameLine(WIDTH_DIV._6 - WIDTH_DIV._20)
+	if ui.button('Close', vec2(WIDTH_DIV._25, HEIGHT_DIV._50)) then
+		menuStates.main = false
 		onSettingsChange()
 	end
-	settings.hudOffsetX = ui.slider('##' .. 'HUD Offset X', settings.hudOffsetX, 0, windowWidth, 'HUD Offset X' .. ': %.0f')
-	settings.hudOffsetY = ui.slider('##' .. 'HUD Offset Y', settings.hudOffsetY, 0, windowHeight, 'HUD Offset Y' .. ': %.0f')
+	settings.hudOffset.x = ui.slider('##' .. 'HUD Offset X', settings.hudOffset.x, 0, WINDOW_WIDTH,'HUD Offset X' .. ': %.0f')
+	settings.hudOffset.y = ui.slider('##' .. 'HUD Offset Y', settings.hudOffset.y, 0, WINDOW_HEIGHT,'HUD Offset Y' .. ': %.0f')
 	settings.essentialSize = ui.slider('##' .. 'HUD Size', settings.essentialSize, 10, 50, 'HUD Size' .. ': %.0f')
-	settings.fontSize = settings.essentialSize * fontMultiplier
-    ui.setNextItemWidth(300)
+	settings.fontSize = settings.essentialSize * FONT_MULT
+	ui.setNextItemWidth(300)
 	local colorHud = settings.colorHud
-	local colorHud2 = settings.colorHud2
-    ui.colorPicker('Theme Color', colorHud, ui.ColorPickerFlags.AlphaBar)
-	if colorHud ~= colorHud2 then
-		settingsJSON.colorHud = rgbmToString(colorHud)
-	end
-    ui.newLine()
-    uiTab()
+	ui.colorPicker('Theme Color', colorHud, ui.ColorPickerFlags.AlphaBar)
+	ui.newLine()
+	uiTab()
 	ui.endGroup()
-	updatePos()
+	updateHudPos()
 	return 2
 end
 
 
------------------------------------------------------------------------------------------------ Sectors -----------------------------------------------------------------------------------------------
--- Variables --
-local sectorInfo = {
-	time = 0,
-	timerText = '00:00.00',
-	finalTime = '00:00.00',
-	checkpoints = 1,
-	sectorIndex = 1,
-	distance = 0,
-	finished = false,
-	drawLine = false,
-	timePosted = false,
-}
-
-local duo = {
-	teammate = nil,
-	request = false,
-	onlineSender = nil,
-	teammateHasFinished = false,
-	waiting = false,
-	playerName = "Online Players",
-}
-
-local function resetSectors()
-	sector = sectors[sectorInfo.sectorIndex]
-	sectorInfo.time = 0
-	sectorInfo.timerText = '00:00.00'
-	sectorInfo.finalTime = '00:00.00'
-	sectorInfo.checkpoints = 1
-	sectorInfo.distance = 0
-	sectorInfo.finished = false
-	sectorInfo.timePosted = false
-end
-
-local function dot(vector1, vector2)
-	return vector1.x * vector2.x + vector1.y * vector2.y
-end
-
------------------------------------------------------------------------------------------------ UI ----------------------------------------------------------------------------------------------------
--- Functions --
 local showDescription = false
 
 local function discordLinks()
-	ui.newLine(100)
+	ui.newLine(50)
 	ui.dwriteTextWrapped("For more info about the challenge click on the Discord link :", 15, rgbm.colors.white)
-	if sectorInfo.sectorIndex == 1 then
+	if sectorManager.sector.name == 'H1' then
 		if ui.textHyperlink("H1 Races Discord") then
 			os.openURL("https://discord.com/channels/358562025032646659/1073622643145703434")
 		end
@@ -1156,49 +1476,25 @@ local function discordLinks()
 		if ui.textHyperlink("H1 Vertex Discord") then
 			os.openURL("https://discord.com/channels/358562025032646659/1088832930698231959")
 		end
-	elseif sectorInfo.sectorIndex == 2 then
+	elseif sectorManager.sector.name == 'BOBs SCRAPYARD' then
 		if ui.textHyperlink("BOB's Scrapyard Discord") then
 			os.openURL("https://discord.com/channels/358562025032646659/1096776154217709629")
 		end
-	elseif sectorInfo.sectorIndex == 3 then
+	elseif sectorManager.sector.name == 'DOUBLE TROUBLE' then
 		if ui.textHyperlink("Double Trouble Discord") then
 			os.openURL("https://discord.com/channels/358562025032646659/1097229381308530728")
-		end
-	elseif sectorInfo.sectorIndex  == 4 then
-		if ui.textHyperlink("Velocity Vendetta Discord") then
-			os.openURL("https://discord.com/channels/358562025032646659/1118046532168589392")
 		end
 	end
 	ui.newLine(10)
 end
 
-local acpEvent = ac.OnlineEvent({
-    message = ac.StructItem.string(110),
-	messageType = ac.StructItem.int16(),
-	yourIndex = ac.StructItem.int16(),
-}, function (sender, data)
-	if data.yourIndex == car.sessionID and data.messageType == 5 and data.message == "Request" then
-		duo.request = true
-		duo.onlineSender = sender
-	elseif data.yourIndex == car.sessionID and data.messageType == 5 and data.message == "Accept" then
-		duo.teammate = sender
-		duo.request = false
-	elseif duo.teammate and data.yourIndex == car.sessionID and sender.index == duo.teammate.index and data.messageType == 5 and data.message == "Finished" then
-		duo.teammateHasFinished = true
-	elseif duo.teammate and data.yourIndex == car.sessionID and sender.index == duo.teammate.index and data.messageType == 5 and data.message == "Cancel" then
-		duo.teammate = nil
-		duo.request = false
-		sector = sectors[sectorInfo.sectorIndex]
-		resetSectors()
-	end
-end)
 
 local function doubleTrouble()
 	local players = {}
 	for i = ac.getSim().carsCount - 1, 0, -1 do
 		local carPlayer = ac.getCar(i)
-		if carPlayer.isConnected and (not carPlayer.isHidingLabels) then
-			if carPlayer.index ~= car.index and ac.getCarID(i) ~= valideCar[1] and ac.getCarID(i) ~= valideCar[2] and ac.getCarID(i) ~= valideCar[3] then
+		if carPlayer and carPlayer.isConnected and (not carPlayer.isHidingLabels) then
+			if carPlayer.index ~= car.index and not isPoliceCar(carPlayer:id()) then
 				table.insert(players, carPlayer)
 			end
 		end
@@ -1210,10 +1506,10 @@ local function doubleTrouble()
 	else
 		if duo.teammate == nil then
 			ui.setNextItemWidth(150)
-			ui.combo("Teammate", duo.playerName, function ()
+			ui.combo("Teammate", duo.playerName, function()
 				for i = 1, #players do
 					if ui.selectable(ac.getDriverName(players[i].index), duo.teammate == players[i].index) then
-						acpEvent{message = "Request", messageType = 5, yourIndex = ac.getCar(players[i].index).sessionID}
+						acpEvent { message = "Request", messageType = 5, yourIndex = ac.getCar(players[i].index).sessionID }
 						duo.playerName = ac.getDriverName(players[i].index)
 						duo.waiting = true
 					end
@@ -1229,7 +1525,7 @@ local function doubleTrouble()
 			ui.dwriteTextWrapped(ac.getDriverName(duo.teammate.index), 15, rgbm.colors.purple)
 			ui.sameLine()
 			if ui.button("Cancel") then
-				acpEvent{message = "Cancel", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
+				acpEvent { message = "Cancel", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID }
 				duo.teammate = nil
 			end
 			duo.waiting = false
@@ -1239,20 +1535,20 @@ end
 
 local function sectorSelect()
 	ui.setNextItemWidth(150)
-	ui.combo("Sector", sector.name, function ()
+	ui.combo("Sector", sectorManager.sector.name, function()
 		for i = 1, #sectors do
-			if ui.selectable(sectors[i].name, sector == sectors[i]) then
-				sector = sectors[i]
-				sectorInfo.sectorIndex = i
-				resetSectors()
+			if ui.selectable(sectors[i].name, sectorManager.sector == sectors[i]) then
+				sectorManager.sector = sectors[i]
+				sectorManager.sector:reset()
 			end
 		end
 	end)
-	ui.sameLine(windowWidth/5 - 120)
-	if ui.button('Close', vec2(100, windowHeight/50)) then 
-		menuOpen = false
+	ui.sameLine(WIDTH_DIV._5 - 120)
+	if ui.button('Close', vec2(100, HEIGHT_DIV._50)) then
+		menuStates.main = false
 		onSettingsChange()
 	end
+
 end
 
 local function sectorUI()
@@ -1260,12 +1556,7 @@ local function sectorUI()
 	ui.beginGroup()
 	ui.newLine(15)
 	sectorSelect()
-	if sector == nil then
-		sector = sectors[1]
-		sectorInfo.sectorIndex = 1
-		resetSectors()
-	end
-	if sectorInfo.sectorIndex == 3 then doubleTrouble() end
+	if sectorManager.sector.name == 'DOUBLE TROUBLE' then doubleTrouble() end
 	if duo.request then
 		ui.newLine()
 		ui.dwriteTextWrapped((ac.getDriverName(duo.onlineSender.index) .. " want to steal a car with you!"), 15, rgbm.colors.purple)
@@ -1273,100 +1564,20 @@ local function sectorUI()
 			duo.teammate = duo.onlineSender
 			acpEvent{message = "Accept", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
 			duo.request = false
-			sectorInfo.sectorIndex = 3
-			resetSectors()
+			sectorManager:setSector('DOUBLE TROUBLE')
 		end
 		ui.sameLine()
 		if ui.button("Decline") then
 			duo.request = false
 		end
 	end
-	if ui.button("Close Comfy") then
-		ac.setAppWindowVisible("ACP_Tools", '?', true)
-	end
 	discordLinks()
-	ui.endGroup()
+	ui.newLine()
+	-- if ui.button('Load Player Data') then tryFetchPlayerData() end
+	-- ui.sameLine()
+	-- if ui.button('Save Player Data') then trySavePlayerData() end
+	-- ui.endGroup()
 	return 1
-end
-
-local function textTimeFormat()
-	local timeFormated = ''
-	local dt = ui.deltaTime()
-	sectorInfo.time = sectorInfo.time + dt
-	if sectorInfo.time < 600 then
-		timeFormated = '0' .. math.floor(sectorInfo.time / 60) .. ':'
-	else
-		timeFormated = math.floor(sectorInfo.time / 60) .. ':'
-	end
-	if sectorInfo.time % 60 < 10 then
-		timeFormated = timeFormated .. '0' .. string.format("%.2f", sectorInfo.time % 60)
-	else
-		timeFormated = timeFormated .. string.format("%.2f", sectorInfo.time % 60)
-	end
-	sectorInfo.timerText = timeFormated
-end
-
-local function hasCrossedLine(line)
-	local pos3 = car.position
-	if pos3.x > line.region.x1 and pos3.z > line.region.z1 and pos3.x < line.region.x2 and pos3.z < line.region.z2 then
-        if dot(vec2(car.look.x, car.look.z), line.dir) > 0 then return true end
-	end
-    return false
-end
-
-local function sectorUpdate()
-	if wheels[0].surfaceSectorID == 47 and wheels[1].surfaceSectorID == 47 and wheels[2].surfaceSectorID == 47 and wheels[3].surfaceSectorID == 47 then
-		resetSectors()
-	end
-	if sector == nil then
-		sector = sectors[1]
-		sectorInfo.sectorIndex = 1
-		resetSectors()
-	end
-	if distanceSquared(vec2(car.position.x, car.position.z), vec2(sector.lines[sectorInfo.checkpoints].midPoint.x, sector.lines[sectorInfo.checkpoints].midPoint.z)) < 30000 then sectorInfo.drawLine = true else sectorInfo.drawLine = false end
-	if hasCrossedLine(sector.lines[sectorInfo.checkpoints]) then
-		if sectorInfo.checkpoints == 1 then
-			resetSectors()
-			sectorInfo.distance = car.distanceDrivenSessionKm
-		end
-		if sectorInfo.finished then
-			if sectorInfo.finished and not sectorInfo.timePosted then
-				if sectors[sectorInfo.sectorIndex].name == "BOBs SCRAPYARD" then
-					if class == "C" and timeRequirement > sectorInfo.time then
-						if not playerData.Theft then playerData.Theft = 0 end
-						playerData.Theft = playerData.Theft + 1
-						ac.sendChatMessage(" has successfully stolen a " .. string.gsub(ac.getCarName(0), "%W", " ") .. " and got away with it!")
-					else
-						ac.sendChatMessage(" has failed to steal a " .. string.gsub(ac.getCarName(0), "%W", " ") .. " under the time limit!")
-					end
-					local data = {
-						["Theft"] = playerData.Theft,
-					}
-					updatefirebase()
-					updatefirebaseData("Theft", data)
-				else
-					if sectors[sectorInfo.sectorIndex].name == "H1" then updateSectorData('H1', sectorInfo.time)
-					elseif sectors[sectorInfo.sectorIndex].name == "Velocity Vendetta" then updateSectorData('VV', sectorInfo.time) end
-					ac.sendChatMessage(" has finished " .. sectors[sectorInfo.sectorIndex].name .. " in " .. sectorInfo.timerText .. "!")
-				end
-				sectorInfo.timePosted = true
-			end
-			if sectorInfo.sectorIndex == 3 and duo.teammate ~= nil and sectorInfo.finishedTeammate or sectorInfo.sectorIndex ~= 3 then
-				sectorInfo.finalTime = sectorInfo.timerText
-				duo.teammate = nil
-			end
-		elseif sectorInfo.checkpoints == #sector.lines then
-			if sector.length < car.distanceDrivenSessionKm - sectorInfo.distance then
-				if sectorInfo.sectorIndex == 3 then
-					if duo.teammate ~= nil and not sectorInfo.finished then
-						acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
-					end
-				end
-				sectorInfo.finished = true
-			end
-		else sectorInfo.checkpoints = sectorInfo.checkpoints + 1 end
-	end
-	if sectorInfo.checkpoints > 1 and not sectorInfo.finished then textTimeFormat() end
 end
 
 local function resetDrugDelivery()
@@ -1380,7 +1591,9 @@ end
 
 local function drugDeliveryUI()
 	if drugDelivery.active and not drugDelivery.started then
-		textWithBackground("You just picked up some drugs to start the mission click on the THEFT icon! Deliver them to this location : " .. drugDelivery.dropOffName .. "!", 1)
+		textWithBackground(
+			"You just picked up some drugs to start the mission click on the THEFT icon! Deliver them to this location : " ..
+			drugDelivery.dropOffName .. "!", 1)
 	elseif drugDelivery.started then
 		textWithBackground("You are on the way to deliver the drugs to " .. drugDelivery.dropOffName .. "!", 1)
 	end
@@ -1481,11 +1694,15 @@ local timeStartRace = 0
 local function showRaceLights()
 	local timing = os.clock() % 1
 	if timing > 0.5 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), settings.colorHud, rgbm(0,0,0,0),  rgbm(0,0,0,0), settings.colorHud)
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(0,0,0,0), settings.colorHud, settings.colorHud, rgbm(0,0,0,0))
+		ui.drawRectFilledMultiColor(vec2(0, 0), vec2(WIDTH_DIV._10, WINDOW_HEIGHT), settings.colorHud, rgbm.colors.transparent,
+			rgbm.colors.transparent, settings.colorHud)
+		ui.drawRectFilledMultiColor(vec2(WINDOW_WIDTH - WIDTH_DIV._10, 0), vec2(WINDOW_WIDTH, WINDOW_HEIGHT),
+			rgbm.colors.transparent, settings.colorHud, settings.colorHud, rgbm.colors.transparent)
 	else
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/10,windowHeight), rgbm(0,0,0,0), rgbm(0,0,0,0),  rgbm(0,0,0,0), rgbm(0,0,0,0))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/10,0), vec2(windowWidth,windowHeight),  rgbm(0,0,0,0), rgbm(0,0,0,0), rgbm(0,0,0,0), rgbm(0,0,0,0))
+		ui.drawRectFilledMultiColor(vec2(0, 0), vec2(WIDTH_DIV._10, WINDOW_HEIGHT), rgbm.colors.transparent, rgbm.colors.transparent,
+			rgbm.colors.transparent, rgbm.colors.transparent)
+		ui.drawRectFilledMultiColor(vec2(WINDOW_WIDTH - WIDTH_DIV._10, 0), vec2(WINDOW_WIDTH, WINDOW_HEIGHT),
+			rgbm.colors.transparent, rgbm.colors.transparent, rgbm.colors.transparent, rgbm.colors.transparent)
 	end
 end
 
@@ -1495,14 +1712,11 @@ local function hasWin(winner)
 	raceFinish.time = 10
 	raceState.inRace = false
 	if winner == car then
-		playerData.Wins = playerData.Wins + 1
+		player.wins = player.wins + 1
 		raceFinish.opponentName = ac.getDriverName(raceState.opponent.index)
 		raceFinish.messageSent = false
 	else
-		playerData.Losses = playerData.Losses + 1
-	end
-	if playerData.Wins + playerData.Losses > 0 then
-		playerData.WR = math.floor((playerData.Wins * 100 / (playerData.Wins + playerData.Losses))*100)/100
+		player.losses = player.losses + 1
 	end
 	raceState.opponent = nil
 end
@@ -1510,7 +1724,7 @@ end
 local acpRace = ac.OnlineEvent({
 	targetSessionID = ac.StructItem.int16(),
 	messageType = ac.StructItem.int16(),
-}, function (sender, data)
+}, function(sender, data)
 	if data.targetSessionID == car.sessionID and data.messageType == 1 then
 		raceState.opponent = sender
 		horn.resquestTime = 7
@@ -1529,11 +1743,13 @@ end)
 
 local function whosInFront()
 	if raceState.opponent == nil then return end
-	local direction = cross(vec2(car.velocity.x, car.velocity.z), vec2(raceState.opponent.velocity.x, raceState.opponent.velocity.z))
-	local midBetweenPlayers = vec2((car.position.x + raceState.opponent.position.x)/2, (car.position.z + raceState.opponent.position.z)/2)
+	local direction = cross(vec2(car.velocity.x, car.velocity.z),
+		vec2(raceState.opponent.velocity.x, raceState.opponent.velocity.z))
+	local midBetweenPlayers = vec2((car.position.x + raceState.opponent.position.x) / 2,
+		(car.position.z + raceState.opponent.position.z) / 2)
 	local midPlusDirection = vec2(midBetweenPlayers.x + direction.x, midBetweenPlayers.y + direction.y)
-	local youDistanceSquared = distanceSquared(vec2(car.position.x, car.position.z), midPlusDirection)
-	local opponentDistanceSquared = distanceSquared(vec2(raceState.opponent.position.x, raceState.opponent.position.z), midPlusDirection)
+	local youDistanceSquared = vec2(car.position.x, car.position.z):distanceSquared(midPlusDirection)
+	local opponentDistanceSquared = vec2(raceState.opponent.position.x, raceState.opponent.position.z):distanceSquared(midPlusDirection)
 	if youDistanceSquared < opponentDistanceSquared then
 		raceState.inFront = car
 	else
@@ -1547,7 +1763,7 @@ local function hasPit()
 		return false
 	end
 	if car.isInPit then
-		acpRace{targetSessionID = raceState.opponent.sessionID, messageType = 3}
+		acpRace { targetSessionID = raceState.opponent.sessionID, messageType = 3 }
 		hasWin(raceState.opponent)
 		return false
 	end
@@ -1556,8 +1772,9 @@ end
 
 local function inRace()
 	if raceState.opponent == nil then return end
-	raceState.distance = distance(vec2(car.position.x, car.position.z), vec2(raceState.opponent.position.x, raceState.opponent.position.z))
-	if raceState.distance < 50 then whosInFront()
+	raceState.distance = vec2(car.position.x, car.position.z):distance(vec2(raceState.opponent.position.x, raceState.opponent.position.z))
+	if raceState.distance < 50 then
+		whosInFront()
 	elseif raceState.distance > 250 then
 		hasWin(raceState.inFront)
 	end
@@ -1580,13 +1797,17 @@ local function hornUsage()
 	end
 end
 
+local function dot(vector1, vector2)
+	return vector1.x * vector2.x + vector1.y * vector2.y
+end
+
 local function resquestRace()
 	local opponent = ac.getCar(ac.getCarIndexInFront(0))
 	if not opponent then return end
 	horn.opponentName = ac.getDriverName(opponent.index)
 	if opponent and (not opponent.isHidingLabels) then
 		if dot(vec2(car.look.x, car.look.z), vec2(opponent.look.x, opponent.look.z)) > 0 then
-			acpRace{targetSessionID = opponent.sessionID, messageType = 1}
+			acpRace { targetSessionID = opponent.sessionID, messageType = 1 }
 			horn.resquestTime = 10
 		end
 	end
@@ -1594,7 +1815,7 @@ end
 
 local function acceptingRace()
 	if dot(vec2(car.look.x, car.look.z), vec2(raceState.opponent.look.x, raceState.opponent.look.z)) > 0 then
-		acpRace{targetSessionID = raceState.opponent.sessionID, messageType = 2}
+		acpRace { targetSessionID = raceState.opponent.sessionID, messageType = 2 }
 		raceState.inRace = true
 		horn.resquestTime = 0
 		timeStartRace = 7
@@ -1607,10 +1828,13 @@ local function raceUpdate(dt)
 		inRace()
 		if raceState.time > 0 then
 			raceState.time = raceState.time - dt
-		elseif raceState.time < 0 then raceState.time = 0 end
+		elseif raceState.time < 0 then
+			raceState.time = 0
+		end
 		if raceState.message and raceState.time == 0 then
 			if raceState.opponent then
-				ac.sendChatMessage(ac.getDriverName(0) .. " has started an illegal race against " .. ac.getDriverName(raceState.opponent.index) .. "!")
+				ac.sendChatMessage(DRIVER_NAME ..
+					" has started an illegal race against " .. ac.getDriverName(raceState.opponent.index) .. "!")
 				raceState.message = false
 			end
 		end
@@ -1637,13 +1861,11 @@ end
 -------------------------------------------------------------------------------- overtake --------------------------------------------------------------------------------
 
 -- Event configuration:
-local requiredSpeed = 80
+local REQUIRED_SPEED = const(80)
 
 -- This function is called before event activates. Once it returns true, it’ll run:
 function script.prepare(dt)
-    return
-    ac.debug("speed", car.speedKmh)
-    return car.speedKmh > 60
+	return car.speedKmh > 60
 end
 
 -- Event state:
@@ -1662,12 +1884,10 @@ local function resetOvertake()
 	if overtake.totalScore > highestScore then
 		highestScore = math.floor(overtake.totalScore)
 		ac.sendChatMessage("New highest Overtake score: " .. highestScore .. " pts !")
-		playerData.Overtake = highestScore
+		player.overtake = highestScore
 		local data = {
 			["Overtake"] = highestScore,
 		}
-		updatefirebase()
-		updatefirebaseData("Overtake", data)
 	end
 	overtake.totalScore = 0
 	overtake.comboMeter = 1
@@ -1678,80 +1898,80 @@ local function initOverTake()
 end
 
 local function overtakeUpdate(dt)
-    if car.engineLifeLeft < 1 then
+	if car.engineLifeLeft < 1 then
 		resetOvertake()
-        return
-    end
+		return
+	end
 	for i = 0, 4 do
 		if car.damage[i] > overtake.damage[i] then
 			resetOvertake()
 			break
 		end
 	end
-    overtake.timePassed = overtake.timePassed + dt
+	overtake.timePassed = overtake.timePassed + dt
 
-    local comboFadingRate = 0.5 * math.lerp(1, 0.1, math.lerpInvSat(car.speedKmh, 80, 200)) + car.wheelsOutside
-    overtake.comboMeter = math.max(1, overtake.comboMeter - dt * comboFadingRate)
+	local comboFadingRate = 0.5 * math.lerp(1, 0.1, math.lerpInvSat(car.speedKmh, 80, 200)) + car.wheelsOutside
+	overtake.comboMeter = math.max(1, overtake.comboMeter - dt * comboFadingRate)
 
-    while sim.carsCount > #carsState do
-        carsState[#carsState + 1] = {}
-    end
+	while sim.carsCount > #carsState do
+		carsState[#carsState + 1] = {}
+	end
 
-    if car.speedKmh < requiredSpeed then
-        if overtake.dangerouslySlowTimer > 3 then
+	if car.speedKmh < REQUIRED_SPEED then
+		if overtake.dangerouslySlowTimer > 3 then
 			resetOvertake()
 			return
-        end
-        overtake.dangerouslySlowTimer = overtake.dangerouslySlowTimer + dt
-        overtake.comboMeter = 1
-        return
-    else
-        overtake.dangerouslySlowTimer = 0
-    end
+		end
+		overtake.dangerouslySlowTimer = overtake.dangerouslySlowTimer + dt
+		overtake.comboMeter = 1
+		return
+	else
+		overtake.dangerouslySlowTimer = 0
+	end
 
-    for i = 1, ac.getSim().carsCount - 1 do
-        local state = carsState[i]
+	for i = 1, ac.getSim().carsCount - 1 do
+		local state = carsState[i]
 		local otherCar = ac.getCar(i)
-        if otherCar.isConnected and otherCar.position:closerToThan(car.position, 10) then
-            local drivingAlong = math.dot(otherCar.look, car.look) > 0.2
-            if not drivingAlong then
-                state.drivingAlong = false
+		if otherCar.isConnected and otherCar.position:closerToThan(car.position, 10) then
+			local drivingAlong = math.dot(otherCar.look, car.look) > 0.2
+			if not drivingAlong then
+				state.drivingAlong = false
 
-                if not state.nearMiss and otherCar.position:closerToThan(car.position, 3) then
-                    state.nearMiss = true
+				if not state.nearMiss and otherCar.position:closerToThan(car.position, 3) then
+					state.nearMiss = true
 
-                    if otherCar.position:closerToThan(car.position, 2.5) then
-                        overtake.comboMeter = overtake.comboMeter + 3
-                    else
-                        overtake.comboMeter = overtake.comboMeter + 1
-                    end
-                end
-            end
+					if otherCar.position:closerToThan(car.position, 2.5) then
+						overtake.comboMeter = overtake.comboMeter + 3
+					else
+						overtake.comboMeter = overtake.comboMeter + 1
+					end
+				end
+			end
 
-            if otherCar.collidedWith == 0 then
-                state.collided = true
+			if otherCar.collidedWith == 0 then
+				state.collided = true
 				resetOvertake()
 				return
-            end
+			end
 
-            if not state.overtaken and not state.collided and state.drivingAlong then
-                local posDir = (otherCar.position - car.position):normalize()
-                local posDot = math.dot(posDir, otherCar.look)
-                state.maxPosDot = math.max(state.maxPosDot, posDot)
-                if posDot < -0.5 and state.maxPosDot > 0.5 then
-                    overtake.totalScore = overtake.totalScore + math.ceil(10 * overtake.comboMeter)
-                    overtake.comboMeter = overtake.comboMeter + 1
-                    state.overtaken = true
-                end
-            end
-        else
-            state.maxPosDot = -1
-            state.overtaken = false
-            state.collided = false
-            state.drivingAlong = true
-            state.nearMiss = false
-        end
-    end
+			if not state.overtaken and not state.collided and state.drivingAlong then
+				local posDir = (otherCar.position - car.position):normalize()
+				local posDot = math.dot(posDir, otherCar.look)
+				state.maxPosDot = math.max(state.maxPosDot, posDot)
+				if posDot < -0.5 and state.maxPosDot > 0.5 then
+					overtake.totalScore = overtake.totalScore + math.ceil(10 * overtake.comboMeter)
+					overtake.comboMeter = overtake.comboMeter + 1
+					state.overtaken = true
+				end
+			end
+		else
+			state.maxPosDot = -1
+			state.overtaken = false
+			state.collided = false
+			state.drivingAlong = true
+			state.nearMiss = false
+		end
+	end
 end
 
 local function overtakeUI(textOffset)
@@ -1759,69 +1979,14 @@ local function overtakeUI(textOffset)
 	local colorCombo
 
 	if overtake.totalScore > 0 then
-		text = overtake.totalScore .. " pts - " .. string.format("%d",overtake.comboMeter) .. "x"
+		text = overtake.totalScore .. " pts - " .. string.format("%d", overtake.comboMeter) .. "x"
 		colorCombo = rgbm(0, 1, 0, 0.9)
 	else
 		text = "PB: " .. highestScore .. "pts"
 		colorCombo = rgbm(1, 1, 1, 0.9)
 	end
 	local textSize = ui.measureDWriteText(text, settings.fontSize)
-	ui.dwriteDrawText(text, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), colorCombo)
-end
-
---------------------------------------------------------------------------------- Drift -----------------------------------------------------------------------------------
-
-local function isDriftValid()
-	if car.driftInstantPoints == 0 then driftState.valid = true end
-	if wheels[0].surfaceSectorID == 47 and wheels[1].surfaceSectorID == 47 and wheels[2].surfaceSectorID == 47 and wheels[3].surfaceSectorID == 47 then
-		driftState.valid = false
-	end
-end
-
-local function isDriftValidSpot()
-	if wheels[0].surfaceGrip == 1 and wheels[1].surfaceGrip == 1 and wheels[2].surfaceGrip == 1 and wheels[3].surfaceGrip == 1 then
-		return false
-	end
-	if (not (car.position.x > 800 and car.position.x < 1050 and car.position.z > 2000 and car.position.z < 2250)
-	and not (car.position.x > -1006 and car.position.x < -79 and car.position.z > 1264 and car.position.z < 1431)) then
-		return true
-	else
-		return false
-	end
-end
-
--- Disable drift event if car is in arena area
-local function driftUpdate(dt)
-	isDriftValid()
-	if driftState.lastScore ~= car.driftPoints then
-		if car.driftPoints - driftState.lastScore > driftState.bestScore and isDriftValidSpot() and driftState.valid then
-			driftState.bestScore = car.driftPoints - driftState.lastScore
-			playerData.Drift = math.floor(driftState.bestScore)
-			if driftState.bestScore > 100 then
-				ac.sendChatMessage("New Drift PB: " .. string.format("%d",driftState.bestScore) .. " pts !")
-				local data = {
-					["Drift"] = playerData.Drift,
-				}
-				updatefirebase()
-				updatefirebaseData("Drift", data)
-			end
-		end
-		driftState.lastScore = car.driftPoints
-	end
-end
-
-local function driftUI(textOffset)
-	local text
-	local colorCombo
-	if car.driftInstantPoints > 0 and isDriftValidSpot() and driftState.valid then
-		text = string.format("%d", car.driftInstantPoints) .. " pts"
-		colorCombo = rgbm(0, 1, 0, 0.9)
-	else
-		text = "PB: " .. string.format("%d", driftState.bestScore) .. " pts"
-		colorCombo = rgbm(1, 1, 1, 0.9)
-	end
-	local textSize = ui.measureDWriteText(text, settings.fontSize)
-	ui.dwriteDrawText(text, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13),  colorCombo)
+	ui.dwriteDrawText(text, settings.fontSize, textOffset - vec2(textSize.x / 2, -hud.size.y / 13), colorCombo)
 end
 
 -- UI Update
@@ -1830,11 +1995,15 @@ end
 local function flashingAlert(intensity)
 	local timing = os.clock() % 1
 	if timing > 0.5 then
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/intensity,windowHeight), rgbm(1, 0, 0, 0.5), rgbm(0,0,0,0),  rgbm(0,0,0,0), rgbm(1, 0, 0, 0.5))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/intensity,0), vec2(windowWidth,windowHeight), rgbm(0,0,0,0), rgbm(1, 0, 0, 0.5), rgbm(1, 0, 0, 0.5), rgbm(0,0,0,0))
+		ui.drawRectFilledMultiColor(vec2(0, 0), vec2(WINDOW_WIDTH / intensity, WINDOW_HEIGHT), rgbm(1, 0, 0, 0.5),
+			rgbm.colors.transparent, rgbm.colors.transparent, rgbm(1, 0, 0, 0.5))
+		ui.drawRectFilledMultiColor(vec2(WINDOW_WIDTH - WINDOW_WIDTH / intensity, 0), vec2(WINDOW_WIDTH, WINDOW_HEIGHT),
+			rgbm.colors.transparent, rgbm(1, 0, 0, 0.5), rgbm(1, 0, 0, 0.5), rgbm.colors.transparent)
 	else
-		ui.drawRectFilledMultiColor(vec2(0,0), vec2(windowWidth/intensity,windowHeight), rgbm(0,0,0,0), rgbm(0,0,0,0),  rgbm(0,0,0,0), rgbm(0,0,0,0))
-		ui.drawRectFilledMultiColor(vec2(windowWidth-windowWidth/intensity,0), vec2(windowWidth,windowHeight), rgbm(0,0,0,0), rgbm(0,0,0,0),  rgbm(0,0,0,0), rgbm(0,0,0,0))
+		ui.drawRectFilledMultiColor(vec2(0, 0), vec2(WINDOW_WIDTH / intensity, WINDOW_HEIGHT), rgbm.colors.transparent,
+			rgbm.colors.transparent, rgbm.colors.transparent, rgbm.colors.transparent)
+		ui.drawRectFilledMultiColor(vec2(WINDOW_WIDTH - WINDOW_WIDTH / intensity, 0), vec2(WINDOW_WIDTH, WINDOW_HEIGHT),
+			rgbm.colors.transparent, rgbm.colors.transparent, rgbm.colors.transparent, rgbm.colors.transparent)
 	end
 end
 
@@ -1848,12 +2017,12 @@ local function distanceBar()
 	local text = math.floor(raceState.distance) .. "m"
 	local textLenght = ui.measureDWriteText(text, 30)
 	ui.newLine()
-	ui.dummy(vec2(windowWidth/3, windowHeight/40))
+	ui.dummy(vec2(WIDTH_DIV._3, HEIGHT_DIV._40))
 	ui.sameLine()
 	ui.beginRotation()
-	ui.progressBar(raceState.distance/250, vec2(windowWidth/3,windowHeight/60), playerInFront)
-	ui.endRotation(90,vec2(settings.msgOffsetX - windowWidth/2 - textLenght.x/2,settings.msgOffsetY))
-	ui.dwriteDrawText(text, 30, vec2(settings.msgOffsetX - textLenght.x/2 , settings.msgOffsetY), rgbm.colors.white)
+	ui.progressBar(raceState.distance / 250, vec2(WIDTH_DIV._3, HEIGHT_DIV._60), playerInFront)
+	ui.endRotation(90, vec2(settings.msgOffsetX - WIDTH_DIV._2 - textLenght.x / 2, settings.msgOffset.y))
+	ui.dwriteDrawText(text, 30, vec2(settings.msgOffsetX - textLenght.x / 2, settings.msgOffset.y), rgbm.colors.white)
 end
 
 local function raceUI()
@@ -1868,8 +2037,11 @@ local function raceUI()
 			textWithBackground(text, 1)
 		else
 			local number = math.floor(timeStartRace - 1)
-			if number <= 0 then text = "GO!"
-			else text = number .. " ..." end
+			if number <= 0 then
+				text = "GO!"
+			else
+				text = number .. " ..."
+			end
 			textWithBackground(text, 3)
 		end
 		if timeStartRace - 6 > 0 then showRaceLights() end
@@ -1878,27 +2050,31 @@ local function raceUI()
 		distanceBar()
 		if raceState.inFront == raceState.opponent then
 			if raceState.distance > 190 then
-				flashingAlert(math.floor((190 - raceState.distance)/10)+10)
+				flashingAlert(math.floor((190 - raceState.distance) / 10) + 10)
 			end
 		end
 	elseif raceFinish.finished then
 		text = ac.getDriverName(raceFinish.winner.index) .. " has won the race"
 		displayText = true
 		if not raceFinish.messageSent and raceFinish.winner == car then
-			ac.sendChatMessage(ac.getDriverName(0) .. " has just beaten " .. raceFinish.opponentName .. string.format(" in an illegal race. [Win rate: %d",playerData.Wins * 100 / (playerData.Wins + playerData.Losses)) .. "%]")
+			ac.sendChatMessage(DRIVER_NAME ..
+				" has just beaten " ..
+				raceFinish.opponentName ..
+				string.format(" in an illegal race. [Win rate: %d",
+					player.wins * 100 / (player.wins + player.losses)) .. "%]")
 			raceFinish.messageSent = true
 			local data = {
-				["Wins"] = playerData.Wins,
-				["Losses"] = playerData.Losses,
+				["Wins"] = player.wins,
+				["Losses"] = player.losses,
 			}
-			updatefirebase()
-			updatefirebaseData("STRace", data)
+			-- Update the player Race stats
 		end
-	elseif horn.resquestTime > 0  and raceState.opponent then
-		text = ac.getDriverName(raceState.opponent.index) .. " wants to challenge you to a race. To accept activate your horn twice quickly"
+	elseif horn.resquestTime > 0 and raceState.opponent then
+		text = ac.getDriverName(raceState.opponent.index) ..
+			" wants to challenge you to a race. To accept activate your horn twice quickly"
 		displayText = true
 	elseif horn.resquestTime > 0 and raceState.opponent == nil then
-		text = "Waiting for " ..  horn.opponentName .. " to accept the challenge"
+		text = "Waiting for " .. horn.opponentName .. " to accept the challenge"
 		displayText = true
 	end
 	if displayText then textWithBackground(text, 1) end
@@ -1908,60 +2084,61 @@ end
 --------------------------------------------------------------------------------------- Police Chase --------------------------------------------------------------------------------------------------
 
 local policeLightsPos = {
-	vec2(0,0), 
-	vec2(windowWidth/15,windowHeight),
-	vec2(windowWidth-windowWidth/15,0),
-	vec2(windowWidth,windowHeight)
+	vec2(0, 0),
+	vec2(WIDTH_DIV._15, WINDOW_HEIGHT),
+	vec2(WINDOW_WIDTH - WIDTH_DIV._15, 0),
+	vec2(WINDOW_WIDTH, WINDOW_HEIGHT)
 }
 
 local acpPolice = ac.OnlineEvent({
-    message = ac.StructItem.string(110),
+	message = ac.StructItem.string(110),
 	messageType = ac.StructItem.int16(),
 	yourIndex = ac.StructItem.int16(),
-}, function (sender, data)
+}, function(sender, data)
 	online.type = data.messageType
 	if data.yourIndex == car.sessionID and data.messageType == 0 then
 		online.message = data.message
 		online.chased = true
 		online.officer = sender
 		online.messageTimer = settings.timeMsg
-		policeLightsPos[2] = vec2(windowWidth/10,windowHeight)
-		policeLightsPos[3] = vec2(windowWidth-windowWidth/10,0)
+		policeLightsPos[2] = vec2(WIDTH_DIV._10, WINDOW_HEIGHT)
+		policeLightsPos[3] = vec2(WINDOW_WIDTH - WIDTH_DIV._10, 0)
 	elseif data.yourIndex == car.sessionID and data.messageType == 1 then
 		online.level = tonumber(data.message)
 		online.messageTimer = settings.timeMsg
-        online.message = "CHASE LEVEL " .. data.message
-        if online.level > 8 then
-            online.color = rgbm.colors.red
-        elseif online.level > 6 then
-            online.color = rgbm.colors.orange
-        elseif online.level > 4 then
-            online.color = rgbm.colors.yellow
-        else
-            online.color = rgbm.colors.white
-        end
+		online.message = "CHASE LEVEL " .. data.message
+		if online.level > 8 then
+			online.color = rgbm.colors.red
+		elseif online.level > 6 then
+			online.color = rgbm.colors.orange
+		elseif online.level > 4 then
+			online.color = rgbm.colors.yellow
+		else
+			online.color = rgbm.colors.white
+		end
 	elseif data.yourIndex == car.sessionID and data.messageType == 2 then
 		online.message = data.message
 		online.messageTimer = settings.timeMsg
-		if data.message == "BUSTED!" then
-			playerData.Busted = playerData.Busted + 1
-		end
 		online.chased = false
 		online.officer = nil
 		online.level = 0
-		policeLightsPos[2] = vec2(windowWidth/6,windowHeight)
-		policeLightsPos[3] = vec2(windowWidth-windowWidth/6,0)
+		policeLightsPos[2] = vec2(WIDTH_DIV._6, WINDOW_HEIGHT)
+		policeLightsPos[3] = vec2(WINDOW_WIDTH - WIDTH_DIV._6, 0)
 	end
 end)
 
 local function showPoliceLights()
-	local timing = math.floor(os.clock()*2 % 2)
+	local timing = math.floor(os.clock() * 2 % 2)
 	if timing == 0 then
-		ui.drawRectFilledMultiColor(policeLightsPos[1], policeLightsPos[2], rgbm(1,0,0,0.5), rgbm(0,0,0,0), rgbm(0,0,0,0), rgbm(1,0,0,0.5))
-		ui.drawRectFilledMultiColor(policeLightsPos[3], policeLightsPos[4], rgbm(0,0,0,0), rgbm(0,0,1,0.5), rgbm(0,0,1,0.5), rgbm(0,0,0,0))
+		ui.drawRectFilledMultiColor(policeLightsPos[1], policeLightsPos[2], rgbm(1, 0, 0, 0.5), rgbm.colors.transparent,
+			rgbm.colors.transparent, rgbm(1, 0, 0, 0.5))
+		ui.drawRectFilledMultiColor(policeLightsPos[3], policeLightsPos[4], rgbm.colors.transparent, rgbm(0, 0, 1, 0.5),
+			rgbm(0, 0, 1, 0.5), rgbm.colors.transparent)
 	else
-		ui.drawRectFilledMultiColor(policeLightsPos[1], policeLightsPos[2], rgbm(0,0,1,0.5), rgbm(0,0,0,0), rgbm(0,0,0,0), rgbm(0,0,1,0.5))
-		ui.drawRectFilledMultiColor(policeLightsPos[3], policeLightsPos[4], rgbm(0,0,0,0), rgbm(1,0,0,0.5), rgbm(1,0,0,0.5), rgbm(0,0,0,0))
+		ui.drawRectFilledMultiColor(policeLightsPos[1], policeLightsPos[2], rgbm(0, 0, 1, 0.5), rgbm.colors.transparent,
+			rgbm.colors.transparent, rgbm(0, 0, 1, 0.5))
+		ui.drawRectFilledMultiColor(policeLightsPos[3], policeLightsPos[4], rgbm.colors.transparent, rgbm(1, 0, 0, 0.5),
+			rgbm(1, 0, 0, 0.5), rgbm.colors.transparent)
 	end
 end
 
@@ -1969,11 +2146,13 @@ local function showArrestMSG()
 	ui.pushDWriteFont("Orbitron;Weight=Black")
 	local textArrest1 = "BUSTED!"
 	local textArrest2 = "GGs! Please Go Back To Pits."
-	local textArrestLenght1 = ui.measureDWriteText(textArrest1, settings.fontSizeMSG*3)
-	local textArrestLenght2 = ui.measureDWriteText(textArrest2, settings.fontSizeMSG*3)
-	ui.drawRectFilled(vec2(0,0), vec2(windowWidth,windowHeight), rgbm(0, 0, 0, 0.5))
-	ui.dwriteDrawText(textArrest1, settings.fontSizeMSG*3, vec2(windowWidth/2 - textArrestLenght1.x/2, windowHeight/4 - textArrestLenght1.y/2), rgbm(1, 0, 0, 1))
-	ui.dwriteDrawText(textArrest2, settings.fontSizeMSG*3, vec2(windowWidth/2 - textArrestLenght2.x/2, windowHeight/4 + textArrestLenght2.y/2), rgbm(1, 1, 1, 1))
+	local textArrestLenght1 = ui.measureDWriteText(textArrest1, settings.fontSizeMSG * 3)
+	local textArrestLenght2 = ui.measureDWriteText(textArrest2, settings.fontSizeMSG * 3)
+	ui.drawRectFilled(vec2(0, 0), vec2(WINDOW_WIDTH, WINDOW_HEIGHT), rgbm(0, 0, 0, 0.5))
+	ui.dwriteDrawText(textArrest1, settings.fontSizeMSG * 3,
+		vec2(WIDTH_DIV._2 - textArrestLenght1.x / 2, HEIGHT_DIV._4 - textArrestLenght1.y / 2), rgbm(1, 0, 0, 1))
+	ui.dwriteDrawText(textArrest2, settings.fontSizeMSG * 3,
+		vec2(WIDTH_DIV._2 - textArrestLenght2.x / 2, HEIGHT_DIV._4 + textArrestLenght2.y / 2), rgbm.colors.white)
 	ui.popDWriteFont()
 end
 
@@ -1981,12 +2160,12 @@ end
 local function onlineEventMessageUI()
 	if online.messageTimer > 0 then
 		online.messageTimer = online.messageTimer - ui.deltaTime()
-        local text = online.message
-        if online.message ~= "BUSTED!" then textWithBackground(text, 1) end
-        if online.type == 2 then
-            if online.message == "BUSTED!" then showArrestMSG() end
-            showPoliceLights()
-        end
+		local text = online.message
+		if online.message ~= "BUSTED!" then textWithBackground(text, 1) end
+		if online.type == 2 then
+			if online.message == "BUSTED!" then showArrestMSG() end
+			showPoliceLights()
+		end
 		if online.type == 1 and online.messageTimer < 3 then
 			showPoliceLights()
 		end
@@ -2001,18 +2180,16 @@ end
 local statOn = {
 	[1] = "Distance Driven",
 	[2] = "Races",
-	[3] = "Busted",
+	[3] = "Overtake",
 	[4] = "Sector",
-	[5] = "Overtake",
-	[6] = "Drift",
-	[7] = "Drug Delivery",
+	[5] = "Drug Delivery",
 }
 
 local iconsColorOn = {
-	[1] = rgbm(1,1,1,1),
-	[2] = rgbm(1,1,1,1),
-	[3] = rgbm(1,1,1,1),
-	[4] = rgbm(1,1,1,1),
+	[1] = rgbm.colors.white,
+	[2] = rgbm.colors.white,
+	[3] = rgbm.colors.white,
+	[4] = rgbm.colors.white,
 }
 
 local countdownTime = 0
@@ -2045,107 +2222,107 @@ local function countdown()
 	end
 end
 
-local function drawText()
+local function drawHudText()
 	ui.pushDWriteFont("Orbitron;Weight=BOLD")
-    local textOffset = vec2(imageSize.x / 2, imageSize.y / 4.5)
-    local textSize = ui.measureDWriteText(statOn[settings.current], settings.fontSize)
-    if settings.current ~= 4 then ui.dwriteDrawText(statOn[settings.current], settings.fontSize, textOffset - vec2(textSize.x/2, 0), settings.colorHud) end
-    if settings.current == 1 then
-        local drivenKm = car.distanceDrivenSessionKm
-        if drivenKm < 0.01 then drivenKm = 0 end
-        textSize = ui.measureDWriteText(string.format("%.2f",drivenKm) .. " km", settings.fontSize)
-        ui.dwriteDrawText(string.format("%.2f",drivenKm) .. " km", settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1, 1, 1, 0.9))
-    elseif settings.current == 2 then
-        textSize = ui.measureDWriteText(playerData.Wins .. "Win  -  Lost" .. playerData.Losses, settings.fontSize/1.1)
-        ui.dwriteDrawText("Win " .. playerData.Wins .. " - Lost " .. playerData.Losses, settings.fontSize/1.1, textOffset - vec2(textSize.x/2, -imageSize.y/12.5), rgbm(1, 1, 1, 0.9))
-    elseif settings.current == 3 then
-        textSize = ui.measureDWriteText(playerData.Busted, settings.fontSize)
-        ui.dwriteDrawText(playerData.Busted, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1, 1, 1, 0.9))
-    elseif settings.current == 4 then
-        textSize = ui.measureDWriteText(sector.name, settings.fontSize)
-        ui.dwriteDrawText(sector.name, settings.fontSize, textOffset - vec2(textSize.x/2, 0), settings.colorHud)
-        textSize = ui.measureDWriteText("Time: 0:00:00", settings.fontSize)
-        if sectorInfo.finished then
-            ui.dwriteDrawText("Time: " .. sectorInfo.timerText, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(0, 1, 0, 1))
-        else
-            ui.dwriteDrawText("Time: " .. sectorInfo.timerText, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), rgbm(1, 1, 1, 0.9))
-        end
-	elseif settings.current == 5 then
+	local textOffset = vec2(hud.size.x / 2, hud.size.y / 4.5)
+	local textSize = ui.measureDWriteText(statOn[settings.current], settings.fontSize)
+	if settings.current ~= 4 then
+		ui.dwriteDrawText(statOn[settings.current], settings.fontSize,
+			textOffset - vec2(textSize.x / 2, 0), settings.colorHud)
+	end
+	if settings.current == 1 then
+		local drivenKm = car.distanceDrivenSessionKm
+		if drivenKm < 0.01 then drivenKm = 0 end
+		textSize = ui.measureDWriteText(string.format("%.2f", drivenKm) .. " km", settings.fontSize)
+		ui.dwriteDrawText(string.format("%.2f", drivenKm) .. " km", settings.fontSize,
+			textOffset - vec2(textSize.x / 2, -hud.size.y / 13), rgbm(1, 1, 1, 0.9))
+	elseif settings.current == 2 then
+		textSize = ui.measureDWriteText(player.wins .. "Win  -  Lost" .. player.losses, settings.fontSize / 1.1)
+		ui.dwriteDrawText("Win " .. player.wins .. " - Lost " .. player.losses, settings.fontSize / 1.1,
+			textOffset - vec2(textSize.x / 2, -hud.size.y / 12.5), rgbm(1, 1, 1, 0.9))
+	elseif settings.current == 3 then
 		overtakeUI(textOffset)
-	elseif settings.current == 6 then
-		driftUI(textOffset)
-	elseif settings.current == 7 then
+	elseif settings.current == 4 then
+		textSize = ui.measureDWriteText(sectorManager.sector.name, settings.fontSize)
+		ui.dwriteDrawText(sectorManager.sector.name, settings.fontSize, textOffset - vec2(textSize.x / 2, 0), settings.colorHud)
+		textSize = ui.measureDWriteText("Time: 00:00:000", settings.fontSize)
+		ui.dwriteDrawText("Time: " .. sectorManager.sector.time, settings.fontSize, textOffset - vec2(textSize.x / 2, -hud.size.y / 13), sectorManager.sector.timeColor)
+	elseif settings.current == 5 then
 		textSize = ui.measureDWriteText("123 km/h", settings.fontSize)
 		local avgSpeed = drugDelivery.avgSpeed
 		local color = rgbm(1, 1, 1, 0.9)
 		if drugDelivery.finalAvgSpeed > 1 then
 			avgSpeed = drugDelivery.finalAvgSpeed
-			if avgSpeed > 120 then color = rgbm(0, 1, 0, 1)
-			else color = rgbm(1, 0, 0, 1) end
+			if avgSpeed > 120 then
+				color = rgbm(0, 1, 0, 1)
+			else
+				color = rgbm(1, 0, 0, 1)
+			end
 		end
 		avgSpeed = avgSpeed * settings.unitMult
-		ui.dwriteDrawText(string.format("%.1f ", avgSpeed) .. settings.unit, settings.fontSize, textOffset - vec2(textSize.x/2, -imageSize.y/13), color)
-    end
+		ui.dwriteDrawText(string.format("%.1f ", avgSpeed) .. settings.unit, settings.fontSize,
+			textOffset - vec2(textSize.x / 2, -hud.size.y / 13), color)
+	end
 	ui.popDWriteFont()
 end
 
 local stealingTime = 0
 local stealMsgTime = 0
 
-local function drawImage()
-	iconsColorOn[1] = rgbm(0.99,0.99,0.99,1)
-	iconsColorOn[2] = rgbm(0.99,0.99,0.99,1)
-	iconsColorOn[3] = rgbm(0.99,0.99,0.99,1)
-	iconsColorOn[4] = rgbm(0.99,0.99,0.99,1)
-	local uiState = ac.getUI()
+local function drawHudImages()
+	iconsColorOn[1] = rgbm.colors.white
+	iconsColorOn[2] = rgbm.colors.white
+	iconsColorOn[3] = rgbm.colors.white
+	iconsColorOn[4] = rgbm.colors.white
 	local toolTipOn = false
-	ui.drawImage(hudImg.center, vec2(0,0), imageSize)
-	if ui.rectHovered(vec2(0,0), vec2(imageSize.x, imageSize.y/2)) then toolTipOn = true end
-	if ui.rectHovered(imgPos.leftPos2, imgPos.leftPos1) then
-		ui.image(hudImg.left, imageSize, settings.colorHud)
+	ui.drawImage(HUD_IMG.center, vec2(0, 0), hud.size)
+	if ui.rectHovered(vec2(0, 0), vec2(hud.size.x, hud.size.y / 2)) then toolTipOn = true end
+	if ui.rectHovered(hud.pos.leftPos2, hud.pos.leftPos1) then
+		ui.image(HUD_IMG.left, hud.size, settings.colorHud)
 		if uiState.isMouseLeftKeyClicked then
 			if settings.current == 1 then settings.current = #statOn else settings.current = settings.current - 1 end
 		end
-	elseif ui.rectHovered(imgPos.rightPos2, imgPos.rightPos1) then
-		ui.image(hudImg.right, imageSize, settings.colorHud)
+	elseif ui.rectHovered(hud.pos.rightPos2, hud.pos.rightPos1) then
+		ui.image(HUD_IMG.right, hud.size, settings.colorHud)
 		if uiState.isMouseLeftKeyClicked then
 			if settings.current == #statOn then settings.current = 1 else settings.current = settings.current + 1 end
 		end
-	elseif ui.rectHovered(imgPos.theftPos2, imgPos.theftPos1) then
+	elseif ui.rectHovered(hud.pos.theftPos2, hud.pos.theftPos1) then
 		iconsColorOn[1] = settings.colorHud
 		if uiState.isMouseLeftKeyClicked then
 			if stealingTime == 0 then
 				stealingTime = 30
 				if not drugDelivery.drawPickUp then
-					ac.sendChatMessage("* Stealing a " .. string.gsub(ac.getCarName(0), "%W", " ") .. os.date(" %x *"))
+					ac.sendChatMessage("* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. os.date(" %x *"))
 					stealMsgTime = 7
-					if sectorInfo.sectorIndex ~= 3 and sectorInfo.timerText == "00:00.00" then
-						sectorInfo.sectorIndex = 2
-						sector = sectors[sectorInfo.sectorIndex]
-						resetSectors()
-						settings.current = 4
-					end
+					-- if sectorInfo.sectorIndex ~= 3 and sectorInfo.timerText == "00:00.00" then
+					-- 	sectorInfo.sectorIndex = 2
+					-- 	sector = sectors[sectorInfo.sectorIndex]
+					-- 	resetSectors()
+					-- 	settings.current = 4
+					-- end
 				end
 				if drugDelivery.active and not drugDelivery.started then
-					ac.sendChatMessage(" has picked up the drugs at (" .. drugDelivery.pickUpName .. ") and is on the way to the drop off! (".. drugDelivery.dropOffName ..")")
+					ac.sendChatMessage(" has picked up the drugs at (" .. drugDelivery.pickUpName .. ") and is on the way to the drop off! (" .. drugDelivery.dropOffName .. ")")
 					drugDelivery.call = true
 				end
 			end
 		end
-	elseif ui.rectHovered(imgPos.ranksPos2, imgPos.ranksPos1) then
+	elseif ui.rectHovered(hud.pos.ranksPos2, hud.pos.ranksPos1) then
 		iconsColorOn[2] = settings.colorHud
 		if uiState.isMouseLeftKeyClicked then
-			if leaderboardOpen then leaderboardOpen = false
+			if menuStates.leaderboard then
+				menuStates.leaderboard = false
 			else
-				if menuOpen then
-					menuOpen = false
+				if menuStates.main then
+					menuStates.main = false
 					onSettingsChange()
 				end
-				leaderboardOpen = true
-				loadLeaderboard()
+				menuStates.leaderboard = true
+				-- loadLeaderboard()
 			end
 		end
-	elseif ui.rectHovered(imgPos.countdownPos2, imgPos.countdownPos1) then
+	elseif ui.rectHovered(hud.pos.countdownPos2, hud.pos.countdownPos1) then
 		iconsColorOn[3] = settings.colorHud
 		if not countDownState.countdownOn and uiState.isMouseLeftKeyClicked then
 			if cooldownTime == 0 then
@@ -2158,34 +2335,39 @@ local function drawImage()
 			end
 			settings.current = 2
 		end
-	elseif ui.rectHovered(imgPos.menuPos2, imgPos.menuPos1) then
+	elseif ui.rectHovered(hud.pos.menuPos2, hud.pos.menuPos1) then
 		iconsColorOn[4] = settings.colorHud
 		if uiState.isMouseLeftKeyClicked then
-			if menuOpen then
-				menuOpen = false
+			if menuStates.main then
+				menuStates.main = false
 				onSettingsChange()
 			else
-				if leaderboardOpen then leaderboardOpen = false end
-				menuOpen = true
+				if menuStates.leaderboard then menuStates.leaderboard = false end
+				menuStates.main = true
 			end
 		end
 	end
-	ui.image(hudImg.base, imageSize, settings.colorHud)
-	ui.drawImage(hudImg.theft, vec2(0,0), imageSize, iconsColorOn[1])
-	ui.drawImage(hudImg.ranks, vec2(0,0), imageSize, iconsColorOn[2])
-	ui.drawImage(hudImg.countdown, vec2(0,0), imageSize, iconsColorOn[3])
-	ui.drawImage(hudImg.menu, vec2(0,0), imageSize, iconsColorOn[4])
+	ui.image(HUD_IMG.base, hud.size, settings.colorHud)
+	ui.drawImage(HUD_IMG.theft, vec2(0, 0), hud.size, iconsColorOn[1])
+	ui.drawImage(HUD_IMG.ranks, vec2(0, 0), hud.size, iconsColorOn[2])
+	ui.drawImage(HUD_IMG.countdown, vec2(0, 0), hud.size, iconsColorOn[3])
+	ui.drawImage(HUD_IMG.menu, vec2(0, 0), hud.size, iconsColorOn[4])
 	if countDownState.countdownOn then countdown() end
-	if stealingTime > 0 then stealingTime = stealingTime - ui.deltaTime()
-	elseif stealingTime < 0 then stealingTime = 0 end
-	if toolTipOn then ui.tooltip(function ()
+	if stealingTime > 0 then
+		stealingTime = stealingTime - ui.deltaTime()
+	elseif stealingTime < 0 then
+		stealingTime = 0
+	end
+	if toolTipOn then
+		ui.tooltip(function()
 			ui.text("Click ALT to Bring up\nThe Welcome Menu")
 		end)
 	end
 end
 
 local function showMsgSteal()
-	local text = "You have successfully stolen the " ..  string.gsub(string.gsub(ac.getCarName(0), "%W", " "), "  ", "") .. "! Hurry to the scrapyard!"
+	local text = "You have successfully stolen the " ..
+		string.gsub(string.gsub(CAR_NAME, "%W", " "), "  ", "") .. "! Hurry to the scrapyard!"
 	textWithBackground(text, 1)
 end
 
@@ -2193,25 +2375,26 @@ local function hudUI()
 	if stealMsgTime > 0 then
 		showMsgSteal()
 		stealMsgTime = stealMsgTime - ui.deltaTime()
-	elseif stealMsgTime < 0 then stealMsgTime = 0 end
-	ui.beginTransparentWindow("HUD", vec2(settings.hudOffsetX, settings.hudOffsetY), imageSize, true)
-	drawImage()
-	drawText()
+	elseif stealMsgTime < 0 then
+		stealMsgTime = 0
+	end
+	ui.beginTransparentWindow("HUD", vec2(settings.hudOffset.x, settings.hudOffset.y), hud.size, true)
+	drawHudImages()
+	drawHudText()
 	ui.endTransparentWindow()
 end
 
 -------------------------------------------------------------------------------------------- Menu --------------------------------------------------------------------------------------------
 
-local firstLoad = true
-local initialized = false
-local menuSize = {vec2(windowWidth/5, windowHeight/4), vec2(windowWidth/6, windowHeight*2/3), vec2(windowWidth/3, windowHeight/3)}
+local menuSize = { vec2(WIDTH_DIV._5, HEIGHT_DIV._4), vec2(WIDTH_DIV._6, WINDOW_HEIGHT * 2 / 3), vec2(
+	WIDTH_DIV._3, HEIGHT_DIV._3) }
 local currentTab = 1
 local buttonPressed = false
 
 local function menu()
-	ui.tabBar('MainTabBar', ui.TabBarFlags.Reorderable, function ()
-		ui.tabItem('Sectors', function () currentTab = sectorUI() end)
-		ui.tabItem('settings', function () currentTab = settingsWindow() end)
+	ui.tabBar('MainTabBar', ui.TabBarFlags.Reorderable, function()
+		ui.tabItem('Sectors', function() currentTab = sectorUI() end)
+		ui.tabItem('settings', function() currentTab = settingsWindow() end)
 	end)
 end
 
@@ -2222,8 +2405,8 @@ local function moveMenu()
 end
 
 local function leaderboardWindow()
-	ui.toolWindow('LeaderboardWindow', settings.menuPos, vec2(windowWidth/2, windowHeight/2), true, function ()
-		ui.childWindow('childLeaderboard', vec2(windowWidth/2, windowHeight/2), true, function ()
+	ui.toolWindow('LeaderboardWindow', settings.menuPos, vec2(WIDTH_DIV._2, HEIGHT_DIV._2), true, function()
+		ui.childWindow('childLeaderboard', vec2(WIDTH_DIV._2, HEIGHT_DIV._2), true, function()
 			showLeaderboard()
 			moveMenu()
 		end)
@@ -2232,245 +2415,206 @@ end
 
 --------------------------------------------------------------------------------- Welcome Menu ---------------------------------------------------------------------------------
 
-local welcomeImg = {
-	base = "https://i.postimg.cc/pX9rTTVC/baseacp.png",
-	logo = "https://i.postimg.cc/brZysCPr/logoacp.png",
-	leftBoxOff = "https://i.postimg.cc/MTKK8Zry/left-Box-Off.png",
-	leftBoxOn = "https://i.postimg.cc/xdPT7Ngf/left-Box-On.png",
-	centerBoxOff = "https://i.postimg.cc/G2qtBTs7/center-Box-Off.png",
-	centerBoxOn = "https://i.postimg.cc/2j93rvY3/center-Box-On.png",
-	rightBoxOff = "https://i.postimg.cc/kXtMCpwh/right-Box-Off.png",
-	rightBoxOn = "https://i.postimg.cc/13hm3rjR/right-Box-On.png",
-	leftArrowOff = "https://i.postimg.cc/cLwJRbn8/left-Arrow-Off.png",
-	leftArrowOn = "https://i.postimg.cc/B6YZZWdR/left-Arrow-On.png",
-	rightArrowOff = "https://i.postimg.cc/cLRsgtpR/right-Arrow-Off.png",
-	rightArrowOn = "https://i.postimg.cc/BbRqDTZg/right-Arrow-On.png",
-}
+local welcomeCardsToDisplayed = { 1, 2, 3, 4, 5, 6, 7, 8, 9, }
 
-local imgToDraw = { welcomeImg.leftArrowOff, welcomeImg.rightArrowOff, welcomeImg.leftBoxOff, welcomeImg.centerBoxOff, welcomeImg.rightBoxOff, welcomeImg.base, welcomeImg.logo}
+local welcomeNavImgToDraw = { WELCOME_NAV_IMG.leftArrowOff, WELCOME_NAV_IMG.rightArrowOff, WELCOME_NAV_IMG.leftBoxOff, WELCOME_NAV_IMG
+	.centerBoxOff, WELCOME_NAV_IMG.rightBoxOff, WELCOME_NAV_IMG.base, WELCOME_NAV_IMG.logo }
 
-local imgColor = {
+local cardOutline = {
 	rgbm.colors.white,
 	rgbm.colors.white,
 	rgbm.colors.white,
 	rgbm.colors.white,
 	rgbm.colors.white,
-	settings.colorHud,
 	rgbm.colors.white,
-}
-
--- Position for interaction with the image
--- Position is based on the image size of 2560x1440
-local imgPos_ = {
-	{vec2(70, 650), vec2(320, 910)},
-	{vec2(2230, 650), vec2(2490, 910)},
-	{vec2(357, 325), vec2(920, 1234)},
-	{vec2(993, 325), vec2(1557, 1234)},
-	{vec2(1633, 325), vec2(2195, 1234)},
-	{vec2(31, 106), vec2(2535, 1370)},
-	{vec2(2437, 48), vec2(2510, 100)},
+	rgbm.colors.white,
 }
 
 local welcomeWindow = {
-	size = vec2(16 * windowHeight / 9, windowHeight),
+	size = vec2(16 * WINDOW_HEIGHT / 9, WINDOW_HEIGHT),
 	topLeft = vec2(0, 0),
-	topRight = vec2(windowWidth, 0),
+	topRight = vec2(WINDOW_WIDTH, 0),
 	offset = vec2(0, 0),
 	scale = 0.9,
 	fontBold = ui.DWriteFont("Orbitron;Weight=BLACK"),
 	font = ui.DWriteFont("Orbitron;Weight=REGULAR"),
 	closeIMG = "https://acstuff.ru/images/icons_24/cancel.png",
-	fontSize = windowHeight/35,
+	fontSize = WINDOW_HEIGHT / 35,
 }
 
 
-local function loadFont()
-	local urlFont = "https://cdn.discordapp.com/attachment/1130004696984203325/1218567361892847708/EUROSTARBLACKEXTENDED.zip?ex=6608224a&is=65f5ad4a&hm=9e63bb730630e53c5f273e1e66f67684231380f71327793af6cb4603b141b989&"
-
-    web.loadRemoteAssets(urlFont, function (err, folder)
-		if err then
-			print("Error loading font: " .. err)
-			welcomeWindow.fontBold = ui.DWriteFont("Orbitron;Weight=BLACK")
-			welcomeWindow.font = ui.DWriteFont("Orbitron;Weight=REGULAR")
-		else
-			welcomeWindow.fontBold = ui.DWriteFont("Eurostar Black Extended", folder):weight(ui.DWriteFont.Weight.Bold)
-			welcomeWindow.font = ui.DWriteFont("Eurostar Black Extended", folder):weight(ui.DWriteFont.Weight.SemiBold)
-		end
-	end)
-end
-
-local function scalePositions()
-	welcomeWindow.fontBold = ui.DWriteFont("Orbitron;Weight=BLACK")
-	welcomeWindow.font = ui.DWriteFont("Orbitron;Weight=REGULAR")
-	local xScale = windowWidth / 2560
-	local yScale = windowHeight / 1440
+local function scaleWelcomeMenu()
+	local xScale = WINDOW_WIDTH / 2560
+	local yScale = WINDOW_HEIGHT / 1440
 	local minScale = math.min(xScale, yScale)
 
 	welcomeWindow.size = welcomeWindow.size * welcomeWindow.scale
-	welcomeWindow.offset = vec2((windowWidth - welcomeWindow.size.x) / 2, (windowHeight - welcomeWindow.size.y) / 2)
+	welcomeWindow.offset = vec2((WINDOW_WIDTH - welcomeWindow.size.x) / 2, (WINDOW_HEIGHT - welcomeWindow.size.y) / 2)
 	minScale = minScale * welcomeWindow.scale
-	for i = 1, #imgPos_ do
-		imgPos_[i][1] = imgPos_[i][1] * minScale
-		imgPos_[i][2] = imgPos_[i][2] * minScale
+	for i = 1, #WELCOME_CARD_IMG_POS do
+		WELCOME_CARD_IMG_POS[i][1] = WELCOME_CARD_IMG_POS[i][1] * minScale
+		WELCOME_CARD_IMG_POS[i][2] = WELCOME_CARD_IMG_POS[i][2] * minScale
 	end
-	welcomeWindow.topLeft = imgPos_[6][1] + welcomeWindow.offset + welcomeWindow.size/100
-	welcomeWindow.topRight = vec2(imgPos_[6][2].x - welcomeWindow.size.x/100, imgPos_[6][1].y + welcomeWindow.size.y/100) + welcomeWindow.offset
+	welcomeWindow.topLeft = WELCOME_CARD_IMG_POS[6][1] + welcomeWindow.offset + welcomeWindow.size / 100
+	welcomeWindow.topRight = vec2(WELCOME_CARD_IMG_POS[6][2].x - welcomeWindow.size.x / 100,
+		WELCOME_CARD_IMG_POS[6][1].y + welcomeWindow.size.y / 100) + welcomeWindow.offset
 end
 
-local imgSet = {
-	"https://i.postimg.cc/5tW6DVV3/aboutacp.jpg",
-	"https://i.postimg.cc/MHLG5k51/earnmoney.jpg",
-	"https://i.postimg.cc/4yydp46J/leaderboard.jpg",
-	"https://i.postimg.cc/T3DKkPZ1/bank.jpg",
-	"https://i.postimg.cc/15LtNQfQ/police.jpg",
-	"https://i.postimg.cc/WbKD6ZYx/buycars.jpg",
-	"https://i.postimg.cc/sfLftrPh/tuning.jpg",
-	"https://i.postimg.cc/bv0shBYj/cartheft.jpg",
-	"https://i.postimg.cc/Jn1t45tH/drugdealer.jpg",
-}
 
-local imgLink = {
-	"https://discord.com/channels/358562025032646659/1062186611091185784",--FAQ
-	"https://discord.com/channels/358562025032646659/1147217487524528138",--earn
-	"https://discord.com/channels/358562025032646659/1127619394328076318",--leaderboard
-	"https://discord.com/channels/358562025032646659/1075578309443858522",--bank
-	"https://discord.com/channels/358562025032646659/1095681142197325975",--police
-	"https://discord.com/channels/358562025032646659/1076123906362056784",--car
-	"https://discord.com/channels/358562025032646659/1079799948306034708",--tuning
-	"https://discord.com/channels/358562025032646659/1096470595392241704",--car theft
-	"",
-}
-
-local imgDisplayed = {1,2,3,4,5,6,7,8,9,}
 
 local function drugShowInfo(i)
-	local leftCorner = vec2(imgPos_[i+2][1].x, imgPos_[i+2][1].y) + vec2(welcomeWindow.size.x/100, welcomeWindow.size.y/10)
-	local textPos = leftCorner + welcomeWindow.size/100
-	ui.drawRectFilled(leftCorner,  vec2(imgPos_[i+2][2].x - welcomeWindow.size.x/100 , leftCorner.y + ui.measureDWriteText("Locations names are the same\nas the teleports in the mini map.\nDelivery : \n \nPick Up :  \nDrop Off :  " .. drugDelivery.dropOffName, settings.fontSize).y*2), rgbm(0, 0, 0, 0.8))
+	local leftCorner = vec2(WELCOME_CARD_IMG_POS[i + 2][1].x, WELCOME_CARD_IMG_POS[i + 2][1].y) +
+		vec2(welcomeWindow.size.x / 100, welcomeWindow.size.y / 10)
+	local textPos = leftCorner + welcomeWindow.size / 100
+	ui.drawRectFilled(leftCorner,
+		vec2(WELCOME_CARD_IMG_POS[i + 2][2].x - welcomeWindow.size.x / 100,
+			leftCorner.y +
+			ui.measureDWriteText(
+				"Locations names are the same\nas the teleports in the mini map.\nDelivery : \n \nPick Up :  \nDrop Off :  " ..
+				drugDelivery.dropOffName, settings.fontSize).y * 2), rgbm(0, 0, 0, 0.8))
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=BLACK")
-	ui.dwriteDrawText("Location names are the same\nas teleports in the mini map.", welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
-	textPos.y = textPos.y + ui.measureDWriteText("Locations names are the same\nas the teleports in the mini map.", welcomeWindow.fontSize*0.6).y*2
-	ui.dwriteDrawText("Delivery : " .. os.date("%a the %d"), welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
-	textPos.x = textPos.x  + ui.measureDWriteText("Delivery : " .. os.date("%a the %d"), welcomeWindow.fontSize*0.6).x
+	ui.dwriteDrawText("Location names are the same\nas teleports in the mini map.", welcomeWindow.fontSize * 0.6, textPos,
+		rgbm.colors.white)
+	textPos.y = textPos.y +
+		ui.measureDWriteText("Locations names are the same\nas the teleports in the mini map.",
+			welcomeWindow.fontSize * 0.6)
+		.y * 2
+	ui.dwriteDrawText("Delivery : " .. os.date("%a the %d"), welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
+	textPos.x = textPos.x + ui.measureDWriteText("Delivery : " .. os.date("%a the %d"), welcomeWindow.fontSize * 0.6).x
 	if os.date("%d") == "01" then
-		ui.dwriteDrawText(" st", welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+		ui.dwriteDrawText(" st", welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
 	elseif os.date("%d") == "02" then
-		ui.dwriteDrawText(" nd", welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+		ui.dwriteDrawText(" nd", welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
 	elseif os.date("%d") == "03" then
-		ui.dwriteDrawText(" rd", welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+		ui.dwriteDrawText(" rd", welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
 	else
-		ui.dwriteDrawText("th", welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+		ui.dwriteDrawText("th", welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
 	end
-	textPos.x = textPos.x - ui.measureDWriteText(os.date("%a the %d"), welcomeWindow.fontSize*0.6).x
-	textPos.y = textPos.y + ui.measureDWriteText("Delivery : " .. os.date("%a the %d"), welcomeWindow.fontSize*0.6).y
-	ui.dwriteDrawText("of " .. os.date("%B"), welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
-	textPos.x = textPos.x - ui.measureDWriteText("Delivery : ", welcomeWindow.fontSize*0.6).x
-	textPos.y = textPos.y + ui.measureDWriteText("Delivery :  " .. os.date("%x"), welcomeWindow.fontSize*0.6).y*2
-	ui.dwriteDrawText("Pick Up :  " .. drugDelivery.pickUpName, welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
-	textPos.y = textPos.y + ui.measureDWriteText("Pick Up :  " .. drugDelivery.pickUpName, welcomeWindow.fontSize*0.6).y*2
-	ui.dwriteDrawText("Drop Off :  " .. drugDelivery.dropOffName, welcomeWindow.fontSize*0.6, textPos, rgbm.colors.white)
+	textPos.x = textPos.x - ui.measureDWriteText(os.date("%a the %d"), welcomeWindow.fontSize * 0.6).x
+	textPos.y = textPos.y + ui.measureDWriteText("Delivery : " .. os.date("%a the %d"), welcomeWindow.fontSize * 0.6).y
+	ui.dwriteDrawText("of " .. os.date("%B"), welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
+	textPos.x = textPos.x - ui.measureDWriteText("Delivery : ", welcomeWindow.fontSize * 0.6).x
+	textPos.y = textPos.y + ui.measureDWriteText("Delivery :  " .. os.date("%x"), welcomeWindow.fontSize * 0.6).y * 2
+	ui.dwriteDrawText("Pick Up :  " .. drugDelivery.pickUpName, welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
+	textPos.y = textPos.y +
+		ui.measureDWriteText("Pick Up :  " .. drugDelivery.pickUpName, welcomeWindow.fontSize * 0.6).y * 2
+	ui.dwriteDrawText("Drop Off :  " .. drugDelivery.dropOffName, welcomeWindow.fontSize * 0.6, textPos,
+		rgbm.colors.white)
 	ui.popDWriteFont()
 end
 
-local function drawMenuText()
+local function drawWelcomeText()
 	ui.popDWriteFont()
 	ui.pushDWriteFont(welcomeWindow.font)
-	ui.dwriteDrawText("WELCOME BACK,", welcomeWindow.fontSize*0.6, welcomeWindow.topLeft, rgbm.colors.white)
+	ui.dwriteDrawText("WELCOME BACK,", welcomeWindow.fontSize * 0.6, welcomeWindow.topLeft, rgbm.colors.white)
 	ui.popDWriteFont()
 	ui.pushDWriteFont(welcomeWindow.fontBold)
-	ui.dwriteDrawText(ac.getDriverName(0), welcomeWindow.fontSize, vec2(welcomeWindow.topLeft.x, welcomeWindow.topLeft.y + ui.measureDWriteText("WELCOME BACK,", welcomeWindow.fontSize*0.6).y), settings.colorHud)
+	ui.dwriteDrawText(DRIVER_NAME, welcomeWindow.fontSize,
+		vec2(welcomeWindow.topLeft.x,
+			welcomeWindow.topLeft.y + ui.measureDWriteText("WELCOME BACK,", welcomeWindow.fontSize * 0.6).y),
+		settings.colorHud)
 	ui.popDWriteFont()
 	ui.pushDWriteFont(welcomeWindow.font)
-	ui.dwriteDrawText("CURRENT CAR", welcomeWindow.fontSize*0.6, vec2(welcomeWindow.topRight.x - ui.measureDWriteText("CURRENT CAR", welcomeWindow.fontSize*0.6).x, welcomeWindow.topRight.y), rgbm.colors.white)
+	ui.dwriteDrawText("CURRENT CAR", welcomeWindow.fontSize * 0.6,
+		vec2(welcomeWindow.topRight.x - ui.measureDWriteText("CURRENT CAR", welcomeWindow.fontSize * 0.6).x,
+			welcomeWindow.topRight.y), rgbm.colors.white)
 	ui.popDWriteFont()
 	ui.pushDWriteFont(welcomeWindow.fontBold)
-	ui.dwriteDrawText(string.gsub(string.gsub(ac.getCarName(0), "%W", " "), "  ", ""), welcomeWindow.fontSize, vec2(welcomeWindow.topRight.x - ui.measureDWriteText(string.gsub(string.gsub(ac.getCarName(0), "%W", " "), "  ", ""), welcomeWindow.fontSize).x - ui.measureDWriteText(carVersion, welcomeWindow.fontSize*0.8).x, welcomeWindow.topRight.y + ui.measureDWriteText("CURRENT CAR", welcomeWindow.fontSize*0.6).y), settings.colorHud)
-	ui.popDWriteFont()
-	ui.pushDWriteFont(welcomeWindow.font)
-	ui.dwriteDrawText(carVersion, welcomeWindow.fontSize*0.7, vec2(welcomeWindow.topRight.x - ui.measureDWriteText(carVersion, welcomeWindow.fontSize*0.7).x, welcomeWindow.topRight.y + ui.measureDWriteText("CURRENT CAR", welcomeWindow.fontSize).y*0.85), rgbm.colors.white)
+	ui.dwriteDrawText(string.gsub(string.gsub(CAR_NAME, "%W", " "), "  ", ""), welcomeWindow.fontSize,
+		vec2(
+			welcomeWindow.topRight.x -
+			ui.measureDWriteText(string.gsub(string.gsub(CAR_NAME, "%W", " "), "  ", ""), welcomeWindow.fontSize).x,
+			welcomeWindow.topRight.y + ui.measureDWriteText("CURRENT CAR", welcomeWindow.fontSize * 0.6).y),
+		settings.colorHud)
 	ui.popDWriteFont()
 end
 
-local function drawMenuImage()
+local function drawWelcomeImg()
 	local iconCloseColor = rgbm.colors.white
 	local toolTipOn = false
-	for i = 1, #imgColor - 1 do
-		if i == #imgColor - 1 then imgColor[i] = settings.colorHud
-		else imgColor[i] = rgbm.colors.white end
+	for i = 1, #cardOutline - 1 do
+		if i == #cardOutline - 1 then
+			cardOutline[i] = settings.colorHud
+		else
+			cardOutline[i] = rgbm.colors.white
+		end
 	end
-	imgToDraw[1] = welcomeImg.leftArrowOff
-	imgToDraw[2] = welcomeImg.rightArrowOff
-	imgToDraw[3] = welcomeImg.leftBoxOff
-	imgToDraw[4] = welcomeImg.centerBoxOff
-	imgToDraw[5] = welcomeImg.rightBoxOff
-	ui.transparentWindow('welcomeIMG', welcomeWindow.offset, welcomeWindow.size, true, function ()
-		ui.childWindow('welcomeIMGChild', welcomeWindow.size, true, function ()
-			local uiState = ac.getUI()
-			ui.drawRectFilled(imgPos_[6][1], imgPos_[6][2], rgbm(0, 0, 0, 0.6))
-			ui.drawRectFilled(imgPos_[7][1], imgPos_[7][2], rgbm(0, 0, 0, 0.6))
-			if ui.rectHovered(imgPos_[1][1], imgPos_[1][2]) then
-				imgColor[1] = settings.colorHud
-				imgToDraw[1] = welcomeImg.leftArrowOn
+	welcomeNavImgToDraw[1] = WELCOME_NAV_IMG.leftArrowOff
+	welcomeNavImgToDraw[2] = WELCOME_NAV_IMG.rightArrowOff
+	welcomeNavImgToDraw[3] = WELCOME_NAV_IMG.leftBoxOff
+	welcomeNavImgToDraw[4] = WELCOME_NAV_IMG.centerBoxOff
+	welcomeNavImgToDraw[5] = WELCOME_NAV_IMG.rightBoxOff
+	ui.transparentWindow('WELCOME_NAV_IMG', welcomeWindow.offset, welcomeWindow.size, true, function()
+		ui.childWindow('welcomeNavIMGChild', welcomeWindow.size, true, function()
+			ui.drawRectFilled(WELCOME_CARD_IMG_POS[6][1], WELCOME_CARD_IMG_POS[6][2], rgbm(0, 0, 0, 0.6))
+			ui.drawRectFilled(WELCOME_CARD_IMG_POS[7][1], WELCOME_CARD_IMG_POS[7][2], rgbm(0, 0, 0, 0.6))
+			if ui.rectHovered(WELCOME_CARD_IMG_POS[1][1], WELCOME_CARD_IMG_POS[1][2]) then
+				cardOutline[1] = settings.colorHud
+				welcomeNavImgToDraw[1] = WELCOME_NAV_IMG.leftArrowOn
 				if uiState.isMouseLeftKeyClicked then
-					for i = 1, #imgDisplayed do
-						if imgDisplayed[i] == 1 then
-							imgDisplayed[i] = #imgSet
+					for i = 1, #welcomeCardsToDisplayed do
+						if welcomeCardsToDisplayed[i] == 1 then
+							welcomeCardsToDisplayed[i] = #WELCOME_CARD_IMG
 						else
-							imgDisplayed[i] = imgDisplayed[i] - 1
+							welcomeCardsToDisplayed[i] = welcomeCardsToDisplayed[i] - 1
 						end
 					end
 				end
-			elseif ui.rectHovered(imgPos_[2][1], imgPos_[2][2]) then
-				imgColor[2] = settings.colorHud
-				imgToDraw[2] = welcomeImg.rightArrowOn
+			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[2][1], WELCOME_CARD_IMG_POS[2][2]) then
+				cardOutline[2] = settings.colorHud
+				welcomeNavImgToDraw[2] = WELCOME_NAV_IMG.rightArrowOn
 				if uiState.isMouseLeftKeyClicked then
-					for i = 1, #imgDisplayed do
-						if imgDisplayed[i] == #imgSet then
-							imgDisplayed[i] = 1
+					for i = 1, #welcomeCardsToDisplayed do
+						if welcomeCardsToDisplayed[i] == #WELCOME_CARD_IMG then
+							welcomeCardsToDisplayed[i] = 1
 						else
-							imgDisplayed[i] = imgDisplayed[i] + 1
+							welcomeCardsToDisplayed[i] = welcomeCardsToDisplayed[i] + 1
 						end
 					end
 				end
-			elseif ui.rectHovered(imgPos_[3][1], imgPos_[3][2]) then
+			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[3][1], WELCOME_CARD_IMG_POS[3][2]) then
 				toolTipOn = true
-				imgColor[3] = settings.colorHud
-				imgToDraw[3] = welcomeImg.leftBoxOn
-				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(imgLink[imgDisplayed[1]]) end
-			elseif ui.rectHovered(imgPos_[4][1], imgPos_[4][2]) then
+				cardOutline[3] = settings.colorHud
+				welcomeNavImgToDraw[3] = WELCOME_NAV_IMG.leftBoxOn
+				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(WELCOME_CARD_LINK[welcomeCardsToDisplayed[1]]) end
+			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[4][1], WELCOME_CARD_IMG_POS[4][2]) then
 				toolTipOn = true
-				imgColor[4] = settings.colorHud
-				imgToDraw[4] = welcomeImg.centerBoxOn
-				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(imgLink[imgDisplayed[2]]) end
-			elseif ui.rectHovered(imgPos_[5][1], imgPos_[5][2]) then
+				cardOutline[4] = settings.colorHud
+				welcomeNavImgToDraw[4] = WELCOME_NAV_IMG.centerBoxOn
+				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(WELCOME_CARD_LINK[welcomeCardsToDisplayed[2]]) end
+			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[5][1], WELCOME_CARD_IMG_POS[5][2]) then
 				toolTipOn = true
-				imgColor[5] = settings.colorHud
-				imgToDraw[5] = welcomeImg.rightBoxOn
-				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(imgLink[imgDisplayed[3]]) end
-			elseif ui.rectHovered(imgPos_[7][1], imgPos_[7][2]) then
+				cardOutline[5] = settings.colorHud
+				welcomeNavImgToDraw[5] = WELCOME_NAV_IMG.rightBoxOn
+				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(WELCOME_CARD_LINK[welcomeCardsToDisplayed[3]]) end
+			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[7][1], WELCOME_CARD_IMG_POS[7][2]) then
 				iconCloseColor = settings.colorHud
-				if uiState.isMouseLeftKeyClicked then welcomeClosed = true end
+				if uiState.isMouseLeftKeyClicked then menuStates.welcome = false end
 			end
-				ui.drawImage(welcomeWindow.closeIMG, imgPos_[7][1]+vec2(10,10), imgPos_[7][2]-vec2(10,10), iconCloseColor)
-			for i = 1, #imgToDraw do ui.drawImage(imgToDraw[i], vec2(0,0), welcomeWindow.size, imgColor[i]) end
+			ui.drawImage(welcomeWindow.closeIMG, WELCOME_CARD_IMG_POS[7][1] + vec2(10, 10), WELCOME_CARD_IMG_POS[7][2] - vec2(10, 10),
+				iconCloseColor)
+			for i = 1, #welcomeNavImgToDraw do ui.drawImage(welcomeNavImgToDraw[i], vec2(0, 0), welcomeWindow.size, cardOutline[i]) end
 			for i = 1, 3 do
-				if imgDisplayed[i] == 9 then
-					ui.drawImage(imgSet[imgDisplayed[i]], imgPos_[i+2][1], imgPos_[i+2][2], rgbm(1,1,1,1))
+				if welcomeCardsToDisplayed[i] == 9 then
+					ui.drawImage(WELCOME_CARD_IMG[welcomeCardsToDisplayed[i]], WELCOME_CARD_IMG_POS[i + 2][1], WELCOME_CARD_IMG_POS[i + 2][2], rgbm.colors.white)
 					drugShowInfo(i)
-				else ui.drawImage(imgSet[imgDisplayed[i]], imgPos_[i+2][1], imgPos_[i+2][2], rgbm(1,1,1,1)) end
+				else
+					ui.drawImage(WELCOME_CARD_IMG[welcomeCardsToDisplayed[i]], WELCOME_CARD_IMG_POS[i + 2][1], WELCOME_CARD_IMG_POS[i + 2][2], rgbm.colors.white)
+				end
 			end
 		end)
 	end)
-	if toolTipOn then ui.tooltip(function ()
+	if toolTipOn then
+		ui.tooltip(function()
 			ui.text("CTRL + Left Click to open Discord link\nWhere you can find more information")
 		end)
 	end
 end
 
-local function drawMenuWelcome()
-	drawMenuImage()
-	drawMenuText()
+local function drawWelcomeMenu()
+	drawWelcomeImg()
+	drawWelcomeText()
 end
 
 -------------------------------------------------------------------------------- UPDATE --------------------------------------------------------------------------------
@@ -2478,40 +2622,35 @@ end
 
 
 function script.drawUI()
-	return
-	if ui.keyboardButtonPressed(ui.KeyIndex.Menu) then welcomeClosed = not welcomeClosed end
-	if not welcomeClosed then
-		drawMenuWelcome()
-	elseif initialized then
-		if cspVersion < cspMinVersion then return end
-		if firstLoad then
-			updatePos()
-			firstLoad = false
-		end
+	if not shouldRun() then return end
+	if ui.keyboardButtonPressed(ui.KeyIndex.Menu) then menuStates.welcome = not menuStates.welcome end
+	if menuStates.welcome then
+		drawWelcomeMenu()
+	else
 		if online.chased then showStarsPursuit() end
 		hudUI()
 		onlineEventMessageUI()
 		raceUI()
 		drugDeliveryUI()
-		if menuOpen then
-			ui.toolWindow('Menu', settings.menuPos, menuSize[currentTab], true, function ()
-				ui.childWindow('childMenu', menuSize[currentTab], true, ui.WindowFlags.MenuBar, function ()
+		if menuStates.main then
+			ui.toolWindow('Menu', settings.menuPos, menuSize[currentTab], true, function()
+				ui.childWindow('childMenu', menuSize[currentTab], true, ui.WindowFlags.MenuBar, function()
 					menu()
 					moveMenu()
 				end)
 			end)
 		end
-		if leaderboardOpen then leaderboardWindow() end
+		-- if menuStates.leaderboard then leaderboardWindow() end
 	end
 end
 
-local policeCarIndex = {0, 0, 0, 0, 0, 0}
+local policeCarIndex = { 0, 0, 0, 0, 0, 0 }
 
 local function initPoliceCarIndex()
 	local j = 1
 	for i = ac.getSim().carsCount - 1, 0, -1 do
 		local playerCarID = ac.getCarID(i)
-		if playerCarID == valideCar[1] or playerCarID == valideCar[2] or carID == valideCar[3] then
+		if playerCarID and isPoliceCar(playerCarID) then
 			policeCarIndex[j] = i
 			j = j + 1
 		end
@@ -2521,9 +2660,9 @@ end
 local function hidePolice()
 	local hideRange = 100
 	for i = 1, 6 do
-		local player = ac.getCar(policeCarIndex[i])
-		if player.isConnected then
-			if player.position.x > car.position.x - hideRange and player.position.z > car.position.z - hideRange and player.position.x < car.position.x + hideRange and player.position.z < car.position.z + hideRange then
+		local p = ac.getCar(policeCarIndex[i])
+		if p and p.isConnected then
+			if p.position.x > car.position.x - hideRange and p.position.z > car.position.z - hideRange and p.position.x < car.position.x + hideRange and p.position.z < car.position.z + hideRange then
 				ac.hideCarLabels(i, false)
 			else
 				ac.hideCarLabels(i, true)
@@ -2532,89 +2671,176 @@ local function hidePolice()
 	end
 end
 
-function script.update(dt)
-	return
-	if not initialized then
-		ac.log("ACP Essential APP")
-		if carID == valideCar[1] or carID == valideCar[2] or carID == valideCar[3] or cspVersion < cspMinVersion then return end
-		loadSettings()
-		initLines()
-		initialized = true
-		getFirebase()
-		loadLeaderboard()
-		initDrugRoute()
-		scalePositions()
-		initOverTake()
-		initPoliceCarIndex()
-	else
-		sectorUpdate()
-		raceUpdate(dt)
-		overtakeUpdate(dt)
-		driftUpdate(dt)
-		drugDeliveryUpdate(dt)
-		hidePolice()
+local function sectorUpdate()
+	if not sectorManager.started and not sectorManager.sector:hasStarted() then
+		sectorManager.started = true
+		sectorManager.finished = false
+	end
+	if not sectorManager.finished and sectorManager.sector:isFinished() then
+		sectorManager:printToChat()
+		sectorManager.finished = true
+		sectorManager.started = false
+	end
+	if sectorManager.started and not sectorManager.finished and not sectorManager:hasTeammateFinished() then
+		sectorManager.sector:update()
 	end
 end
 
-ac.onCarJumped(0, function (carIndex)
-	if carID ~= valideCar[1] and carID ~= valideCar[2] and carID ~= valideCar[3] then
-		ac.log("Car Jumped")
-		resetSectors()
+local function initUi()
+	updateHudPos()
+	scaleWelcomeMenu()
+	updateStarsPos()
+	dataLoaded['Settings'] = true
+end
+
+local function loadSettings()
+	Settings.allocate(function(allocatedSetting)
+		ac.log("Settings Allocated")
+		settings = allocatedSetting
+		initUi()
+	end)
+end
+
+
+local function loadAllSectors()
+	local url = FIREBASE_URL .. 'Sectors.json'
+	if localTesting then
+		local currentPath = ac.getFolder(ac.FolderID.ScriptOrigin)
+		local file = io.open(currentPath .. '/sectorsResponse.json', 'r')
+		if not file then
+			ac.error('Failed to open sectorsResponse.json')
+			return
+		end
+		local data = JSON.parse(file:read('*a'))
+		file:close()
+		local i = 1
+		for key, value in pairs(data) do
+			local sector = Sector.tryParse(value)
+			if sector then
+				sector.name = key
+				sectors[i] = sector
+				i = i + 1
+			end
+		end
+		sectorManager:setSector('Test')
+		dataLoaded['Sectors'] = true
+	else
+		web.get(url, function(err, response)
+			if canProcessRequest(err, response) then
+				local data = JSON.parse(response.body)
+				local i = 1
+				for key, value in pairs(data) do
+					local sector = Sector.tryParse(value)
+					if sector then
+						sector.name = key
+						sectors[i] = sector
+						i = i + 1
+					end
+				end
+				sectorManager:setSector('H1')
+				dataLoaded['Sectors'] = true
+			end
+		end)
+	end
+end
+
+local function loadPlayerData()
+	Player.allocate(function(allocatedPlayer)
+		if allocatedPlayer then
+			player = allocatedPlayer
+			dataLoaded['PlayerData'] = true
+		end
+	end)
+end
+
+function script.update(dt)
+	if initialisation then
+		initialisation = false
+		loadSettings()
+		loadAllSectors()
+		loadPlayerData()
+		initPoliceCarIndex()
+		initOverTake()
+		initDrugRoute()
+	end
+	if not shouldRun() then return end
+
+	sectorUpdate()
+	raceUpdate(dt)
+	overtakeUpdate(dt)
+	drugDeliveryUpdate(dt)
+	hidePolice()
+end
+
+--------------------------------------------------------------- 3D Update ---------------------------------------------------------------
+
+local function drawGate()
+	if sectorManager.sector and not sectorManager.sector:isFinished() then
+		local gateIndex = sectorManager.sector.gateIndex
+		if gateIndex > sectorManager.sector.gateCount then gateIndex = sectorManager.sector.gateCount end
+		render.debugLine(sectorManager.sector.gates[gateIndex].point1,
+			sectorManager.sector.gates[gateIndex].point2, gateColor)
+	end
+end
+
+local function drawDrugDelivery()
+	if drugDelivery.drawPickUp then render.circle(drugDelivery.pickUp, vec3(0,1,0), 4, rgbm(0,1,0,1))
+	elseif drugDelivery.drawDropOff then render.circle(drugDelivery.dropOff, vec3(0,1,0), 4, rgbm(0,1,0,1)) end
+end
+
+function script.draw3D()
+	if not shouldRun() then return end
+	render.setBlendMode(render.BlendMode.AlphaBlend)
+	render.setCullMode(render.CullMode.None)
+	render.setDepthMode(render.DepthMode.Normal)
+	if settings.current == 4 then
+		drawGate()
+	elseif settings.current == 5 then
+		drawDrugDelivery()
+	end
+end
+
+ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
+
+--------------------------------------------------------------- AC Callbacks --------------------------------------------------------------
+ac.onCarJumped(0, function(carIndex)
+	sectorManager:reset()
+	if not isPoliceCar(CAR_ID) then
 		if drugDelivery.started then
 			ac.sendChatMessage(" has crashed and lost the drugs!")
 		end
 		resetDrugDelivery()
 		if online.chased and online.officer then
-			acpPolice{message = "TP", messageType = 0, yourIndex = online.officer.sessionID}
+			acpPolice { message = "TP", messageType = 0, yourIndex = online.officer.sessionID }
 		end
 	end
 end)
 
-ac.onClientConnected(function (carIndex)
+ac.onClientConnected(function(carIndex)
 	local newCar = ac.getCarID(carIndex)
-	ac.log("New Car : " .. newCar)
-	if newCar == valideCar[1] or newCar == valideCar[2] or newCar == valideCar[3] then
+	if newCar and isPoliceCar(newCar) then
 		ac.hideCarLabels(carIndex)
 	end
 	initPoliceCarIndex()
 end)
 
-ac.onClientDisconnected(function (carIndex)
-	local newCar = ac.getCarID(carIndex)
-	ac.log("Car Disconnected : " .. newCar)
+ac.onClientDisconnected(function(carIndex)
 	ac.hideCarLabels(carIndex, false)
 end)
 
-ac.onChatMessage(function (message, senderCarIndex, senderSessionID)
-	if carID ~= valideCar[1] and carID ~= valideCar[2] and carID ~= valideCar[3] and online.chased and online.officer then
+ac.onChatMessage(function(message, senderCarIndex, senderSessionID)
+	if not shouldRun() then return false end
+	if online.chased and online.officer then
 		if (senderSessionID == online.officer.sessionID and string.find(message, 'lost')) then
-			if not playerData.Getaway then playerData.Getaway = 0 end
-			playerData.Getaway = playerData.Getaway + 1
+			if not player.getaways then player.getaways = 0 end
+			player.getaways = player.getaways + 1
 			online.chased = false
 			online.officer = nil
 			local data = {
-				["Getaway"] = playerData.Getaway,
+				["Getaway"] = player.getaways,
 			}
-			updatefirebase()
-			updatefirebaseData("Getaway", data)
+			-- Update the player get away count
 		end
 	end
+	return false
 end)
-
-function script.draw3D()
-	return
-	render.setBlendMode(render.BlendMode.AlphaBlend)
-    render.setCullMode(render.CullMode.None)
-	render.setDepthMode(render.DepthMode.Normal)
-	if initialized and settings.current == 4 then
-		if sectorInfo.drawLine then render.debugLine(sector.pointsData[sectorInfo.checkpoints][1], sector.pointsData[sectorInfo.checkpoints][2], rgbm(0,100,0,1)) end
-	end
-	if initialized then
-		if drugDelivery.drawPickUp then render.circle(drugDelivery.pickUp, vec3(0,1,0), 4, rgbm(0,1,0,1))
-		elseif drugDelivery.drawDropOff then render.circle(drugDelivery.dropOff, vec3(0,1,0), 4, rgbm(0,1,0,1)) end
-	end
-end
-
-if carID ~= valideCar[1] and carID ~= valideCar[2] and carID ~= valideCar[3] and cspVersion >= cspMinVersion then
-	ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
-end
