@@ -165,8 +165,6 @@ local function checkHash256()
 	local carHash256 = ac.checksumSHA256(io.load(carDataPath))
 end
 
-local highestScore = 0
-
 --return json of playerData with only the data needed for the leaderboard
 -- data are keys of the playerData table
 local function dataStringify(data)
@@ -1881,13 +1879,14 @@ local carsState = {}
 
 local function resetOvertake()
 	for i = 0, 4 do overtake.damage[i] = car.damage[i] end
-	if overtake.totalScore > highestScore then
-		highestScore = math.floor(overtake.totalScore)
-		ac.sendChatMessage("New highest Overtake score: " .. highestScore .. " pts !")
-		player.overtake = highestScore
-		local data = {
-			["Overtake"] = highestScore,
-		}
+	if overtake.totalScore > player.overtake then
+		player.overtake = math.floor(overtake.totalScore)
+		if player.overtake > 10000 then
+			ac.sendChatMessage("New highest Overtake score: " .. player.overtake .. " pts !")
+		end
+		-- local data = {
+		-- 	["Overtake"] = highestScore,
+		-- }
 	end
 	overtake.totalScore = 0
 	overtake.comboMeter = 1
@@ -1982,7 +1981,7 @@ local function overtakeUI(textOffset)
 		text = overtake.totalScore .. " pts - " .. string.format("%d", overtake.comboMeter) .. "x"
 		colorCombo = rgbm(0, 1, 0, 0.9)
 	else
-		text = "PB: " .. highestScore .. "pts"
+		text = "PB: " .. player.overtake .. "pts"
 		colorCombo = rgbm(1, 1, 1, 0.9)
 	end
 	local textSize = ui.measureDWriteText(text, settings.fontSize)
