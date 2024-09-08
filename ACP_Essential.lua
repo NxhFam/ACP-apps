@@ -5,7 +5,7 @@ local wheels = car.wheels or error()
 local uiState = ac.getUI()
 ui.setAsynchronousImagesLoading(true)
 
-local localTesting = true
+local localTesting = false
 local initialisation = true
 
 -- Constants --
