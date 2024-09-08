@@ -26,7 +26,10 @@ if DRIVER_NATION_CODE == "USA" or DRIVER_NATION_CODE == "GBR" then
 	UNIT_MULT = 0.621371
 end
 
-local POLICE_CAR = const({ "chargerpolice_acpursuit", "crown_police" })
+local POLICE_CAR = { "chargerpolice_acpursuit", "crown_police" }
+-- if localTesting then
+-- 	POLICE_CAR = { "supra_acp24" }
+-- end
 
 -- URL --
 local GOOGLE_APP_SCRIPT_URL = const(
@@ -1030,7 +1033,7 @@ function SectorManager:printToChat()
 end
 
 function SectorManager:hasTeammateFinished()
-	if self.isDuo and duo.teammate and duo.teammateHasFinished then
+	if duo.teammate and duo.teammateHasFinished then
 		return true
 	end
 	return false
@@ -2681,8 +2684,14 @@ local function sectorUpdate()
 		sectorManager.finished = true
 		sectorManager.started = false
 	end
-	if sectorManager.started and not sectorManager.finished and not sectorManager:hasTeammateFinished() then
-		sectorManager.sector:update()
+	if sectorManager.isDuo then
+		if sectorManager.started and not sectorManager.finished and not sectorManager:hasTeammateFinished() then
+			sectorManager.sector:update()
+		end
+	else
+		if sectorManager.started and not sectorManager.finished then
+			sectorManager.sector:update()
+		end
 	end
 end
 
