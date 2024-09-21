@@ -161,26 +161,6 @@ end
 
 if isPoliceCar(CAR_ID) then return end
 
-local carVersion = "Rental"
-
-local function checkHash256()
-	local carDataPath = ac.getFolder(ac.FolderID.ContentCars) .. '/' .. ac.getCarID(0) .. '/data.acd'
-	if not carDataPath or not io.exists(carDataPath) then
-		return
-	end
-	local carHash256 = ac.checksumSHA256(io.load(carDataPath))
-end
-
---return json of playerData with only the data needed for the leaderboard
--- data are keys of the playerData table
-local function dataStringify(data)
-	local str = '{"' .. STEAMID .. '": '
-	local name = DRIVER_NAME
-	data['Name'] = name
-	str = str .. JSON.stringify(data) .. '}'
-	return str
-end
-
 --------------firebase--------------
 local nodes = {
 	['Arrests'] = 'Arrestations',
@@ -805,7 +785,7 @@ function Player.fetch(url, callback)
 		file:close()
 		local player = Player.tryParse(data)
 		callback(player)
-		ac.log('Loaded From File')
+		ac.log('Player Date Loaded From File')
 	else
 		web.get(url, function(err, response)
 			if canProcessRequest(err, response) then
@@ -1069,69 +1049,6 @@ local hud = {
 	},
 }
 
-local drugAccessPointsName = {
-	"Gas Station 1",
-	"Street Runners",
-	"Gas Station 2",
-	"McDanalds 3",
-	"Road Criminals",
-	"McDanalds 4",
-	"Gas Station 3",
-	"Reckless Renegades",
-	"Motion Masters",
-	"restaurant 4",
-	"restaurant 7",
-	"McDanalds 7",
-	"restaurant 9",
-	"restaurant 11",
-	"restaurant 13",
-	"restaurant 14",
-	"McDanalds 8",
-	"restaurant 15",
-	"McDanalds 9",
-	"restaurant 16",
-}
-
-local drugAccessPoints = {
-	[1] = vec3(779.2, 96.9, 2225.4),
-	[2] = vec3(-78.9, 100.3, 2906.2),
-	[3] = vec3(-902.2, 144.1, 3494.8),
-	[4] = vec3(-2029.1, 99.9, 3522.9),
-	[5] = vec3(-2357, 97.2, 3147.6),
-	[6] = vec3(-2605.8, 94.9, 2863.1),
-	[7] = vec3(-4021.3, 60, 65.4),
-	[8] = vec3(-2952.5, -28.5, -593.4),
-	[9] = vec3(-2154.1, -14.3, -1928.1),
-	[10] = vec3(-2317.3, -23.2, -2443),
-	[11] = vec3(-1084.8, -121.5, -3029.7),
-	[12] = vec3(-152.9, -120.3, -3427.6),
-	[13] = vec3(913.1, -77.8, -2670.6),
-	[14] = vec3(2751.9, 23.2, -2169.7),
-	[15] = vec3(4231.5, 135.1, -2789.3),
-	[16] = vec3(4942.5, 101.7, -2367),
-	[17] = vec3(4890.5, 69.9, -1525.5),
-	[18] = vec3(4556.7, 62.3, -1031.8),
-	[19] = vec3(3147.5, 55.9, 214.7),
-	[20] = vec3(1831.1, 71.9, 1621.5)
-}
-
-local drugDelivery = {
-	pickUp = vec3(0, 0, 0),
-	dropOff = vec3(0, 0, 0),
-	pickUpName = "",
-	dropOffName = "",
-	active = false,
-	call = false,
-	started = false,
-	drawPickUp = false,
-	drawDropOff = false,
-	timer = 0,
-	distance = 0,
-	avgSpeed = 0,
-	finalAvgSpeed = 0,
-	damage = { 0, 0, 0, 0, 0 },
-}
-
 ----------------------------------------------------------------------------------------------- Math -----------------------------------------------------------------------------------------------
 
 local function cross(vector1, vector2)
@@ -1178,41 +1095,6 @@ local function updateHudPos()
 	settings.fontSize = settings.essentialSize * FONT_MULT
 end
 
-local function randNum(seed)
-	local date = os.date("%m%d%Y")
-	local num = 0
-	for i = 1, #date do
-		num = num + tonumber(date:sub(i, i))
-	end
-	num = num + seed
-	num = num % 20
-	num = num + 1
-	return num
-end
-
-
-local function initDrugRoute()
-	local accessPoint = randNum(0)
-	local ray = render.createRay(drugAccessPoints[accessPoint], vec3(0, -1, 0))
-	local hit = ray:track() - 0.1
-	if hit ~= -1 then
-		drugDelivery.pickUp = ray.pos + ray.dir * hit
-	else
-		drugDelivery.pickUp = drugAccessPoints[accessPoint]
-	end
-	drugDelivery.pickUpName = drugAccessPointsName[accessPoint]
-	local deliveryPoint = randNum(accessPoint) % 4 + 3
-	if (accessPoint + deliveryPoint) > #drugAccessPoints then
-		deliveryPoint = accessPoint + deliveryPoint - #drugAccessPoints
-	else
-		deliveryPoint = accessPoint + deliveryPoint
-	end
-	drugDelivery.dropOff = drugAccessPoints[deliveryPoint]
-	drugDelivery.dropOffName = drugAccessPointsName[deliveryPoint]
-end
-
-
-
 local function textWithBackground(text, sizeMult)
 	local textLenght = ui.measureDWriteText(text, settings.fontSizeMSG * sizeMult)
 	local rectPos1 = vec2(settings.msgOffset.x - textLenght.x / 2, settings.msgOffset.y)
@@ -1227,37 +1109,6 @@ local function textWithBackground(text, sizeMult)
 end
 
 ----------------------------------------------------------------------------------------------- Firebase -----------------------------------------------------------------------------------------------
-
-local function onSettingsChange()
-	settings:save()
-	ac.log('Settings updated')
-end
-
-local function updateSheets(category)
-	local str = '{"category" : "' .. nodes[category] .. '"}'
-	web.post(GOOGLE_APP_SCRIPT_URL, str, function(err, response)
-		if err then
-			ac.log(err)
-			return
-		else
-			ac.log(response.body)
-		end
-	end)
-end
-
--- local function updatefirebaseData(node, data)
--- 	local str = dataStringify(data)
--- 	web.request('PATCH', FIREBASE_URL .. 'PlayersData/' .. node .. ".json", str, function(err, response)
--- 		if err then
--- 			ac.log(err)
--- 			return
--- 		else
--- 			ac.log(response.body)
--- 			updateSheets(node)
--- 		end
--- 	end)
--- end
-
 local boxHeight = HEIGHT_DIV._70
 
 local function displayInGrid()
@@ -1450,7 +1301,7 @@ local function settingsWindow()
 	ui.sameLine(WIDTH_DIV._6 - WIDTH_DIV._20)
 	if ui.button('Close', vec2(WIDTH_DIV._25, HEIGHT_DIV._50)) then
 		menuStates.main = false
-		onSettingsChange()
+		settings:save()
 	end
 	settings.hudOffset.x = ui.slider('##' .. 'HUD Offset X', settings.hudOffset.x, 0, WINDOW_WIDTH,'HUD Offset X' .. ': %.0f')
 	settings.hudOffset.y = ui.slider('##' .. 'HUD Offset Y', settings.hudOffset.y, 0, WINDOW_HEIGHT,'HUD Offset Y' .. ': %.0f')
@@ -1465,9 +1316,6 @@ local function settingsWindow()
 	updateHudPos()
 	return 2
 end
-
-
-local showDescription = false
 
 local function discordLinks()
 	ui.newLine(50)
@@ -1550,7 +1398,6 @@ local function sectorSelect()
 	ui.sameLine(WIDTH_DIV._5 - 120)
 	if ui.button('Close', vec2(100, HEIGHT_DIV._50)) then
 		menuStates.main = false
-		onSettingsChange()
 	end
 
 end
@@ -1577,80 +1424,53 @@ local function sectorUI()
 	end
 	discordLinks()
 	ui.newLine()
-	-- if ui.button('Load Player Data') then tryFetchPlayerData() end
-	-- ui.sameLine()
-	-- if ui.button('Save Player Data') then trySavePlayerData() end
-	-- ui.endGroup()
 	return 1
 end
 
-local function resetDrugDelivery()
-	drugDelivery.active = false
-	drugDelivery.started = false
-	drugDelivery.call = false
-	drugDelivery.timer = 0
-	drugDelivery.distance = 0
-	drugDelivery.avgSpeed = 0
-end
 
-local function drugDeliveryUI()
-	if drugDelivery.active and not drugDelivery.started then
-		textWithBackground(
-			"You just picked up some drugs to start the mission click on the THEFT icon! Deliver them to this location : " ..
-			drugDelivery.dropOffName .. "!", 1)
-	elseif drugDelivery.started then
-		textWithBackground("You are on the way to deliver the drugs to " .. drugDelivery.dropOffName .. "!", 1)
-	end
-end
+-- local function drugDeliveryUI()
+-- 	if drugDelivery.active and not drugDelivery.started then
+-- 		textWithBackground(
+-- 			"You just picked up some drugs to start the mission click on the THEFT icon! Deliver them to this location : " ..
+-- 			drugDelivery.dropOffName .. "!", 1)
+-- 	elseif drugDelivery.started then
+-- 		textWithBackground("You are on the way to deliver the drugs to " .. drugDelivery.dropOffName .. "!", 1)
+-- 	end
+-- end
 
-local function drawDrugLocations()
-	if not drugDelivery.started and math.distanceSquared(car.position, drugDelivery.pickUp) < 30000 then drugDelivery.drawPickUp = true else drugDelivery.drawPickUp = false end
-	if math.distanceSquared(car.position, drugDelivery.dropOff) < 30000 then drugDelivery.drawDropOff = true else drugDelivery.drawDropOff = false end
-end
-
-local function drugAvgSpeedValid()
-	if drugDelivery.timer > 0 then
-		local routeLength = car.distanceDrivenSessionKm - drugDelivery.distance
-		drugDelivery.finalAvgSpeed = drugDelivery.avgSpeed
-		resetDrugDelivery()
-		if drugDelivery.finalAvgSpeed > 100 then return true end
-	end
-	return false
-end
-
-local function drugDeliveryUpdate(dt)
-	drawDrugLocations()
-	if not drugDelivery.active and car.speedKmh < 5 and isPointInCircle(car.position, drugDelivery.pickUp, 100) then
-		drugDelivery.active = true
-		drugDelivery.finalAvgSpeed = 0
-	elseif drugDelivery.call and drugDelivery.active and car.speedKmh > 5 and isPointInCircle(car.position, drugDelivery.pickUp, 100) then
-		resetDrugDelivery()
-		drugDelivery.distance = car.distanceDrivenSessionKm
-		for i = 0, 4 do drugDelivery.damage[i] = car.damage[i] end
-		drugDelivery.started = true
-	elseif drugDelivery.started and car.speedKmh < 10 and isPointInCircle(car.position, drugDelivery.dropOff, 100) then
-		if drugAvgSpeedValid() then
-			ac.sendChatMessage(" has delivered the drugs and got away with it!\nDate : " .. os.date("%d/%m/%Y"))
-		else
-			ac.sendChatMessage(" was too slow and got caught by the cops with the drugs!")
-		end
-	end
-	if drugDelivery.started then
-		if car.speedKmh > 10 then
-			for i = 0, 4 do
-				if car.damage[i] > drugDelivery.damage[i] then
-					ac.sendChatMessage(" has crashed and lost the drugs!")
-					resetDrugDelivery()
-					break
-				end
-			end
-		end
-	end
-	if drugDelivery.started then
-		drugDelivery.timer = drugDelivery.timer + dt
-		drugDelivery.avgSpeed = (car.distanceDrivenSessionKm - drugDelivery.distance) * 3600 / drugDelivery.timer
-	end
-end
+-- local function drugDeliveryUpdate(dt)
+-- 	drawDrugLocations()
+-- 	if not drugDelivery.active and car.speedKmh < 5 and isPointInCircle(car.position, drugDelivery.pickUp, 100) then
+-- 		drugDelivery.active = true
+-- 		drugDelivery.finalAvgSpeed = 0
+-- 	elseif drugDelivery.call and drugDelivery.active and car.speedKmh > 5 and isPointInCircle(car.position, drugDelivery.pickUp, 100) then
+-- 		resetDrugDelivery()
+-- 		drugDelivery.distance = car.distanceDrivenSessionKm
+-- 		for i = 0, 4 do drugDelivery.damage[i] = car.damage[i] end
+-- 		drugDelivery.started = true
+-- 	elseif drugDelivery.started and car.speedKmh < 10 and isPointInCircle(car.position, drugDelivery.dropOff, 100) then
+-- 		if drugAvgSpeedValid() then
+-- 			ac.sendChatMessage(" has delivered the drugs and got away with it!\nDate : " .. os.date("%d/%m/%Y"))
+-- 		else
+-- 			ac.sendChatMessage(" was too slow and got caught by the cops with the drugs!")
+-- 		end
+-- 	end
+-- 	if drugDelivery.started then
+-- 		if car.speedKmh > 10 then
+-- 			for i = 0, 4 do
+-- 				if car.damage[i] > drugDelivery.damage[i] then
+-- 					ac.sendChatMessage(" has crashed and lost the drugs!")
+-- 					resetDrugDelivery()
+-- 					break
+-- 				end
+-- 			end
+-- 		end
+-- 	end
+-- 	if drugDelivery.started then
+-- 		drugDelivery.timer = drugDelivery.timer + dt
+-- 		drugDelivery.avgSpeed = (car.distanceDrivenSessionKm - drugDelivery.distance) * 3600 / drugDelivery.timer
+-- 	end
+-- end
 
 --------------------------------------------------------------------------------------- Race Opponent -----------------------------------------------------------------------------------------------
 -- Variables --
@@ -2187,7 +2007,6 @@ local statOn = {
 	[2] = "Races",
 	[3] = "Overtake",
 	[4] = "Sector",
-	[5] = "Drug Delivery",
 }
 
 local iconsColorOn = {
@@ -2252,21 +2071,6 @@ local function drawHudText()
 		ui.dwriteDrawText(sectorManager.sector.name, settings.fontSize, textOffset - vec2(textSize.x / 2, 0), settings.colorHud)
 		textSize = ui.measureDWriteText("Time: 00:00:000", settings.fontSize)
 		ui.dwriteDrawText("Time: " .. sectorManager.sector.time, settings.fontSize, textOffset - vec2(textSize.x / 2, -hud.size.y / 13), sectorManager.sector.timeColor)
-	elseif settings.current == 5 then
-		textSize = ui.measureDWriteText("123 km/h", settings.fontSize)
-		local avgSpeed = drugDelivery.avgSpeed
-		local color = rgbm(1, 1, 1, 0.9)
-		if drugDelivery.finalAvgSpeed > 1 then
-			avgSpeed = drugDelivery.finalAvgSpeed
-			if avgSpeed > 120 then
-				color = rgbm(0, 1, 0, 1)
-			else
-				color = rgbm(1, 0, 0, 1)
-			end
-		end
-		avgSpeed = avgSpeed * settings.unitMult
-		ui.dwriteDrawText(string.format("%.1f ", avgSpeed) .. settings.unit, settings.fontSize,
-			textOffset - vec2(textSize.x / 2, -hud.size.y / 13), color)
 	end
 	ui.popDWriteFont()
 end
@@ -2297,18 +2101,18 @@ local function drawHudImages()
 		if uiState.isMouseLeftKeyClicked then
 			if stealingTime == 0 then
 				stealingTime = 30
-				if not drugDelivery.drawPickUp then
-					ac.sendChatMessage("* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. os.date(" %x *"))
-					stealMsgTime = 7
-					if sectorManager.sector.name ~= "BOBs SCRAPYARD" and sectorManager.sector.name ~= "DOUBLE TROUBLE" then
-						sectorManager:setSector('BOBs SCRAPYARD')
-						settings.current = 4
-					end
+				ac.sendChatMessage("* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. os.date(" %x *"))
+				stealMsgTime = 7
+				if sectorManager.sector.name ~= "BOBs SCRAPYARD" and sectorManager.sector.name ~= "DOUBLE TROUBLE" then
+					sectorManager:setSector('BOBs SCRAPYARD')
+					settings.current = 4
 				end
-				if drugDelivery.active and not drugDelivery.started then
-					ac.sendChatMessage(" has picked up the drugs at (" .. drugDelivery.pickUpName .. ") and is on the way to the drop off! (" .. drugDelivery.dropOffName .. ")")
-					drugDelivery.call = true
-				end
+				-- if not drugDelivery.drawPickUp then
+				-- end
+				-- if drugDelivery.active and not drugDelivery.started then
+				-- 	ac.sendChatMessage(" has picked up the drugs at (" .. drugDelivery.pickUpName .. ") and is on the way to the drop off! (" .. drugDelivery.dropOffName .. ")")
+				-- 	drugDelivery.call = true
+				-- end
 			end
 		end
 	elseif ui.rectHovered(hud.pos.ranksPos2, hud.pos.ranksPos1) then
@@ -2319,7 +2123,6 @@ local function drawHudImages()
 			else
 				if menuStates.main then
 					menuStates.main = false
-					onSettingsChange()
 				end
 				menuStates.leaderboard = true
 				-- loadLeaderboard()
@@ -2343,7 +2146,6 @@ local function drawHudImages()
 		if uiState.isMouseLeftKeyClicked then
 			if menuStates.main then
 				menuStates.main = false
-				onSettingsChange()
 			else
 				if menuStates.leaderboard then menuStates.leaderboard = false end
 				menuStates.main = true
@@ -2463,47 +2265,41 @@ local function scaleWelcomeMenu()
 		WELCOME_CARD_IMG_POS[6][1].y + welcomeWindow.size.y / 100) + welcomeWindow.offset
 end
 
-
-
-local function drugShowInfo(i)
+local function showBobsInfo(i)
 	local leftCorner = vec2(WELCOME_CARD_IMG_POS[i + 2][1].x, WELCOME_CARD_IMG_POS[i + 2][1].y) +
 		vec2(welcomeWindow.size.x / 100, welcomeWindow.size.y / 10)
 	local textPos = leftCorner + welcomeWindow.size / 100
 	ui.drawRectFilled(leftCorner,
 		vec2(WELCOME_CARD_IMG_POS[i + 2][2].x - welcomeWindow.size.x / 100,
-			leftCorner.y +
-			ui.measureDWriteText(
-				"Locations names are the same\nas the teleports in the mini map.\nDelivery : \n \nPick Up :  \nDrop Off :  " ..
-				drugDelivery.dropOffName, settings.fontSize).y * 2), rgbm(0, 0, 0, 0.8))
+			leftCorner.y + ui.measureDWriteText("\n\n\n\n", settings.fontSize).y), rgbm(0, 0, 0, 0.8))
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=BLACK")
-	ui.dwriteDrawText("Location names are the same\nas teleports in the mini map.", welcomeWindow.fontSize * 0.6, textPos,
-		rgbm.colors.white)
+	ui.dwriteDrawText("Steal : Gas Station 1 TP", welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
 	textPos.y = textPos.y +
-		ui.measureDWriteText("Locations names are the same\nas the teleports in the mini map.",
-			welcomeWindow.fontSize * 0.6)
-		.y * 2
-	ui.dwriteDrawText("Delivery : " .. os.date("%a the %d"), welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
-	textPos.x = textPos.x + ui.measureDWriteText("Delivery : " .. os.date("%a the %d"), welcomeWindow.fontSize * 0.6).x
-	if os.date("%d") == "01" then
-		ui.dwriteDrawText(" st", welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
-	elseif os.date("%d") == "02" then
-		ui.dwriteDrawText(" nd", welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
-	elseif os.date("%d") == "03" then
-		ui.dwriteDrawText(" rd", welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
-	else
-		ui.dwriteDrawText("th", welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
-	end
-	textPos.x = textPos.x - ui.measureDWriteText(os.date("%a the %d"), welcomeWindow.fontSize * 0.6).x
-	textPos.y = textPos.y + ui.measureDWriteText("Delivery : " .. os.date("%a the %d"), welcomeWindow.fontSize * 0.6).y
-	ui.dwriteDrawText("of " .. os.date("%B"), welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
-	textPos.x = textPos.x - ui.measureDWriteText("Delivery : ", welcomeWindow.fontSize * 0.6).x
-	textPos.y = textPos.y + ui.measureDWriteText("Delivery :  " .. os.date("%x"), welcomeWindow.fontSize * 0.6).y * 2
-	ui.dwriteDrawText("Pick Up :  " .. drugDelivery.pickUpName, welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
-	textPos.y = textPos.y +
-		ui.measureDWriteText("Pick Up :  " .. drugDelivery.pickUpName, welcomeWindow.fontSize * 0.6).y * 2
-	ui.dwriteDrawText("Drop Off :  " .. drugDelivery.dropOffName, welcomeWindow.fontSize * 0.6, textPos,
+		ui.measureDWriteText("Steal : Gas Station 1 TP", welcomeWindow.fontSize * 0.6).y * 2
+	ui.dwriteDrawText("Deliver : Red Car (Map)", welcomeWindow.fontSize * 0.6, textPos,
 		rgbm.colors.white)
+	textPos.y = textPos.y + ui.measureDWriteText("Deliver : Red Car (Map)", welcomeWindow.fontSize * 0.6).y * 2
+	ui.dwriteDrawText("Time Limit: 03:20.00", welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
+	ui.popDWriteFont()
+end
+
+local function showDrugInfo(i)
+	local leftCorner = vec2(WELCOME_CARD_IMG_POS[i + 2][1].x, WELCOME_CARD_IMG_POS[i + 2][1].y) +
+		vec2(welcomeWindow.size.x / 100, welcomeWindow.size.y / 10)
+	local textPos = leftCorner + welcomeWindow.size / 100
+	ui.drawRectFilled(leftCorner,
+		vec2(WELCOME_CARD_IMG_POS[i + 2][2].x - welcomeWindow.size.x / 100,
+		leftCorner.y + ui.measureDWriteText("\n\n\n\n", settings.fontSize).y), rgbm(0, 0, 0, 0.8))
+	ui.popDWriteFont()
+	ui.pushDWriteFont("Orbitron;Weight=BLACK")
+	ui.dwriteDrawText("Pick Up : Drug Delivery TP", welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
+	textPos.y = textPos.y +
+		ui.measureDWriteText("Pick Up : Drug Delivery TP", welcomeWindow.fontSize * 0.6).y * 2
+	ui.dwriteDrawText("Drop Off : Pink House (Map)", welcomeWindow.fontSize * 0.6, textPos,
+		rgbm.colors.white)
+	textPos.y = textPos.y + ui.measureDWriteText("Drop Off : Pink House (Map)", welcomeWindow.fontSize * 0.6).y * 2
+	ui.dwriteDrawText("Time Limit: 03:20.00", welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
 	ui.popDWriteFont()
 end
 
@@ -2601,7 +2397,10 @@ local function drawWelcomeImg()
 			for i = 1, 3 do
 				if welcomeCardsToDisplayed[i] == 9 then
 					ui.drawImage(WELCOME_CARD_IMG[welcomeCardsToDisplayed[i]], WELCOME_CARD_IMG_POS[i + 2][1], WELCOME_CARD_IMG_POS[i + 2][2], rgbm.colors.white)
-					drugShowInfo(i)
+					showDrugInfo(i)
+				elseif welcomeCardsToDisplayed[i] == 8 then
+					ui.drawImage(WELCOME_CARD_IMG[welcomeCardsToDisplayed[i]], WELCOME_CARD_IMG_POS[i + 2][1], WELCOME_CARD_IMG_POS[i + 2][2], rgbm.colors.white)
+					showBobsInfo(i)
 				else
 					ui.drawImage(WELCOME_CARD_IMG[welcomeCardsToDisplayed[i]], WELCOME_CARD_IMG_POS[i + 2][1], WELCOME_CARD_IMG_POS[i + 2][2], rgbm.colors.white)
 				end
@@ -2634,7 +2433,6 @@ function script.drawUI()
 		hudUI()
 		onlineEventMessageUI()
 		raceUI()
-		drugDeliveryUI()
 		if menuStates.main then
 			ui.toolWindow('Menu', settings.menuPos, menuSize[currentTab], true, function()
 				ui.childWindow('childMenu', menuSize[currentTab], true, ui.WindowFlags.MenuBar, function()
@@ -2731,7 +2529,7 @@ local function loadAllSectors()
 				i = i + 1
 			end
 		end
-		sectorManager:setSector('Test')
+		sectorManager:setSector('H1')
 		dataLoaded['Sectors'] = true
 	else
 		web.get(url, function(err, response)
@@ -2770,14 +2568,12 @@ function script.update(dt)
 		loadPlayerData()
 		initPoliceCarIndex()
 		initOverTake()
-		initDrugRoute()
 	end
 	if not shouldRun() then return end
 
 	sectorUpdate()
 	raceUpdate(dt)
 	overtakeUpdate(dt)
-	drugDeliveryUpdate(dt)
 	hidePolice()
 end
 
@@ -2792,21 +2588,12 @@ local function drawGate()
 	end
 end
 
-local function drawDrugDelivery()
-	if drugDelivery.drawPickUp then render.circle(drugDelivery.pickUp, vec3(0,1,0), 4, rgbm(0,1,0,1))
-	elseif drugDelivery.drawDropOff then render.circle(drugDelivery.dropOff, vec3(0,1,0), 4, rgbm(0,1,0,1)) end
-end
-
 function script.draw3D()
 	if not shouldRun() then return end
 	render.setBlendMode(render.BlendMode.AlphaBlend)
 	render.setCullMode(render.CullMode.None)
 	render.setDepthMode(render.DepthMode.Normal)
-	if settings.current == 4 then
-		drawGate()
-	elseif settings.current == 5 then
-		drawDrugDelivery()
-	end
+	drawGate()
 end
 
 ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
@@ -2815,10 +2602,6 @@ ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlag
 ac.onCarJumped(0, function(carIndex)
 	sectorManager:reset()
 	if not isPoliceCar(CAR_ID) then
-		if drugDelivery.started then
-			ac.sendChatMessage(" has crashed and lost the drugs!")
-		end
-		resetDrugDelivery()
 		if online.chased and online.officer then
 			acpPolice { message = "TP", messageType = 0, yourIndex = online.officer.sessionID }
 		end
