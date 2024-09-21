@@ -31,6 +31,8 @@ local POLICE_CAR = { "chargerpolice_acpursuit", "crown_police" }
 -- 	POLICE_CAR = { "supra_acp24" }
 -- end
 
+local patchCount = 0
+
 -- URL --
 local GOOGLE_APP_SCRIPT_URL = const(
 	'https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec')
@@ -117,6 +119,31 @@ local WELCOME_CARD_LINK = const({
 	"https://discord.com/channels/358562025032646659/1096470595392241704", --car theft
 	"",
 })
+-- local SECTOR_NAMES = const({ "H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST" })
+-- MAP of messages where the key is the sector name and the value is the message to be displayed
+local FINISH_MSG = const({
+	["H1"] = {
+		success = " has finished H1 in ",
+		fail = " has failed to finish H1 under the time limit!",
+	},
+	["BOBs SCRAPYARD"] = {
+		success = " has successfully stolen a " .. string.gsub(CAR_NAME, "%W", " ") .. " and got away with it!",
+		fail = " has failed to steal a " .. string.gsub(CAR_NAME, "%W", " ") .. " under the time limit!",
+	},
+	["DOUBLE TROUBLE"] = {
+		success = " has successfully stolen a " .. string.gsub(CAR_NAME, "%W", " ") .. " and got away with it!",
+		fail = " has failed to steal a " .. string.gsub(CAR_NAME, "%W", " ") .. " under the time limit!",
+	},
+	["DRUG DELIVERY"] = {
+		success = " has successfully delivered the drugs!",
+		fail = " has failed to deliver the drugs under the time limit!",
+	},
+	["BANK HEIST"] = {
+		success = " has successfully robbed the bank!",
+		fail = " has failed to rob the bank under the time limit!",
+	},
+});
+
 
 local WELCOME_CARD_IMG_POS = const({
 	{ vec2(70, 650),   vec2(320, 910) },
@@ -160,17 +187,6 @@ local function isPoliceCar(carID)
 end
 
 if isPoliceCar(CAR_ID) then return end
-
---------------firebase--------------
-local nodes = {
-	['Arrests'] = 'Arrestations',
-	['H1'] = 'Class C - H1',
-	['STRace'] = 'Street Racing',
-	['Theft'] = 'Car Thefts',
-	['VV'] = 'Velocity Vendetta',
-	['Overtake'] = 'Overtake',
-	['Getaway'] = 'Most Wanted'
-}
 
 --------- Utils ------------
 ---@param keys string[]
@@ -400,7 +416,8 @@ function Settings:export()
 end
 
 function Settings:save()
-	if localTesting then return end
+	if localTesting or patchCount > 20 then return end
+	patchCount = patchCount + 1
 	local str = '{"' .. STEAMID .. '": ' .. JSON.stringify(self:export()) .. '}'
 	web.request('PATCH', FIREBASE_URL .. "Settings.json", str, function(err, response)
 		if err then
@@ -431,14 +448,15 @@ function Gate.tryParse(data)
 
 	local pos = tableToVec3(data.pos)
 	local dir = tableToVec3(data.dir)
-	dir = vec3(dir.x, 0, dir.z):normalize()
-
+	local cross = vec3(dir.z, 0, -dir.x)
+	local point1 = pos + cross * data.width / 2
+	local point2 = pos - cross * data.width / 2
 	return {
 		pos = pos,
 		dir = dir,
-		cross = vec3(dir.z, 0, -dir.x),
-		point1 = snapToTrack(pos + vec3(dir.z, 0, -dir.x) * data.width / 2):add(vec3(0, GATE_HEIGHT_OFFSET, 0)),
-		point2 = snapToTrack(pos - vec3(dir.z, 0, -dir.x) * data.width / 2):add(vec3(0, GATE_HEIGHT_OFFSET, 0)),
+		cross = cross,
+		point1 = snapToTrack(point1) + vec3(0, GATE_HEIGHT_OFFSET, 0),
+		point2 = snapToTrack(point2) + vec3(0, GATE_HEIGHT_OFFSET, 0),
 		width = data.width,
 		id = data.id,
 	}
@@ -519,7 +537,7 @@ function Sector.tryParse(data)
 		startTime = 0,
 		time = '00:00.000',
 		timeLimit = data.timeLimit,
-		timeColor = rgbm.colors.white,
+		timeColor = white,
 		startDistance = 0,
 		distanceDriven = 0,
 		lenght = data.length,
@@ -581,7 +599,7 @@ function Sector:reset()
 	self.gateIndex = 1
 	self.startTime = 0
 	self.time = '00:00.000'
-	self.timeColor = rgbm.colors.white
+	self.timeColor = white
 	self.startDistance = 0
 	self.distanceDriven = 0
 end
@@ -596,7 +614,7 @@ end
 
 ---@return boolean
 function Sector:isFinished()
-	return self.gateIndex > self.gateCount and self.distanceDriven > self.lenght
+	return self.gateIndex > self.gateCount -- and self.distanceDriven > self.lenght
 end
 
 ---@return boolean
@@ -622,13 +640,13 @@ end
 
 function Sector:isUnderTimeLimit()
 	if self.timeLimit > 0 then
-		return os.preciseClock() - self.startTime > self.timeLimit
+		return os.preciseClock() - self.startTime < self.timeLimit
 	end
-	return false
+	return true
 end
 
 function Sector:updateTimeColor()
-	if self:hasStarted() and self:isUnderTimeLimit() then
+	if self:hasStarted() and not self:isUnderTimeLimit() then
 		self.timeColor = rgbm(1, 0, 0, 1)
 	end
 	if self:isFinished() then
@@ -854,7 +872,8 @@ function Player:export()
 end
 
 function Player:save()
-	if localTesting then return end
+	if localTesting or patchCount > 20 then return end
+	patchCount = patchCount + 1
 	local str = '{"' .. STEAMID .. '": ' .. JSON.stringify(self:export()) .. '}'
 	web.request('PATCH', FIREBASE_URL .. "Players.json", str, function(err, response)
 		if err then
@@ -987,28 +1006,12 @@ function SectorManager:duoFinished()
 end
 
 function SectorManager:printToChat()
-	if self.isDuo then
-		if duo.teammate then
-			if duo.teammateHasFinished then
-				ac.sendChatMessage(" has finished " .. self.sector.name .. " in " .. self.sector.time .. "!")
-			else
-				acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
-			end
-		end
+	if sectorManager.sector.name == "H1" then
+		ac.sendChatMessage(" has finished H1 in " .. sectorManager.sector.time .. " driving a " .. CAR_NAME .. "!")
+	elseif self.sector:isUnderTimeLimit() then
+		ac.sendChatMessage(FINISH_MSG[self.sector.name].success)
 	else
-		if self.sector:isUnderTimeLimit() then
-			if self.sector.name == "BOBs SCRAPYARD" then
-				ac.sendChatMessage(" has failed to steal a " .. string.gsub(CAR_NAME, "%W", " ") .. " under the time limit!")
-			else
-				ac.sendChatMessage(" has failed to finish " .. self.sector.name .. " under the time limit!")
-			end
-		else
-			if self.sector.name == "BOBs SCRAPYARD" then
-				ac.sendChatMessage(" has successfully stolen a " .. string.gsub(CAR_NAME, "%W", " ") .. " and got away with it!")
-			else
-				ac.sendChatMessage(" has finished " .. self.sector.name .. " in " .. self.sector.time .. "!")
-			end
-		end
+		ac.sendChatMessage(FINISH_MSG[self.sector.name].fail)
 	end
 end
 
@@ -1105,7 +1108,7 @@ local function textWithBackground(text, sizeMult)
 	else
 		ui.drawRectFilled(rectPos1 - vec2(10, 0), rectPos2 + rectOffset, rgbm(0, 0, 0, 0.5), 10)
 	end
-	ui.dwriteDrawText(text, settings.fontSizeMSG * sizeMult, rectPos1, rgbm.colors.white)
+	ui.dwriteDrawText(text, settings.fontSizeMSG * sizeMult, rectPos1, white)
 end
 
 ----------------------------------------------------------------------------------------------- Firebase -----------------------------------------------------------------------------------------------
@@ -1137,21 +1140,21 @@ local function displayInGrid()
 			sufix = "rd"
 		end
 		ui.dwriteTextAligned(i - 1 .. sufix, settings.fontSize / 2, ui.Alignment.Center, ui.Alignment.Center, box1, false,
-			rgbm.colors.white)
+			white)
 		for j = 1, #leaderboard[1] do
 			local textLenght = ui.measureDWriteText(leaderboard[i][leaderboard[1][j]], settings.fontSize / 1.5).x
 			ui.sameLine(box1.x + colWidth / 2 + colWidth * (j - 1) - textLenght / 2)
-			ui.dwriteTextWrapped(leaderboard[i][leaderboard[1][j]], settings.fontSize / 1.5, rgbm.colors.white)
+			ui.dwriteTextWrapped(leaderboard[i][leaderboard[1][j]], settings.fontSize / 1.5, white)
 		end
 	end
 	ui.popDWriteFont()
 	local lineHeight = math.max(ui.itemRectMax().y, HEIGHT_DIV._3)
-	ui.drawLine(vec2(box1.x, HEIGHT_DIV._20), vec2(box1.x, lineHeight), rgbm.colors.white, 1)
+	ui.drawLine(vec2(box1.x, HEIGHT_DIV._20), vec2(box1.x, lineHeight), white, 1)
 	for i = 1, nbCol - 1 do
 		ui.drawLine(vec2(box1.x + colWidth * i, HEIGHT_DIV._20), vec2(box1.x + colWidth * i, lineHeight),
-			rgbm.colors.white, 2)
+			white, 2)
 	end
-	ui.drawLine(vec2(0, HEIGHT_DIV._12), vec2(WIDTH_DIV._2, HEIGHT_DIV._12), rgbm.colors.white, 1)
+	ui.drawLine(vec2(0, HEIGHT_DIV._12), vec2(WIDTH_DIV._2, HEIGHT_DIV._12), white, 1)
 end
 
 local function showLeaderboard()
@@ -1233,7 +1236,7 @@ local function distanceBarPreview()
 		ui.beginRotation()
 		ui.progressBar(125 / 250, vec2(WIDTH_DIV._3, HEIGHT_DIV._60), playerInFront)
 		ui.endRotation(90, vec2(settings.msgOffset.x - WIDTH_DIV._2 - textLenght.x / 2, settings.msgOffset.y + textLenght.y / 3))
-		ui.dwriteDrawText(text, 30, vec2(settings.msgOffset.x - textLenght.x / 2, settings.msgOffset.y), rgbm.colors.white)
+		ui.dwriteDrawText(text, 30, vec2(settings.msgOffset.x - textLenght.x / 2, settings.msgOffset.y), white)
 	end)
 end
 
@@ -1319,7 +1322,7 @@ end
 
 local function discordLinks()
 	ui.newLine(50)
-	ui.dwriteTextWrapped("For more info about the challenge click on the Discord link :", 15, rgbm.colors.white)
+	ui.dwriteTextWrapped("For more info about the challenge click on the Discord link :", 15, white)
 	if sectorManager.sector.name == 'H1' then
 		if ui.textHyperlink("H1 Races Discord") then
 			os.openURL("https://discord.com/channels/358562025032646659/1073622643145703434")
@@ -1353,8 +1356,8 @@ local function doubleTrouble()
 	end
 	if #players == 0 then
 		ui.newLine()
-		ui.dwriteTextWrapped("There is no other players connected", 15, rgbm.colors.white)
-		ui.dwriteTextWrapped("You can't steal a car", 15, rgbm.colors.white)
+		ui.dwriteTextWrapped("There is no other players connected", 15, white)
+		ui.dwriteTextWrapped("You can't steal a car", 15, white)
 	else
 		if duo.teammate == nil then
 			ui.setNextItemWidth(150)
@@ -1372,7 +1375,7 @@ local function doubleTrouble()
 			end
 		else
 			ui.newLine()
-			ui.dwriteTextWrapped("teammate : ", 15, rgbm.colors.white)
+			ui.dwriteTextWrapped("teammate : ", 15, white)
 			ui.sameLine()
 			ui.dwriteTextWrapped(ac.getDriverName(duo.teammate.index), 15, rgbm.colors.purple)
 			ui.sameLine()
@@ -1542,6 +1545,7 @@ local function hasWin(winner)
 	else
 		player.losses = player.losses + 1
 	end
+	player:save()
 	raceState.opponent = nil
 end
 
@@ -1709,6 +1713,7 @@ local function resetOvertake()
 		player.overtake = math.floor(overtake.totalScore)
 		if player.overtake > 10000 then
 			ac.sendChatMessage("New highest Overtake score: " .. player.overtake .. " pts !")
+			player.save()
 		end
 		-- local data = {
 		-- 	["Overtake"] = highestScore,
@@ -1847,7 +1852,7 @@ local function distanceBar()
 	ui.beginRotation()
 	ui.progressBar(raceState.distance / 250, vec2(WIDTH_DIV._3, HEIGHT_DIV._60), playerInFront)
 	ui.endRotation(90, vec2(settings.msgOffsetX - WIDTH_DIV._2 - textLenght.x / 2, settings.msgOffset.y))
-	ui.dwriteDrawText(text, 30, vec2(settings.msgOffsetX - textLenght.x / 2, settings.msgOffset.y), rgbm.colors.white)
+	ui.dwriteDrawText(text, 30, vec2(settings.msgOffsetX - textLenght.x / 2, settings.msgOffset.y), white)
 end
 
 local function raceUI()
@@ -1892,7 +1897,6 @@ local function raceUI()
 				["Wins"] = player.wins,
 				["Losses"] = player.losses,
 			}
-			-- Update the player Race stats
 		end
 	elseif horn.resquestTime > 0 and raceState.opponent then
 		text = ac.getDriverName(raceState.opponent.index) ..
@@ -1939,7 +1943,7 @@ local acpPolice = ac.OnlineEvent({
 		elseif online.level > 4 then
 			online.color = rgbm.colors.yellow
 		else
-			online.color = rgbm.colors.white
+			online.color = white
 		end
 	elseif data.yourIndex == car.sessionID and data.messageType == 2 then
 		online.message = data.message
@@ -1977,7 +1981,7 @@ local function showArrestMSG()
 	ui.dwriteDrawText(textArrest1, settings.fontSizeMSG * 3,
 		vec2(WIDTH_DIV._2 - textArrestLenght1.x / 2, HEIGHT_DIV._4 - textArrestLenght1.y / 2), rgbm(1, 0, 0, 1))
 	ui.dwriteDrawText(textArrest2, settings.fontSizeMSG * 3,
-		vec2(WIDTH_DIV._2 - textArrestLenght2.x / 2, HEIGHT_DIV._4 + textArrestLenght2.y / 2), rgbm.colors.white)
+		vec2(WIDTH_DIV._2 - textArrestLenght2.x / 2, HEIGHT_DIV._4 + textArrestLenght2.y / 2), white)
 	ui.popDWriteFont()
 end
 
@@ -2010,10 +2014,10 @@ local statOn = {
 }
 
 local iconsColorOn = {
-	[1] = rgbm.colors.white,
-	[2] = rgbm.colors.white,
-	[3] = rgbm.colors.white,
-	[4] = rgbm.colors.white,
+	[1] = white,
+	[2] = white,
+	[3] = white,
+	[4] = white,
 }
 
 local countdownTime = 0
@@ -2079,10 +2083,10 @@ local stealingTime = 0
 local stealMsgTime = 0
 
 local function drawHudImages()
-	iconsColorOn[1] = rgbm.colors.white
-	iconsColorOn[2] = rgbm.colors.white
-	iconsColorOn[3] = rgbm.colors.white
-	iconsColorOn[4] = rgbm.colors.white
+	iconsColorOn[1] = white
+	iconsColorOn[2] = white
+	iconsColorOn[3] = white
+	iconsColorOn[4] = white
 	local toolTipOn = false
 	ui.drawImage(HUD_IMG.center, vec2(0, 0), hud.size)
 	if ui.rectHovered(vec2(0, 0), vec2(hud.size.x, hud.size.y / 2)) then toolTipOn = true end
@@ -2226,13 +2230,13 @@ local welcomeNavImgToDraw = { WELCOME_NAV_IMG.leftArrowOff, WELCOME_NAV_IMG.righ
 	.centerBoxOff, WELCOME_NAV_IMG.rightBoxOff, WELCOME_NAV_IMG.base, WELCOME_NAV_IMG.logo }
 
 local cardOutline = {
-	rgbm.colors.white,
-	rgbm.colors.white,
-	rgbm.colors.white,
-	rgbm.colors.white,
-	rgbm.colors.white,
-	rgbm.colors.white,
-	rgbm.colors.white,
+	white,
+	white,
+	white,
+	white,
+	white,
+	white,
+	white,
 }
 
 local welcomeWindow = {
@@ -2274,13 +2278,13 @@ local function showBobsInfo(i)
 			leftCorner.y + ui.measureDWriteText("\n\n\n\n", settings.fontSize).y), rgbm(0, 0, 0, 0.8))
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=BLACK")
-	ui.dwriteDrawText("Steal : Gas Station 1 TP", welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
+	ui.dwriteDrawText("Steal : Gas Station 1 TP", welcomeWindow.fontSize * 0.6, textPos, white)
 	textPos.y = textPos.y +
 		ui.measureDWriteText("Steal : Gas Station 1 TP", welcomeWindow.fontSize * 0.6).y * 2
 	ui.dwriteDrawText("Deliver : Red Car (Map)", welcomeWindow.fontSize * 0.6, textPos,
-		rgbm.colors.white)
+		white)
 	textPos.y = textPos.y + ui.measureDWriteText("Deliver : Red Car (Map)", welcomeWindow.fontSize * 0.6).y * 2
-	ui.dwriteDrawText("Time Limit: 03:20.00", welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
+	ui.dwriteDrawText("Time Limit: 03:20.00", welcomeWindow.fontSize * 0.6, textPos, white)
 	ui.popDWriteFont()
 end
 
@@ -2293,20 +2297,20 @@ local function showDrugInfo(i)
 		leftCorner.y + ui.measureDWriteText("\n\n\n\n", settings.fontSize).y), rgbm(0, 0, 0, 0.8))
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=BLACK")
-	ui.dwriteDrawText("Pick Up : Drug Delivery TP", welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
+	ui.dwriteDrawText("Pick Up : Drug Delivery TP", welcomeWindow.fontSize * 0.6, textPos, white)
 	textPos.y = textPos.y +
 		ui.measureDWriteText("Pick Up : Drug Delivery TP", welcomeWindow.fontSize * 0.6).y * 2
 	ui.dwriteDrawText("Drop Off : Pink House (Map)", welcomeWindow.fontSize * 0.6, textPos,
-		rgbm.colors.white)
+		white)
 	textPos.y = textPos.y + ui.measureDWriteText("Drop Off : Pink House (Map)", welcomeWindow.fontSize * 0.6).y * 2
-	ui.dwriteDrawText("Time Limit: 03:20.00", welcomeWindow.fontSize * 0.6, textPos, rgbm.colors.white)
+	ui.dwriteDrawText("Time Limit: 03:20.00", welcomeWindow.fontSize * 0.6, textPos, white)
 	ui.popDWriteFont()
 end
 
 local function drawWelcomeText()
 	ui.popDWriteFont()
 	ui.pushDWriteFont(welcomeWindow.font)
-	ui.dwriteDrawText("WELCOME BACK,", welcomeWindow.fontSize * 0.6, welcomeWindow.topLeft, rgbm.colors.white)
+	ui.dwriteDrawText("WELCOME BACK,", welcomeWindow.fontSize * 0.6, welcomeWindow.topLeft, white)
 	ui.popDWriteFont()
 	ui.pushDWriteFont(welcomeWindow.fontBold)
 	ui.dwriteDrawText(DRIVER_NAME, welcomeWindow.fontSize,
@@ -2317,7 +2321,7 @@ local function drawWelcomeText()
 	ui.pushDWriteFont(welcomeWindow.font)
 	ui.dwriteDrawText("CURRENT CAR", welcomeWindow.fontSize * 0.6,
 		vec2(welcomeWindow.topRight.x - ui.measureDWriteText("CURRENT CAR", welcomeWindow.fontSize * 0.6).x,
-			welcomeWindow.topRight.y), rgbm.colors.white)
+			welcomeWindow.topRight.y), white)
 	ui.popDWriteFont()
 	ui.pushDWriteFont(welcomeWindow.fontBold)
 	ui.dwriteDrawText(string.gsub(string.gsub(CAR_NAME, "%W", " "), "  ", ""), welcomeWindow.fontSize,
@@ -2330,13 +2334,13 @@ local function drawWelcomeText()
 end
 
 local function drawWelcomeImg()
-	local iconCloseColor = rgbm.colors.white
+	local iconCloseColor = white
 	local toolTipOn = false
 	for i = 1, #cardOutline - 1 do
 		if i == #cardOutline - 1 then
 			cardOutline[i] = settings.colorHud
 		else
-			cardOutline[i] = rgbm.colors.white
+			cardOutline[i] = white
 		end
 	end
 	welcomeNavImgToDraw[1] = WELCOME_NAV_IMG.leftArrowOff
@@ -2396,13 +2400,13 @@ local function drawWelcomeImg()
 			for i = 1, #welcomeNavImgToDraw do ui.drawImage(welcomeNavImgToDraw[i], vec2(0, 0), welcomeWindow.size, cardOutline[i]) end
 			for i = 1, 3 do
 				if welcomeCardsToDisplayed[i] == 9 then
-					ui.drawImage(WELCOME_CARD_IMG[welcomeCardsToDisplayed[i]], WELCOME_CARD_IMG_POS[i + 2][1], WELCOME_CARD_IMG_POS[i + 2][2], rgbm.colors.white)
+					ui.drawImage(WELCOME_CARD_IMG[welcomeCardsToDisplayed[i]], WELCOME_CARD_IMG_POS[i + 2][1], WELCOME_CARD_IMG_POS[i + 2][2], white)
 					showDrugInfo(i)
 				elseif welcomeCardsToDisplayed[i] == 8 then
-					ui.drawImage(WELCOME_CARD_IMG[welcomeCardsToDisplayed[i]], WELCOME_CARD_IMG_POS[i + 2][1], WELCOME_CARD_IMG_POS[i + 2][2], rgbm.colors.white)
+					ui.drawImage(WELCOME_CARD_IMG[welcomeCardsToDisplayed[i]], WELCOME_CARD_IMG_POS[i + 2][1], WELCOME_CARD_IMG_POS[i + 2][2], white)
 					showBobsInfo(i)
 				else
-					ui.drawImage(WELCOME_CARD_IMG[welcomeCardsToDisplayed[i]], WELCOME_CARD_IMG_POS[i + 2][1], WELCOME_CARD_IMG_POS[i + 2][2], rgbm.colors.white)
+					ui.drawImage(WELCOME_CARD_IMG[welcomeCardsToDisplayed[i]], WELCOME_CARD_IMG_POS[i + 2][1], WELCOME_CARD_IMG_POS[i + 2][2], white)
 				end
 			end
 		end)
@@ -2478,6 +2482,7 @@ local function sectorUpdate()
 		sectorManager.finished = false
 	end
 	if not sectorManager.finished and sectorManager.sector:isFinished() then
+		
 		sectorManager:printToChat()
 		sectorManager.finished = true
 		sectorManager.started = false
@@ -2570,7 +2575,7 @@ function script.update(dt)
 		initOverTake()
 	end
 	if not shouldRun() then return end
-
+	ac.debug('PATCH COUNT', patchCount)
 	sectorUpdate()
 	raceUpdate(dt)
 	overtakeUpdate(dt)
@@ -2581,6 +2586,9 @@ end
 
 local function drawGate()
 	if sectorManager.sector and not sectorManager.sector:isFinished() then
+		-- for i = 1, sectorManager.sector.gateCount do
+		-- 	render.debugLine(sectorManager.sector.gates[i].point1, sectorManager.sector.gates[i].point2, gateColor)
+		-- end
 		local gateIndex = sectorManager.sector.gateIndex
 		if gateIndex > sectorManager.sector.gateCount then gateIndex = sectorManager.sector.gateCount end
 		render.debugLine(sectorManager.sector.gates[gateIndex].point1,
@@ -2631,7 +2639,7 @@ ac.onChatMessage(function(message, senderCarIndex, senderSessionID)
 			local data = {
 				["Getaway"] = player.getaways,
 			}
-			-- Update the player get away count
+			player.save()
 		end
 	end
 	return false
