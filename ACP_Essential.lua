@@ -121,7 +121,7 @@ local WELCOME_CARD_LINK = const({
 
 local MISSION_INFOS = const({
 	[10] = {
-		start = "Rob : Bank in front of Start/1 TP",
+		start = "Rob : Bank TP",
 		finish = "Deliver : Yellow BHL (Map)",
 		time = "Time Limit: 03:20.000",
 	},
@@ -2155,7 +2155,7 @@ local function drawHudImages()
 			if stealingTime == 0 then
 				local closestMission = getClosestMission()
 				if not closestMission then return end
-				stealingTime = 5
+				stealingTime = 30
 				ac.sendChatMessage(MISSION_TEXT[closestMission.name].chat)
 				stealMsgTime = 7
 				if sectorManager.sector.name ~= "DOUBLE TROUBLE" then
