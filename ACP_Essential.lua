@@ -27,9 +27,6 @@ if DRIVER_NATION_CODE == "USA" or DRIVER_NATION_CODE == "GBR" then
 end
 
 local POLICE_CAR = { "chargerpolice_acpursuit", "crown_police" }
--- if localTesting then
--- 	POLICE_CAR = { "supra_acp24" }
--- end
 
 local patchCount = 0
 
@@ -106,6 +103,7 @@ local WELCOME_CARD_IMG = const({
 	"https://i.postimg.cc/sfLftrPh/tuning.jpg",
 	"https://i.postimg.cc/bv0shBYj/cartheft.jpg",
 	"https://i.postimg.cc/Jn1t45tH/drugdealer.jpg",
+	"https://i.postimg.cc/mrm2J2xf/BANK-HEIST.png",
 })
 
 local WELCOME_CARD_LINK = const({
@@ -118,9 +116,43 @@ local WELCOME_CARD_LINK = const({
 	"https://discord.com/channels/358562025032646659/1079799948306034708", --tuning
 	"https://discord.com/channels/358562025032646659/1096470595392241704", --car theft
 	"",
+	"",
 })
--- local SECTOR_NAMES = const({ "H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST" })
--- MAP of messages where the key is the sector name and the value is the message to be displayed
+
+local MISSION_INFOS = const({
+	[10] = {
+		start = "Rob : Bank in front of Start/1 TP",
+		finish = "Deliver : Yellow BHL (Map)",
+		time = "Time Limit: 03:20.000",
+	},
+	[9] = {
+		start = "Pick Up : Drug Delivery TP",
+		finish = "Drop Off : Pink House (Map)",
+		time = "Time Limit: 05:40.000",
+	},
+	[8] = {
+		start = "Steal : Gas Station 1 TP",
+		finish = "Deliver : Red Car (Map)",
+		time = "Time Limit: 07:20.000",
+	},
+})
+
+local MISSION_NAMES = const({"DRUG DELIVERY", "BANK HEIST", "BOBs SCRAPYARD"})
+local MISSION_TEXT = const({
+	["DRUG DELIVERY"] = {
+		chat = "* Picking up drugs " .. os.date("%x *"),
+		screen = "You have successfully picked up the drugs! Hurry to the drop off location!",
+	},
+	["BOBs SCRAPYARD"] = {
+		chat = "* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. os.date("%x *"),
+		screen = "You have successfully stolen the " .. string.gsub(string.gsub(CAR_NAME, "%W", " "), "  ", "") .. "! Hurry to the scrapyard!",
+	},
+	["BANK HEIST"] = {
+		chat = "* Robbing the bank " .. os.date("%x *"),
+		screen = "You have successfully robbed the bank! Hurry to the drop off location!",
+	},
+});
+
 local FINISH_MSG = const({
 	["H1"] = {
 		success = " has finished H1 in ",
@@ -143,7 +175,6 @@ local FINISH_MSG = const({
 		fail = " has failed to rob the bank under the time limit!",
 	},
 });
-
 
 local WELCOME_CARD_IMG_POS = const({
 	{ vec2(70, 650),   vec2(320, 910) },
@@ -872,7 +903,7 @@ function Player:export()
 end
 
 function Player:save()
-	if localTesting or patchCount > 20 then return end
+	if localTesting or patchCount > 40 then return end
 	patchCount = patchCount + 1
 	local str = '{"' .. STEAMID .. '": ' .. JSON.stringify(self:export()) .. '}'
 	web.request('PATCH', FIREBASE_URL .. "Players.json", str, function(err, response)
@@ -2082,6 +2113,23 @@ end
 local stealingTime = 0
 local stealMsgTime = 0
 
+local function getClosestMission()
+	local closestMission = nil
+	local closestDistance = 500
+	for i = 1, #sectors do
+		for j = 1, #MISSION_NAMES do
+			if sectors[i].name == MISSION_NAMES[j] then
+				if car.position:distance(sectors[i].gates[1].pos) < closestDistance then
+					closestMission = sectors[i]
+					closestDistance = car.position:distance(sectors[i].gates[1].pos)
+				end
+				break
+			end
+		end
+	end
+	return closestMission
+end
+
 local function drawHudImages()
 	iconsColorOn[1] = white
 	iconsColorOn[2] = white
@@ -2103,14 +2151,19 @@ local function drawHudImages()
 	elseif ui.rectHovered(hud.pos.theftPos2, hud.pos.theftPos1) then
 		iconsColorOn[1] = settings.colorHud
 		if uiState.isMouseLeftKeyClicked then
+			
 			if stealingTime == 0 then
+				local closestMission = getClosestMission()
+				if not closestMission then return end
 				stealingTime = 30
-				ac.sendChatMessage("* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. os.date(" %x *"))
+				ac.sendChatMessage(MISSION_TEXT[closestMission.name].chat)
 				stealMsgTime = 7
-				if sectorManager.sector.name ~= "BOBs SCRAPYARD" and sectorManager.sector.name ~= "DOUBLE TROUBLE" then
-					sectorManager:setSector('BOBs SCRAPYARD')
-					settings.current = 4
+				if sectorManager.sector.name ~= "DOUBLE TROUBLE" then
+					sectorManager:setSector(closestMission.name)
+				elseif closestMission.name == "BOBs SCRAPYARD" then
+					sectorManager:setSector("DOUBLE TROUBLE")
 				end
+				settings.current = 4
 				-- if not drugDelivery.drawPickUp then
 				-- end
 				-- if drugDelivery.active and not drugDelivery.started then
@@ -2174,15 +2227,13 @@ local function drawHudImages()
 	end
 end
 
-local function showMsgSteal()
-	local text = "You have successfully stolen the " ..
-		string.gsub(string.gsub(CAR_NAME, "%W", " "), "  ", "") .. "! Hurry to the scrapyard!"
-	textWithBackground(text, 1)
+local function showMsgMission()
+	textWithBackground(MISSION_TEXT[sectorManager.sector.name].screen, 1)
 end
 
 local function hudUI()
 	if stealMsgTime > 0 then
-		showMsgSteal()
+		showMsgMission()
 		stealMsgTime = stealMsgTime - ui.deltaTime()
 	elseif stealMsgTime < 0 then
 		stealMsgTime = 0
@@ -2224,7 +2275,7 @@ end
 
 --------------------------------------------------------------------------------- Welcome Menu ---------------------------------------------------------------------------------
 
-local welcomeCardsToDisplayed = { 1, 2, 3, 4, 5, 6, 7, 8, 9, }
+local welcomeCardsToDisplayed = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }
 
 local welcomeNavImgToDraw = { WELCOME_NAV_IMG.leftArrowOff, WELCOME_NAV_IMG.rightArrowOff, WELCOME_NAV_IMG.leftBoxOff, WELCOME_NAV_IMG
 	.centerBoxOff, WELCOME_NAV_IMG.rightBoxOff, WELCOME_NAV_IMG.base, WELCOME_NAV_IMG.logo }
@@ -2269,26 +2320,7 @@ local function scaleWelcomeMenu()
 		WELCOME_CARD_IMG_POS[6][1].y + welcomeWindow.size.y / 100) + welcomeWindow.offset
 end
 
-local function showBobsInfo(i)
-	local leftCorner = vec2(WELCOME_CARD_IMG_POS[i + 2][1].x, WELCOME_CARD_IMG_POS[i + 2][1].y) +
-		vec2(welcomeWindow.size.x / 100, welcomeWindow.size.y / 10)
-	local textPos = leftCorner + welcomeWindow.size / 100
-	ui.drawRectFilled(leftCorner,
-		vec2(WELCOME_CARD_IMG_POS[i + 2][2].x - welcomeWindow.size.x / 100,
-			leftCorner.y + ui.measureDWriteText("\n\n\n\n", settings.fontSize).y), rgbm(0, 0, 0, 0.8))
-	ui.popDWriteFont()
-	ui.pushDWriteFont("Orbitron;Weight=BLACK")
-	ui.dwriteDrawText("Steal : Gas Station 1 TP", welcomeWindow.fontSize * 0.6, textPos, white)
-	textPos.y = textPos.y +
-		ui.measureDWriteText("Steal : Gas Station 1 TP", welcomeWindow.fontSize * 0.6).y * 2
-	ui.dwriteDrawText("Deliver : Red Car (Map)", welcomeWindow.fontSize * 0.6, textPos,
-		white)
-	textPos.y = textPos.y + ui.measureDWriteText("Deliver : Red Car (Map)", welcomeWindow.fontSize * 0.6).y * 2
-	ui.dwriteDrawText("Time Limit: 03:20.00", welcomeWindow.fontSize * 0.6, textPos, white)
-	ui.popDWriteFont()
-end
-
-local function showDrugInfo(i)
+local function showMissionInfo(i, id)
 	local leftCorner = vec2(WELCOME_CARD_IMG_POS[i + 2][1].x, WELCOME_CARD_IMG_POS[i + 2][1].y) +
 		vec2(welcomeWindow.size.x / 100, welcomeWindow.size.y / 10)
 	local textPos = leftCorner + welcomeWindow.size / 100
@@ -2297,13 +2329,13 @@ local function showDrugInfo(i)
 		leftCorner.y + ui.measureDWriteText("\n\n\n\n", settings.fontSize).y), rgbm(0, 0, 0, 0.8))
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=BLACK")
-	ui.dwriteDrawText("Pick Up : Drug Delivery TP", welcomeWindow.fontSize * 0.6, textPos, white)
+	ui.dwriteDrawText(MISSION_INFOS[id].start, welcomeWindow.fontSize * 0.6, textPos, white)
 	textPos.y = textPos.y +
-		ui.measureDWriteText("Pick Up : Drug Delivery TP", welcomeWindow.fontSize * 0.6).y * 2
-	ui.dwriteDrawText("Drop Off : Pink House (Map)", welcomeWindow.fontSize * 0.6, textPos,
+		ui.measureDWriteText(MISSION_INFOS[id].start, welcomeWindow.fontSize * 0.6).y * 2
+	ui.dwriteDrawText(MISSION_INFOS[id].finish, welcomeWindow.fontSize * 0.6, textPos,
 		white)
-	textPos.y = textPos.y + ui.measureDWriteText("Drop Off : Pink House (Map)", welcomeWindow.fontSize * 0.6).y * 2
-	ui.dwriteDrawText("Time Limit: 03:20.00", welcomeWindow.fontSize * 0.6, textPos, white)
+	textPos.y = textPos.y + ui.measureDWriteText(MISSION_INFOS[id].finish, welcomeWindow.fontSize * 0.6).y * 2
+	ui.dwriteDrawText(MISSION_INFOS[id].time, welcomeWindow.fontSize * 0.6, textPos, white)
 	ui.popDWriteFont()
 end
 
@@ -2399,12 +2431,9 @@ local function drawWelcomeImg()
 				iconCloseColor)
 			for i = 1, #welcomeNavImgToDraw do ui.drawImage(welcomeNavImgToDraw[i], vec2(0, 0), welcomeWindow.size, cardOutline[i]) end
 			for i = 1, 3 do
-				if welcomeCardsToDisplayed[i] == 9 then
+				if welcomeCardsToDisplayed[i] > 7 then
 					ui.drawImage(WELCOME_CARD_IMG[welcomeCardsToDisplayed[i]], WELCOME_CARD_IMG_POS[i + 2][1], WELCOME_CARD_IMG_POS[i + 2][2], white)
-					showDrugInfo(i)
-				elseif welcomeCardsToDisplayed[i] == 8 then
-					ui.drawImage(WELCOME_CARD_IMG[welcomeCardsToDisplayed[i]], WELCOME_CARD_IMG_POS[i + 2][1], WELCOME_CARD_IMG_POS[i + 2][2], white)
-					showBobsInfo(i)
+					showMissionInfo(i, welcomeCardsToDisplayed[i])
 				else
 					ui.drawImage(WELCOME_CARD_IMG[welcomeCardsToDisplayed[i]], WELCOME_CARD_IMG_POS[i + 2][1], WELCOME_CARD_IMG_POS[i + 2][2], white)
 				end
