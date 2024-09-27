@@ -2155,7 +2155,7 @@ local function drawHudImages()
 			if stealingTime == 0 then
 				local closestMission = getClosestMission()
 				if not closestMission then return end
-				stealingTime = 30
+				stealingTime = 5
 				ac.sendChatMessage(MISSION_TEXT[closestMission.name].chat)
 				stealMsgTime = 7
 				if sectorManager.sector.name ~= "DOUBLE TROUBLE" then
