@@ -1074,7 +1074,6 @@ end
 function SectorManager:hasTeammateFinished()
 	if duo.teammate and duo.teammateHasFinished then
 		acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
-		sectorManager:resetDuo()
 		return true
 	end
 	return false
@@ -1401,7 +1400,6 @@ local function discordLinks()
 	ui.newLine(10)
 end
 
-
 local function doubleTrouble()
 	local players = {}
 	for i = ac.getSim().carsCount - 1, 0, -1 do
@@ -1460,7 +1458,6 @@ local function sectorSelect()
 	if ui.button('Close', vec2(100, HEIGHT_DIV._50)) then
 		menuStates.main = false
 	end
-
 end
 
 local function sectorUI()
