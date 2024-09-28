@@ -2481,8 +2481,8 @@ local function sectorUpdate()
 		sectorManager.started = true
 		sectorManager.finished = false
 	end
+	ac.debug('Sector Finished', sectorManager.finished)
 	if not sectorManager.finished and sectorManager.sector:isFinished() then
-		ac.debug('SECTOR FINISHED', sectorManager.sector.name)
 		if sectorManager.sector.name ~= 'DOUBLE TROUBLE' or sectorManager:hasTeammateFinished() then
 			sectorManager:printToChat()
 			sectorManager.finished = true
