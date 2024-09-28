@@ -660,7 +660,7 @@ end
 
 ---@return boolean
 function Sector:isFinished()
-	ac.debug('Sector Finished:', self.gateIndex > self.gateCount)
+	ac.debug('Sector Finished in class:', self.gateIndex > self.gateCount)
 	return self.gateIndex > self.gateCount -- and self.distanceDriven > self.lenght
 end
 
@@ -2486,7 +2486,6 @@ local function sectorUpdate()
 	end
 	ac.debug('Sector Finished', sectorManager.finished)
 	if not sectorManager.finished and sectorManager.sector:isFinished() then
-		ac.debug('Sector Finished', sectorManager.sector.name)
 		if sectorManager.sector.name ~= 'DOUBLE TROUBLE' or sectorManager:hasTeammateFinished() then
 			if sectorManager.sector.name ~= 'DOUBLE TROUBLE' then
 				sectorManager:printToChat()
