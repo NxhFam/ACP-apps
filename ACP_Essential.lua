@@ -5,8 +5,7 @@ local wheels = car.wheels or error()
 local uiState = ac.getUI()
 ui.setAsynchronousImagesLoading(true)
 
-local localTesting = false
-ac.log('Local testing:', localTesting)
+local localTesting = string.startsWith(ac.dirname(),'C:')
 local initialisation = true
 
 -- Constants --
@@ -121,7 +120,7 @@ local WELCOME_CARD_LINK = const({
 
 local MISSION_INFOS = const({
 	[10] = {
-		start = "Rob : Bank TP",
+		start = "Rob : Bank in front of Start/1 TP",
 		finish = "Deliver : Yellow BHL (Map)",
 		time = "Time Limit: 03:20.000",
 	},
@@ -149,7 +148,7 @@ local MISSION_TEXT = const({
 	},
 	["BANK HEIST"] = {
 		chat = "* Robbing the bank " .. os.date("%x *"),
-		screen = "You have successfully robbed the bank! Hurry to the drop off location!",
+		screen = "THE HEIST IS ON, GET READY TO MAKE YOUR GETAWAY!",
 	},
 });
 
@@ -536,6 +535,7 @@ end
 ---@field time string
 ---@field timeLimit number
 ---@field timeColor rgbm
+---@field finalTime number
 ---@field startDistance number
 ---@field distanceDriven number
 ---@field lenght number
@@ -645,7 +645,7 @@ end
 
 ---@return boolean
 function Sector:isFinished()
-	return self.gateIndex > self.gateCount -- and self.distanceDriven > self.lenght
+	return self.gateIndex > self.gateCount and self.distanceDriven > self.lenght
 end
 
 ---@return boolean
@@ -681,7 +681,11 @@ function Sector:updateTimeColor()
 		self.timeColor = rgbm(1, 0, 0, 1)
 	end
 	if self:isFinished() then
-		self.timeColor = rgbm(0, 1, 0, 1)
+		if self:isUnderTimeLimit() then
+			self.timeColor = rgbm(0, 1, 0, 1)
+		else
+			self.timeColor = rgbm(1, 0, 0, 1)
+		end
 	end
 end
 
@@ -696,6 +700,11 @@ function Sector:update()
 		self.gateIndex = self.gateIndex + 1
 		self:starting()
 		self:updateTimeColor()
+		if self:isFinished() then
+			self.finalTime = os.preciseClock() - self.startTime
+			self.time = ('%02d:%02d.%03d'):format(math.floor(self.finalTime / 60), math.floor(self.finalTime % 60),
+				math.floor((self.finalTime % 1) * 1000))
+		end
 	end
 end
 
@@ -739,6 +748,7 @@ function SectorStats.allocate(name, data)
 			name = name,
 			records = records,
 		}
+		setmetatable(sectorStats, { __index = SectorStats })
 		return sectorStats
 	end
 	ac.error('Failed to allocate sector stat')
@@ -746,10 +756,13 @@ function SectorStats.allocate(name, data)
 end
 
 ---@param time number
+---@return boolean
 function SectorStats:addRecord(time)
 	if not self.records[CAR_NAME] or self.records[CAR_NAME] > time then
 		self.records[CAR_NAME] = time
+		return true
 	end
+	return false
 end
 
 ---@return table
@@ -799,7 +812,7 @@ function Player.tryParse(data)
 	local sectors = {}
 	if data.sectors then
 		for sectorName, sectorData in pairs(data.sectors) do
-			local sector = SectorStats(sectorName, sectorData)
+			local sector = SectorStats.allocate(sectorName, sectorData)
 			if sector then
 				table.insert(sectors, sector)
 			end
@@ -890,8 +903,13 @@ function Player:export()
 	end
 
 	local sectors = {}
+	ac.log(self.sectors)
 	for _, sector in ipairs(self.sectors) do
+		if not sector then
+			break
+		end
 		local sectorData = sector:export()
+		ac.log('Sector Data:', sectorData)
 		for key, value in pairs(sectorData) do
 			sectors[key] = value
 		end
@@ -914,6 +932,9 @@ function Player:save()
 	end)
 end
 
+---@param sectorName string
+---@param time number
+---@return boolean
 function Player:addSectorRecord(sectorName, time)
 	---@type SectorStats | nil
 	local sector = nil
@@ -924,11 +945,13 @@ function Player:addSectorRecord(sectorName, time)
 		end
 	end
 	if not sector then
-		sector = SectorStats(sectorName, time)
-		if not sector then return end
+		ac.log('Sector not found:', sectorName)
+		sector = SectorStats.allocate(sectorName, time)
+		if not sector then return false end
 		table.insert(self.sectors, sector)
+		return true
 	end
-	sector:addRecord(time)
+	return sector:addRecord(time)
 end
 
 ---@type Player | nil
@@ -1744,7 +1767,7 @@ local function resetOvertake()
 		player.overtake = math.floor(overtake.totalScore)
 		if player.overtake > 10000 then
 			ac.sendChatMessage("New highest Overtake score: " .. player.overtake .. " pts !")
-			player.save()
+			player:save()
 		end
 		-- local data = {
 		-- 	["Overtake"] = highestScore,
@@ -2155,7 +2178,7 @@ local function drawHudImages()
 			if stealingTime == 0 then
 				local closestMission = getClosestMission()
 				if not closestMission then return end
-				stealingTime = 30
+				stealingTime = 5
 				ac.sendChatMessage(MISSION_TEXT[closestMission.name].chat)
 				stealMsgTime = 7
 				if sectorManager.sector.name ~= "DOUBLE TROUBLE" then
@@ -2510,21 +2533,23 @@ local function sectorUpdate()
 		sectorManager.started = true
 		sectorManager.finished = false
 	end
-	if not sectorManager.finished and sectorManager.sector:isFinished() then
-		
+	if not sectorManager.finished and sectorManager.sector:isFinished() and not sectorManager.isDuo or sectorManager.isDuo and sectorManager:hasTeammateFinished() then
 		sectorManager:printToChat()
 		sectorManager.finished = true
 		sectorManager.started = false
+		local shouldSave = player:addSectorRecord(sectorManager.sector.name, os.preciseClock() - sectorManager.sector.startTime)
+		if shouldSave then player:save() end
 	end
-	if sectorManager.isDuo then
-		if sectorManager.started and not sectorManager.finished and not sectorManager:hasTeammateFinished() then
-			sectorManager.sector:update()
-		end
-	else
-		if sectorManager.started and not sectorManager.finished then
-			sectorManager.sector:update()
-		end
+	if sectorManager.started and not sectorManager.finished then
+		sectorManager.sector:update()
 	end
+	-- if sectorManager.isDuo then
+	-- 	if sectorManager.started and not sectorManager.finished and not sectorManager:hasTeammateFinished() then
+	-- 		sectorManager.sector:update()
+	-- 	end
+	-- else
+
+	-- end
 end
 
 local function initUi()
@@ -2590,6 +2615,7 @@ local function loadPlayerData()
 		if allocatedPlayer then
 			player = allocatedPlayer
 			dataLoaded['PlayerData'] = true
+			player:export()
 		end
 	end)
 end
@@ -2668,7 +2694,7 @@ ac.onChatMessage(function(message, senderCarIndex, senderSessionID)
 			local data = {
 				["Getaway"] = player.getaways,
 			}
-			player.save()
+			player:save()
 		end
 	end
 	return false
