@@ -1011,10 +1011,12 @@ function SectorManager.allocate()
 end
 
 function SectorManager:reset()
-	if duo.teammate then
-		duo.teammateHasFinished = false
-		duo.sentFinish = false
-	end
+	duo.teammateHasFinished = false
+	duo.sentFinish = false
+	duo.waiting = false
+	duo.request = false
+	duo.onlineSender = nil
+	duo.teammate = nil
 	self.started = false
 	self.finished = false
 	self.sector:reset()
@@ -1046,7 +1048,6 @@ local acpEvent = ac.OnlineEvent({
 		duo.request = false
 	elseif duo.teammate and data.yourIndex == car.sessionID and sender.index == duo.teammate.index and data.messageType == 5 and data.message == "Finished" then
 		duo.teammateHasFinished = true
-		ac.log('Teammate has finished')
 	elseif duo.teammate and data.yourIndex == car.sessionID and sender.index == duo.teammate.index and data.messageType == 5 and data.message == "Cancel" then
 		duo.teammate = nil
 		duo.request = false
@@ -1076,10 +1077,6 @@ end
 function SectorManager:hasTeammateFinished()
 	if duo.teammate and duo.teammateHasFinished then
 		if not duo.sentFinish then
-			ac.log('Sending finish to teammate')
-			ac.log('Teammate Index:', duo.teammate.index)
-			ac.log('Teammate Session ID:', ac.getCar(duo.teammate.index).sessionID)
-			ac.log('Teammate Name:', ac.getDriverName(duo.teammate.index))
 			acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
 			duo.sentFinish = true
 		end
