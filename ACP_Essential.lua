@@ -212,6 +212,7 @@ local duo = {
 	teammateHasFinished = false,
 	waiting = false,
 	playerName = "Online Players",
+	sentFinish = false,
 }
 
 local dataLoaded = {}
@@ -1011,6 +1012,7 @@ end
 function SectorManager:reset()
 	if duo.teammate then
 		duo.teammateHasFinished = false
+		duo.sentFinish = false
 	end
 	self.started = false
 	self.finished = false
@@ -1071,6 +1073,7 @@ end
 
 function SectorManager:hasTeammateFinished()
 	if duo.teammate and duo.teammateHasFinished then
+		acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
 		sectorManager:resetDuo()
 		return true
 	end
@@ -2483,7 +2486,9 @@ local function sectorUpdate()
 			local shouldSave = player:addSectorRecord(sectorManager.sector.name, os.preciseClock() - sectorManager.sector.startTime)
 			if shouldSave then player:save() end
 		else
-			acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
+			if duo.teammate and not duo.sentFinish then
+				acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
+			end
 		end
 	end
 	if sectorManager.started and not sectorManager.finished then
