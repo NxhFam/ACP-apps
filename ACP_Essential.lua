@@ -5,8 +5,8 @@ local wheels = car.wheels or error()
 local uiState = ac.getUI()
 ui.setAsynchronousImagesLoading(true)
 
-local localTesting = false
-ac.log('Script Dir:', ac.dirname())
+local localTesting = ac.dirname() == 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\assettocorsa\\extension\\lua\\online'
+ac.log('Local Testing:', localTesting)
 local initialisation = true
 
 -- Constants --
@@ -203,6 +203,15 @@ local menuStates = {
 	welcome = true,
 	main = false,
 	leaderboard = false,
+}
+
+local duo = {
+	teammate = nil,
+	request = false,
+	onlineSender = nil,
+	teammateHasFinished = false,
+	waiting = false,
+	playerName = "Online Players",
 }
 
 local dataLoaded = {}
@@ -660,7 +669,7 @@ end
 
 function Sector:updateDistanceDriven()
 	if self.startDistance > 0 then
-		self.distanceDriven = truncate(car.distanceDrivenTotalKm - self.startDistance, 3)
+		self.distanceDriven = car.distanceDrivenTotalKm - self.startDistance
 	end
 end
 
@@ -981,7 +990,6 @@ end
 ---@field sector Sector
 ---@field started boolean
 ---@field finished boolean
----@field isDuo boolean
 local SectorManager = class('SectorManager')
 
 ---@return SectorManager
@@ -990,7 +998,6 @@ function SectorManager.new()
 		sector = nil,
 		started = false,
 		finished = false,
-		isDuo = false,
 	}
 	setmetatable(sm, { __index = SectorManager })
 	return sm
@@ -1002,10 +1009,8 @@ function SectorManager.allocate()
 end
 
 function SectorManager:reset()
-	if self.sector.name == "DOUBLE TROUBLE" then
-		self.isDuo = true
-	else
-		self.isDuo = false
+	if duo.teammate then
+		duo.teammateHasFinished = false
 	end
 	self.started = false
 	self.finished = false
@@ -1023,15 +1028,6 @@ end
 
 ---@type SectorManager
 local sectorManager = SectorManager()
-
-local duo = {
-	teammate = nil,
-	request = false,
-	onlineSender = nil,
-	teammateHasFinished = false,
-	waiting = false,
-	playerName = "Online Players",
-}
 
 local acpEvent = ac.OnlineEvent({
 	message = ac.StructItem.string(110),
@@ -1065,10 +1061,7 @@ function SectorManager:printToChat()
 end
 
 function SectorManager:hasTeammateFinished()
-	if duo.teammate and duo.teammateHasFinished then
-		return true
-	end
-	return false
+	return duo.teammate and duo.teammateHasFinished
 end
 
 function SectorManager:resetDuo()
@@ -2474,11 +2467,12 @@ end
 
 local function sectorUpdate()
 	if not sectorManager.started and not sectorManager.sector:hasStarted() then
+		if sectorManager.sector.name == 'DOUBLE TROUBLE' and not duo.teammate then return end
 		sectorManager.started = true
 		sectorManager.finished = false
 	end
 	if not sectorManager.finished and sectorManager.sector:isFinished() then
-		if not sectorManager.isDuo or sectorManager:hasTeammateFinished() then
+		if sectorManager.sector.name ~= 'DOUBLE TROUBLE' or sectorManager:hasTeammateFinished() then
 			sectorManager:printToChat()
 			sectorManager.finished = true
 			sectorManager.started = false
