@@ -1046,6 +1046,7 @@ local acpEvent = ac.OnlineEvent({
 		duo.request = false
 	elseif duo.teammate and data.yourIndex == car.sessionID and sender.index == duo.teammate.index and data.messageType == 5 and data.message == "Finished" then
 		duo.teammateHasFinished = true
+		ac.log('Teammate has finished')
 	elseif duo.teammate and data.yourIndex == car.sessionID and sender.index == duo.teammate.index and data.messageType == 5 and data.message == "Cancel" then
 		duo.teammate = nil
 		duo.request = false
@@ -1075,6 +1076,7 @@ end
 function SectorManager:hasTeammateFinished()
 	if duo.teammate and duo.teammateHasFinished then
 		if not duo.sentFinish then
+			ac.log('Sending finish to teammate')
 			acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
 			duo.sentFinish = true
 		end
