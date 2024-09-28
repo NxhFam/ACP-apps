@@ -1073,7 +1073,10 @@ end
 
 function SectorManager:hasTeammateFinished()
 	if duo.teammate and duo.teammateHasFinished then
-		acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
+		if not duo.sentFinish then
+			acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
+			duo.sentFinish = true
+		end
 		return true
 	end
 	return false
