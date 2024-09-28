@@ -659,7 +659,7 @@ end
 
 ---@return boolean
 function Sector:isFinished()
-	return self.gateIndex > self.gateCount and self.distanceDriven > self.lenght
+	return self.gateIndex > self.gateCount -- and self.distanceDriven > self.lenght
 end
 
 ---@return boolean
@@ -1060,10 +1060,6 @@ function SectorManager:printToChat()
 	end
 end
 
-function SectorManager:hasTeammateFinished()
-	return duo.teammate and duo.teammateHasFinished
-end
-
 function SectorManager:resetDuo()
 	duo.teammate = nil
 	duo.request = false
@@ -1071,6 +1067,14 @@ function SectorManager:resetDuo()
 	duo.teammateHasFinished = false
 	duo.waiting = false
 	self.isDuo = false
+end
+
+function SectorManager:hasTeammateFinished()
+	if duo.teammate and duo.teammateHasFinished then
+		sectorManager:resetDuo()
+		return true
+	end
+	return false
 end
 
 local canRun = false
@@ -2480,7 +2484,6 @@ local function sectorUpdate()
 			if shouldSave then player:save() end
 		else
 			acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
-			sectorManager:resetDuo()
 		end
 	end
 	if sectorManager.started and not sectorManager.finished then
@@ -2598,7 +2601,7 @@ ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlag
 
 --------------------------------------------------------------- AC Callbacks --------------------------------------------------------------
 ac.onCarJumped(0, function(carIndex)
-	sectorManager:reset()
+	-- sectorManager:reset()
 	if not isPoliceCar(CAR_ID) then
 		if online.chased and online.officer then
 			acpPolice { message = "TP", messageType = 0, yourIndex = online.officer.sessionID }
