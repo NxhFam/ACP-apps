@@ -1077,6 +1077,9 @@ function SectorManager:hasTeammateFinished()
 	if duo.teammate and duo.teammateHasFinished then
 		if not duo.sentFinish then
 			ac.log('Sending finish to teammate')
+			ac.log('Teammate Index:', duo.teammate.index)
+			ac.log('Teammate Session ID:', car.ac.getCar(duo.teammate.index).sessionID)
+			ac.log('Teammate Name:', ac.getDriverName(duo.teammate.index))
 			acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
 			duo.sentFinish = true
 		end
@@ -2483,8 +2486,11 @@ local function sectorUpdate()
 	end
 	ac.debug('Sector Finished', sectorManager.finished)
 	if not sectorManager.finished and sectorManager.sector:isFinished() then
+		ac.debug('Sector Finished', sectorManager.sector.name)
 		if sectorManager.sector.name ~= 'DOUBLE TROUBLE' or sectorManager:hasTeammateFinished() then
-			sectorManager:printToChat()
+			if sectorManager.sector.name ~= 'DOUBLE TROUBLE' then
+				sectorManager:printToChat()
+			end
 			sectorManager.finished = true
 			sectorManager.started = false
 			local shouldSave = player:addSectorRecord(sectorManager.sector.name, os.preciseClock() - sectorManager.sector.startTime)
