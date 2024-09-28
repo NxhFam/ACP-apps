@@ -1078,7 +1078,7 @@ function SectorManager:hasTeammateFinished()
 		if not duo.sentFinish then
 			ac.log('Sending finish to teammate')
 			ac.log('Teammate Index:', duo.teammate.index)
-			ac.log('Teammate Session ID:', car.ac.getCar(duo.teammate.index).sessionID)
+			ac.log('Teammate Session ID:', ac.getCar(duo.teammate.index).sessionID)
 			ac.log('Teammate Name:', ac.getDriverName(duo.teammate.index))
 			acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
 			duo.sentFinish = true
