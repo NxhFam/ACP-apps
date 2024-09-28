@@ -391,7 +391,6 @@ end
 ---@param callback function
 function Settings.allocate(callback)
 	local url = FIREBASE_URL .. 'Settings/' .. STEAMID .. '.json'
-	ac.log('Loading settings')
 	Settings.fetch(url, function(settings)
 		callback(settings)
 	end)
@@ -847,7 +846,7 @@ function Player.fetch(url, callback)
 		file:close()
 		local player = Player.tryParse(data)
 		callback(player)
-		ac.log('Player Date Loaded From File')
+		ac.log('Player Data Loaded From File')
 	else
 		web.get(url, function(err, response)
 			if canProcessRequest(err, response) then
@@ -903,13 +902,11 @@ function Player:export()
 	end
 
 	local sectors = {}
-	ac.log(self.sectors)
 	for _, sector in ipairs(self.sectors) do
 		if not sector then
 			break
 		end
 		local sectorData = sector:export()
-		ac.log('Sector Data:', sectorData)
 		for key, value in pairs(sectorData) do
 			sectors[key] = value
 		end
@@ -945,7 +942,6 @@ function Player:addSectorRecord(sectorName, time)
 		end
 	end
 	if not sector then
-		ac.log('Sector not found:', sectorName)
 		sector = SectorStats.allocate(sectorName, time)
 		if not sector then return false end
 		table.insert(self.sectors, sector)
@@ -2561,7 +2557,6 @@ end
 
 local function loadSettings()
 	Settings.allocate(function(allocatedSetting)
-		ac.log("Settings Allocated")
 		settings = allocatedSetting
 		initUi()
 	end)
