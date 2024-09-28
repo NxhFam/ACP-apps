@@ -2488,6 +2488,7 @@ local function sectorUpdate()
 		else
 			if duo.teammate and not duo.sentFinish then
 				acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
+				duo.sentFinish = true
 			end
 		end
 	end
