@@ -6,6 +6,7 @@ local uiState = ac.getUI()
 ui.setAsynchronousImagesLoading(true)
 
 local localTesting = false
+ac.log('Script Dir:', ac.dirname())
 local initialisation = true
 
 -- Constants --
@@ -143,6 +144,10 @@ local MISSION_TEXT = const({
 		screen = "You have successfully picked up the drugs! Hurry to the drop off location!",
 	},
 	["BOBs SCRAPYARD"] = {
+		chat = "* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. os.date("%x *"),
+		screen = "You have successfully stolen the " .. string.gsub(string.gsub(CAR_NAME, "%W", " "), "  ", "") .. "! Hurry to the scrapyard!",
+	},
+	["DOUBLE TROUBLE"] = {
 		chat = "* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. os.date("%x *"),
 		screen = "You have successfully stolen the " .. string.gsub(string.gsub(CAR_NAME, "%W", " "), "  ", "") .. "! Hurry to the scrapyard!",
 	},
@@ -632,6 +637,7 @@ function Sector:reset()
 	self.timeColor = white
 	self.startDistance = 0
 	self.distanceDriven = 0
+	self.finalTime = 0
 end
 
 function Sector:starting()
@@ -918,9 +924,12 @@ function Player:export()
 end
 
 function Player:save()
-	if localTesting or patchCount > 40 then return end
-	patchCount = patchCount + 1
 	local str = '{"' .. STEAMID .. '": ' .. JSON.stringify(self:export()) .. '}'
+	if localTesting or patchCount > 40 then
+		ac.log(str)
+		return
+	end
+	patchCount = patchCount + 1
 	web.request('PATCH', FIREBASE_URL .. "Players.json", str, function(err, response)
 		if err then
 			ac.error(err)
@@ -1045,16 +1054,6 @@ local acpEvent = ac.OnlineEvent({
 	end
 end)
 
-function SectorManager:duoFinished()
-	if duo.teammate then
-		if duo.teammateHasFinished then
-			ac.sendChatMessage(" has finished " .. self.sector.name .. " in " .. self.sector.time .. "!")
-		else
-			acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
-		end
-	end
-end
-
 function SectorManager:printToChat()
 	if sectorManager.sector.name == "H1" then
 		ac.sendChatMessage(" has finished H1 in " .. sectorManager.sector.time .. " driving a " .. CAR_NAME .. "!")
@@ -1070,6 +1069,15 @@ function SectorManager:hasTeammateFinished()
 		return true
 	end
 	return false
+end
+
+function SectorManager:resetDuo()
+	duo.teammate = nil
+	duo.request = false
+	duo.onlineSender = nil
+	duo.teammateHasFinished = false
+	duo.waiting = false
+	self.isDuo = false
 end
 
 local canRun = false
@@ -1480,53 +1488,8 @@ local function sectorUI()
 	return 1
 end
 
-
--- local function drugDeliveryUI()
--- 	if drugDelivery.active and not drugDelivery.started then
--- 		textWithBackground(
--- 			"You just picked up some drugs to start the mission click on the THEFT icon! Deliver them to this location : " ..
--- 			drugDelivery.dropOffName .. "!", 1)
--- 	elseif drugDelivery.started then
--- 		textWithBackground("You are on the way to deliver the drugs to " .. drugDelivery.dropOffName .. "!", 1)
--- 	end
--- end
-
--- local function drugDeliveryUpdate(dt)
--- 	drawDrugLocations()
--- 	if not drugDelivery.active and car.speedKmh < 5 and isPointInCircle(car.position, drugDelivery.pickUp, 100) then
--- 		drugDelivery.active = true
--- 		drugDelivery.finalAvgSpeed = 0
--- 	elseif drugDelivery.call and drugDelivery.active and car.speedKmh > 5 and isPointInCircle(car.position, drugDelivery.pickUp, 100) then
--- 		resetDrugDelivery()
--- 		drugDelivery.distance = car.distanceDrivenSessionKm
--- 		for i = 0, 4 do drugDelivery.damage[i] = car.damage[i] end
--- 		drugDelivery.started = true
--- 	elseif drugDelivery.started and car.speedKmh < 10 and isPointInCircle(car.position, drugDelivery.dropOff, 100) then
--- 		if drugAvgSpeedValid() then
--- 			ac.sendChatMessage(" has delivered the drugs and got away with it!\nDate : " .. os.date("%d/%m/%Y"))
--- 		else
--- 			ac.sendChatMessage(" was too slow and got caught by the cops with the drugs!")
--- 		end
--- 	end
--- 	if drugDelivery.started then
--- 		if car.speedKmh > 10 then
--- 			for i = 0, 4 do
--- 				if car.damage[i] > drugDelivery.damage[i] then
--- 					ac.sendChatMessage(" has crashed and lost the drugs!")
--- 					resetDrugDelivery()
--- 					break
--- 				end
--- 			end
--- 		end
--- 	end
--- 	if drugDelivery.started then
--- 		drugDelivery.timer = drugDelivery.timer + dt
--- 		drugDelivery.avgSpeed = (car.distanceDrivenSessionKm - drugDelivery.distance) * 3600 / drugDelivery.timer
--- 	end
--- end
-
 --------------------------------------------------------------------------------------- Race Opponent -----------------------------------------------------------------------------------------------
--- Variables --
+
 local horn = {
 	lastState = false,
 	stateChangedCount = 0,
@@ -1738,15 +1701,12 @@ end
 
 -------------------------------------------------------------------------------- overtake --------------------------------------------------------------------------------
 
--- Event configuration:
 local REQUIRED_SPEED = const(80)
 
--- This function is called before event activates. Once it returns true, it’ll run:
 function script.prepare(dt)
 	return car.speedKmh > 60
 end
 
--- Event state:
 local overtake = {
 	damage = {},
 	timePassed = 0,
@@ -1765,9 +1725,6 @@ local function resetOvertake()
 			ac.sendChatMessage("New highest Overtake score: " .. player.overtake .. " pts !")
 			player:save()
 		end
-		-- local data = {
-		-- 	["Overtake"] = highestScore,
-		-- }
 	end
 	overtake.totalScore = 0
 	overtake.comboMeter = 1
@@ -1868,9 +1825,6 @@ local function overtakeUI(textOffset)
 	local textSize = ui.measureDWriteText(text, settings.fontSize)
 	ui.dwriteDrawText(text, settings.fontSize, textOffset - vec2(textSize.x / 2, -hud.size.y / 13), colorCombo)
 end
-
--- UI Update
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 local function flashingAlert(intensity)
 	local timing = os.clock() % 1
@@ -2183,12 +2137,6 @@ local function drawHudImages()
 					sectorManager:setSector("DOUBLE TROUBLE")
 				end
 				settings.current = 4
-				-- if not drugDelivery.drawPickUp then
-				-- end
-				-- if drugDelivery.active and not drugDelivery.started then
-				-- 	ac.sendChatMessage(" has picked up the drugs at (" .. drugDelivery.pickUpName .. ") and is on the way to the drop off! (" .. drugDelivery.dropOffName .. ")")
-				-- 	drugDelivery.call = true
-				-- end
 			end
 		end
 	elseif ui.rectHovered(hud.pos.ranksPos2, hud.pos.ranksPos1) then
@@ -2529,23 +2477,21 @@ local function sectorUpdate()
 		sectorManager.started = true
 		sectorManager.finished = false
 	end
-	if not sectorManager.finished and sectorManager.sector:isFinished() and not sectorManager.isDuo or sectorManager.isDuo and sectorManager:hasTeammateFinished() then
-		sectorManager:printToChat()
-		sectorManager.finished = true
-		sectorManager.started = false
-		local shouldSave = player:addSectorRecord(sectorManager.sector.name, os.preciseClock() - sectorManager.sector.startTime)
-		if shouldSave then player:save() end
+	if not sectorManager.finished and sectorManager.sector:isFinished() then
+		if not sectorManager.isDuo or sectorManager:hasTeammateFinished() then
+			sectorManager:printToChat()
+			sectorManager.finished = true
+			sectorManager.started = false
+			local shouldSave = player:addSectorRecord(sectorManager.sector.name, os.preciseClock() - sectorManager.sector.startTime)
+			if shouldSave then player:save() end
+		else
+			acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
+			sectorManager:resetDuo()
+		end
 	end
 	if sectorManager.started and not sectorManager.finished then
 		sectorManager.sector:update()
 	end
-	-- if sectorManager.isDuo then
-	-- 	if sectorManager.started and not sectorManager.finished and not sectorManager:hasTeammateFinished() then
-	-- 		sectorManager.sector:update()
-	-- 	end
-	-- else
-
-	-- end
 end
 
 local function initUi()
