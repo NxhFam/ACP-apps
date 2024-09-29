@@ -231,6 +231,21 @@ local function isPoliceCar(carID)
 	return false
 end
 
+---@param key string
+local function removeUtf8Char(key)
+	local newKey = ''
+	for i = 1, #key do
+		local c = key:sub(i, i)
+		if c:byte() < 128 then
+			newKey = newKey .. c
+		end
+	end
+	newKey = newKey:match('^%s*(.-)%s*$')
+	return newKey
+end
+
+local CAR_NAME_NO_UTF8 = removeUtf8Char(CAR_NAME)
+
 if isPoliceCar(CAR_ID) then return end
 
 --------- Utils ------------
@@ -735,7 +750,10 @@ local SectorStats = class('SectorStats')
 function SectorStats.tryParse(name, data)
 	local records = {}
 	for carName, time in pairs(data) do
-		records[carName] = time
+
+		local nameWithoutUtf8 = removeUtf8Char(carName)
+		ac.log(nameWithoutUtf8)
+		records[nameWithoutUtf8] = time
 	end
 	local sectorStats = {
 		name = name,
@@ -759,7 +777,7 @@ function SectorStats.allocate(name, data)
 	end
 	if type(data) == 'number' then
 		local records = {}
-		records[CAR_NAME] = data
+		records[CAR_NAME_NO_UTF8] = data
 		local sectorStats = {
 			name = name,
 			records = records,
@@ -774,8 +792,8 @@ end
 ---@param time number
 ---@return boolean
 function SectorStats:addRecord(time)
-	if not self.records[CAR_NAME] or self.records[CAR_NAME] > time then
-		self.records[CAR_NAME] = time
+	if not self.records[CAR_NAME_NO_UTF8] or self.records[CAR_NAME_NO_UTF8] > time then
+		self.records[CAR_NAME_NO_UTF8] = time
 		return true
 	end
 	return false
@@ -895,13 +913,11 @@ function Player.allocate(callback)
 	end)
 end
 
+---@param key string
 ---@return table
-function Player:export()
+function Player:export(key)
 	local data = { name = self.name }
 
-	if self.arrests > 0 then
-		data.arrests = self.arrests
-	end
 	if self.getaways > 0 then
 		data.getaways = self.getaways
 	end
@@ -924,8 +940,8 @@ function Player:export()
 			break
 		end
 		local sectorData = sector:export()
-		for key, value in pairs(sectorData) do
-			sectors[key] = value
+		for k, v in pairs(sectorData) do
+			sectors[k] = v
 		end
 	end
 	if next(sectors) then
@@ -935,11 +951,12 @@ function Player:export()
 end
 
 function Player:save()
-	local str = '{"' .. STEAMID .. '": ' .. JSON.stringify(self:export()) .. '}'
-	if localTesting or patchCount > 40 then
-		ac.log(str)
-		return
-	end
+	local str = '{"' .. STEAMID .. '": ' .. JSON.stringify(self:export(key)) .. '}'
+	ac.log(str)
+	-- if localTesting or patchCount > 40 then
+	-- 	ac.log(str)
+	-- 	return
+	-- end
 	patchCount = patchCount + 1
 	web.request('PATCH', FIREBASE_URL .. "Players.json", str, function(err, response)
 		if err then
@@ -1056,7 +1073,7 @@ end)
 
 function SectorManager:printToChat()
 	if sectorManager.sector.name == "H1" then
-		ac.sendChatMessage(" has finished H1 in " .. sectorManager.sector.time .. " driving a " .. CAR_NAME .. "!")
+		ac.sendChatMessage(" has finished H1 in " .. sectorManager.sector.time .. " driving a " .. CAR_NAME_NO_UTF8 .. "!")
 	elseif self.sector:isUnderTimeLimit() then
 		ac.sendChatMessage(FINISH_MSG[self.sector.name].success)
 	else
@@ -2325,10 +2342,10 @@ local function drawWelcomeText()
 			welcomeWindow.topRight.y), white)
 	ui.popDWriteFont()
 	ui.pushDWriteFont(welcomeWindow.fontBold)
-	ui.dwriteDrawText(string.gsub(string.gsub(CAR_NAME, "%W", " "), "  ", ""), welcomeWindow.fontSize,
+	ui.dwriteDrawText(string.gsub(string.gsub(CAR_NAME_NO_UTF8, "%W", " "), "  ", ""), welcomeWindow.fontSize,
 		vec2(
 			welcomeWindow.topRight.x -
-			ui.measureDWriteText(string.gsub(string.gsub(CAR_NAME, "%W", " "), "  ", ""), welcomeWindow.fontSize).x,
+			ui.measureDWriteText(string.gsub(string.gsub(CAR_NAME_NO_UTF8, "%W", " "), "  ", ""), welcomeWindow.fontSize).x,
 			welcomeWindow.topRight.y + ui.measureDWriteText("CURRENT CAR", welcomeWindow.fontSize * 0.6).y),
 		settings.colorHud)
 	ui.popDWriteFont()
@@ -2639,9 +2656,6 @@ ac.onChatMessage(function(message, senderCarIndex, senderSessionID)
 			player.getaways = player.getaways + 1
 			online.chased = false
 			online.officer = nil
-			local data = {
-				["Getaway"] = player.getaways,
-			}
 			player:save()
 		end
 	end
