@@ -1016,7 +1016,6 @@ function SectorManager:reset()
 	duo.waiting = false
 	duo.request = false
 	duo.onlineSender = nil
-	duo.teammate = nil
 	self.started = false
 	self.finished = false
 	self.sector:reset()
@@ -2477,19 +2476,18 @@ end
 
 local function sectorUpdate()
 	if not sectorManager.started and not sectorManager.sector:hasStarted() then
-		if sectorManager.sector.name == 'DOUBLE TROUBLE' and not duo.teammate then return end
 		sectorManager.started = true
 		sectorManager.finished = false
 	end
 	ac.debug('Sector Finished', sectorManager.finished)
 	if not sectorManager.finished and sectorManager.sector:isFinished() then
 		if sectorManager.sector.name ~= 'DOUBLE TROUBLE' or sectorManager:hasTeammateFinished() then
-			if sectorManager.sector.name ~= 'DOUBLE TROUBLE' then
-				sectorManager:printToChat()
-			end
+			-- if sectorManager.sector.name ~= 'DOUBLE TROUBLE' then
+			-- 	sectorManager:printToChat()
+			-- end
 			sectorManager.finished = true
 			sectorManager.started = false
-			local shouldSave = player:addSectorRecord(sectorManager.sector.name, os.preciseClock() - sectorManager.sector.startTime)
+			local shouldSave = player:addSectorRecord(sectorManager.sector.name, sectorManager.sector.finalTime)
 			if shouldSave then player:save() end
 		else
 			if duo.teammate and not duo.sentFinish then
