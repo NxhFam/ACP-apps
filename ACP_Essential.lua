@@ -750,9 +750,7 @@ local SectorStats = class('SectorStats')
 function SectorStats.tryParse(name, data)
 	local records = {}
 	for carName, time in pairs(data) do
-
 		local nameWithoutUtf8 = removeUtf8Char(carName)
-		ac.log(nameWithoutUtf8)
 		records[nameWithoutUtf8] = time
 	end
 	local sectorStats = {
@@ -951,12 +949,11 @@ function Player:export(key)
 end
 
 function Player:save()
-	local str = '{"' .. STEAMID .. '": ' .. JSON.stringify(self:export(key)) .. '}'
-	ac.log(str)
-	-- if localTesting or patchCount > 40 then
-	-- 	ac.log(str)
-	-- 	return
-	-- end
+	local str = '{"' .. STEAMID .. '": ' .. JSON.stringify(self:export()) .. '}'
+	if localTesting or patchCount > 40 then
+		ac.log(str)
+		return
+	end
 	patchCount = patchCount + 1
 	web.request('PATCH', FIREBASE_URL .. "Players.json", str, function(err, response)
 		if err then
