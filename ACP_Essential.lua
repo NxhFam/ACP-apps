@@ -676,7 +676,7 @@ end
 ---@return boolean
 function Sector:isFinished()
 	ac.debug('Sector Finished in class:', self.gateIndex > self.gateCount)
-	return self.gateIndex > self.gateCount -- and self.distanceDriven > self.lenght
+	return self.gateIndex > self.gateCount and self.distanceDriven > self.lenght
 end
 
 ---@return boolean
@@ -2625,7 +2625,7 @@ ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlag
 
 --------------------------------------------------------------- AC Callbacks --------------------------------------------------------------
 ac.onCarJumped(0, function(carIndex)
-	-- sectorManager:reset()
+	sectorManager:reset()
 	if not isPoliceCar(CAR_ID) then
 		if online.chased and online.officer then
 			acpPolice { message = "TP", messageType = 0, yourIndex = online.officer.sessionID }
