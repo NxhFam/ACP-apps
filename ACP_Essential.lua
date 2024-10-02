@@ -12,7 +12,7 @@ local initialisation = true
 -- Constants --
 local STEAMID = const(ac.getUserSteamID())
 local CSP_VERSION = const(ac.getPatchVersionCode())
-local CSP_MIN_VERSION = const(2253)
+local CSP_MIN_VERSION = const(3116)
 local CAR_ID = const(ac.getCarID(0))
 local CAR_NAME = const(ac.getCarName(0))
 local DRIVER_NAME = const(ac.getDriverName(0))
@@ -26,8 +26,12 @@ if DRIVER_NATION_CODE == "USA" or DRIVER_NATION_CODE == "GBR" then
 	UNIT_MULT = 0.621371
 end
 
-local POLICE_CAR = { "chargerpolice_acpursuit", "crown_police" }
-
+local POLICE_CAR = const({ "crown_police" })
+local LEADERBOARDS = const({
+	time = {"H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST" },
+	score = { "arrests", "getaways", "thefts", "overtake" },
+})
+local LEADERBOARD_NAMES = const({ "H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST", "arrests", "getaways", "thefts", "overtake" })
 local patchCount = 0
 
 -- URL --
@@ -311,6 +315,184 @@ local function snapToTrack(v)
 	return v
 end
 
+---@param time number
+---@return string
+local function formatTime(time)
+	local minutes = math.floor(time / 60)
+	local seconds = math.floor(time % 60)
+	local milliseconds = math.floor((time % 1) * 1000)
+	return ('%02d:%02d.%03d'):format(minutes, seconds, milliseconds)
+end
+
+---@param category string
+---@param rows LeaderboardRow[]
+---@return LeaderboardRow[]
+local function sortLeaderboard(category, rows)
+	if category == "time" then
+		table.sort(rows, function(a, b)
+			return a[3] < b[3]
+		end)
+	else
+		table.sort(rows, function(a, b)
+			return a[2] > b[2]
+		end)
+	end
+	return rows
+end
+
+---@type Leaderboard[]
+local leaderboards = {}
+---@type Leaderboard
+local currentLeaderboard = nil
+
+---@class LeaderboardRow
+---@field infos string[]
+local LeaderboardRow = class('LeaderboardRow')
+
+---@param category string
+---@param data table
+---@return LeaderboardRow
+function LeaderboardRow.allocate(category, data)
+	local infos = {}
+	if category == "time" then
+		table.insert(infos, data.Driver)
+		table.insert(infos, formatTime(data.Time))
+		table.insert(infos, data.Car)
+	else
+		table.insert(infos, data.Driver)
+		table.insert(infos, data.Score)
+	end
+	setmetatable(infos, { __index = LeaderboardRow })
+	return infos
+end
+
+---@class Leaderboard
+---@field name string
+---@field category string
+---@field header string[]
+---@field rows LeaderboardRow[]
+---@field rowCount integer
+---@field nbCols integer
+local Leaderboard = class('Leaderboard')
+
+---@param name string
+function Leaderboard.noData(name)
+	local category = "score"
+	local header = { "Driver", "Score" }
+	local row = { "No Data", "No Data" }
+	for _, cat in ipairs(LEADERBOARDS.time) do
+		if cat == name then
+			header = { "Driver", "Time", "Car" }
+			category = "time"
+			row = { "No Data", "No Data", "No Data" }
+			break
+		end
+	end
+	local leaderboard = {
+		name = name,
+		category = category,
+		header = header,
+		rows = { row },
+		rowCount = 1,
+		nbCols = category == "time" and 3 or 2,
+	}
+	setmetatable(leaderboard, { __index = Leaderboard })
+	return leaderboard
+end
+
+---@param name string
+---@param data table
+---@return Leaderboard
+function Leaderboard.tryParse(name, data)
+	local rowCount = 0
+	local category = "score"
+	local header = { "Driver", "Score" }
+	for _, cat in ipairs(LEADERBOARDS.time) do
+		if cat == name then
+			header = { "Driver", "Time", "Car" }
+			category = "time"
+			break
+		end
+	end
+	local rows = {}
+	for steamID, record in pairs(data) do
+		local row = LeaderboardRow.allocate(category, record)
+		table.insert(rows, row)
+		rowCount = rowCount + 1
+	end
+	rows = sortLeaderboard(category, rows)
+	local leaderboard = {
+		name = name,
+		category = category,
+		header = header,
+		rows = rows,
+		rowCount = rowCount,
+		nbCols = category == "time" and 3 or 2,
+	}
+	setmetatable(leaderboard, { __index = Leaderboard })
+	return leaderboard
+end
+
+---@param name string
+function Leaderboard.fetch(name)
+	if localTesting then
+		local currentPath = ac.getFolder(ac.FolderID.ScriptOrigin)
+		local file = io.open(currentPath .. '/response/leaderboardsResponse.json', 'r')
+		if not file then
+			ac.error('Failed to open leaderboardResponse.json')
+			return
+		end
+		local data = JSON.parse(file:read('*a'))
+		file:close()
+		data = data[name]
+		if data then
+			local leaderboard = Leaderboard.tryParse(name, data)
+			if leaderboard then
+				leaderboards[name] = leaderboard
+				currentLeaderboard = leaderboard
+				return
+			end
+		end
+		local leaderboard = Leaderboard.noData(name)
+		leaderboards[name] = leaderboard
+		currentLeaderboard = leaderboard
+		ac.error('Failed to parse leaderboard data.')
+	else
+		if leaderboards[name] then return end
+		local url = FIREBASE_URL .. 'Leaderboards/' .. name .. '.json'
+		web.get(url, function(err, response)
+			if canProcessRequest(err, response) then
+				local data = JSON.parse(response.body)
+				if data then
+					local leaderboard = Leaderboard.tryParse(name, data)
+					if leaderboard then
+						leaderboards[name] = leaderboard
+						currentLeaderboard = leaderboard
+						return
+					end
+				end
+			end
+			local leaderboard = Leaderboard.noData(name)
+			leaderboards[name] = leaderboard
+			currentLeaderboard = leaderboard
+			ac.error('No leaderboard data found:', name)
+		end)
+	end
+end
+
+---@param name string
+function Leaderboard.allocate(name)
+	Leaderboard.fetch(name)
+end
+
+function Leaderboard:print()
+	ac.log('Leaderboard:', self.name, 'Category:', self.category, 'Rows:', self.rowCount)
+	for i, row in ipairs(self.rows) do
+		ac.log('Row:', i, 'Infos:', row)
+	end
+end
+
+
 local DEFAULT_SETTINGS = const({
 	essentialSize = 20,
 	policeSize = 20,
@@ -325,8 +507,10 @@ local DEFAULT_SETTINGS = const({
 	unit = UNIT,
 	unitMult = UNIT_MULT,
 	starsSize = 20,
-	starsPos = vec2(WINDOW_WIDTH, 0),
+	starsPos = vec2(WIDTH_DIV._2, 0),
 })
+
+local leaderboardWrapWidth = DEFAULT_SETTINGS.fontSize / 1.5
 
 ---@class Settings
 ---@field essentialSize number
@@ -385,9 +569,9 @@ end
 function Settings.fetch(url, callback)
 	if localTesting then
 		local currentPath = ac.getFolder(ac.FolderID.ScriptOrigin)
-		local file = io.open(currentPath .. '/settingsResponse.json', 'r')
+		local file = io.open(currentPath .. '/response/settingsResponse.json', 'r')
 		if not file then
-			ac.error('Failed to open response.json')
+			ac.error('Failed to open settingsResponse.json')
 			callback(Settings.new())
 			return
 		end
@@ -613,7 +797,7 @@ function Sector.fetch(url, callback)
 	if localTesting then
 		local currentPath = ac.getFolder(ac.FolderID.ScriptOrigin)
 		local filename = url:match('.+/(.+)$')
-		local file = io.open(currentPath .. '/sector' .. filename, 'r')
+		local file = io.open(currentPath .. '/response/sector' .. filename, 'r')
 		if not file then
 			ac.error('Failed to open response.json')
 			callback(nil)
@@ -675,7 +859,6 @@ end
 
 ---@return boolean
 function Sector:isFinished()
-	ac.debug('Sector Finished in class:', self.gateIndex > self.gateCount)
 	return self.gateIndex > self.gateCount and self.distanceDriven > self.lenght
 end
 
@@ -869,7 +1052,7 @@ end
 function Player.fetch(url, callback)
 	if localTesting then
 		local currentPath = ac.getFolder(ac.FolderID.ScriptOrigin)
-		local file = io.open(currentPath .. '/playerResponse.json', 'r')
+		local file = io.open(currentPath .. '/response/playerResponse.json', 'r')
 		if not file then
 			ac.error('Failed to open playerResponse.json')
 			callback(Player.new())
@@ -950,10 +1133,7 @@ end
 
 function Player:save()
 	local str = '{"' .. STEAMID .. '": ' .. JSON.stringify(self:export()) .. '}'
-	if localTesting or patchCount > 40 then
-		ac.log(str)
-		return
-	end
+	if localTesting or patchCount > 40 then return end
 	patchCount = patchCount + 1
 	web.request('PATCH', FIREBASE_URL .. "Players.json", str, function(err, response)
 		if err then
@@ -1192,21 +1372,20 @@ local boxHeight = HEIGHT_DIV._70
 
 local function displayInGrid()
 	local box1 = vec2(WIDTH_DIV._32, boxHeight)
-	local nbCol = #leaderboard[1]
-	local colWidth = (WIDTH_DIV._2 - WIDTH_DIV._32) / (nbCol)
+	local colWidth = (WIDTH_DIV._2 - WIDTH_DIV._32) / currentLeaderboard.nbCols
 	ui.pushDWriteFont("Orbitron;Weight=Black")
 	ui.newLine()
-	ui.dwriteTextAligned("Pos", settings.fontSize / 1.5, ui.Alignment.Center, ui.Alignment.Center, box1, false,
-		settings.colorHud)
-	for i = 1, nbCol do
-		local textLenght = ui.measureDWriteText(leaderboard[1][i], settings.fontSize / 1.5).x
+	ui.dwriteTextAligned("Pos", leaderboardWrapWidth, ui.Alignment.Center, ui.Alignment.Center, box1, false, settings.colorHud)
+	for i = 1, #currentLeaderboard.header do
+		local textLenght = ui.measureDWriteText(currentLeaderboard.header[i], leaderboardWrapWidth).x
 		ui.sameLine(box1.x + colWidth / 2 + colWidth * (i - 1) - textLenght / 2)
-		ui.dwriteTextWrapped(leaderboard[1][i], settings.fontSize / 1.5, settings.colorHud)
+		ui.dwriteTextWrapped(currentLeaderboard.header[i], leaderboardWrapWidth, settings.colorHud)
 	end
+	ui.drawLine(vec2(0, HEIGHT_DIV._12), vec2(WIDTH_DIV._2, HEIGHT_DIV._12), white, 2)
 	ui.newLine()
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=Regular")
-	for i = 2, #leaderboard do
+	for i = 1, #currentLeaderboard.rows do
 		local sufix = "th"
 		if i == 2 then
 			sufix = "st"
@@ -1215,40 +1394,40 @@ local function displayInGrid()
 		elseif i == 4 then
 			sufix = "rd"
 		end
-		ui.dwriteTextAligned(i - 1 .. sufix, settings.fontSize / 2, ui.Alignment.Center, ui.Alignment.Center, box1, false,
+		ui.dwriteTextAligned(i .. sufix, settings.fontSize / 2, ui.Alignment.Center, ui.Alignment.Center, box1, false,
 			white)
-		for j = 1, #leaderboard[1] do
-			local textLenght = ui.measureDWriteText(leaderboard[i][leaderboard[1][j]], settings.fontSize / 1.5).x
+		for j = 1, #currentLeaderboard.rows[1] do
+			local textLenght = ui.measureDWriteText(currentLeaderboard.rows[i][j], leaderboardWrapWidth).x
 			ui.sameLine(box1.x + colWidth / 2 + colWidth * (j - 1) - textLenght / 2)
-			ui.dwriteTextWrapped(leaderboard[i][leaderboard[1][j]], settings.fontSize / 1.5, white)
+			ui.dwriteTextWrapped(currentLeaderboard.rows[i][j], leaderboardWrapWidth, white)
 		end
 	end
 	ui.popDWriteFont()
-	local lineHeight = math.max(ui.itemRectMax().y, HEIGHT_DIV._3)
-	ui.drawLine(vec2(box1.x, HEIGHT_DIV._20), vec2(box1.x, lineHeight), white, 1)
-	for i = 1, nbCol - 1 do
+	local lineHeight = math.max(ui.itemRectMax().y + box1.y)
+	local lineOffset = box1.x + box1.x * 0.5
+	ui.drawLine(vec2(lineOffset, HEIGHT_DIV._20), vec2(lineOffset, lineHeight), white, 2)
+	for i = 1, currentLeaderboard.nbCols - 1 do
 		ui.drawLine(vec2(box1.x + colWidth * i, HEIGHT_DIV._20), vec2(box1.x + colWidth * i, lineHeight),
 			white, 2)
 	end
-	ui.drawLine(vec2(0, HEIGHT_DIV._12), vec2(WIDTH_DIV._2, HEIGHT_DIV._12), white, 1)
 end
 
 local function showLeaderboard()
-	ui.dummy(vec2(WIDTH_DIV._20, 0))
-	ui.sameLine()
 	ui.setNextItemWidth(WIDTH_DIV._12)
-	ui.combo("leaderboard", leaderboardName, function()
-		for i = 1, #leaderboardNames do
-			if ui.selectable(leaderboardNames[i], leaderboardName == leaderboardNames[i]) then
-				leaderboardName = leaderboardNames[i]
-				loadLeaderboard()
+	ui.combo("leaderboard", currentLeaderboard and currentLeaderboard.name or "Select Leaderboard", function()
+		for i = 1, #LEADERBOARD_NAMES do
+			if ui.selectable(LEADERBOARD_NAMES[i], currentLeaderboard and currentLeaderboard.name == LEADERBOARD_NAMES[i]) then
+				Leaderboard.allocate(LEADERBOARD_NAMES[i])
 			end
 		end
 	end)
-	ui.sameLine(WIDTH_DIV._4 - 120)
+	
+	ui.sameLine(WIDTH_DIV._2 - 110)
 	if ui.button('Close', vec2(100, HEIGHT_DIV._50)) then menuStates.leaderboard = false end
 	ui.newLine()
-	displayInGrid()
+	if currentLeaderboard and currentLeaderboard.rows and currentLeaderboard.header then
+		displayInGrid()
+	end
 end
 
 ----------------------------------------------------------------------------------------------- settings -----------------------------------------------------------------------------------------------
@@ -2165,7 +2344,6 @@ local function drawHudImages()
 					menuStates.main = false
 				end
 				menuStates.leaderboard = true
-				-- loadLeaderboard()
 			end
 		end
 	elseif ui.rectHovered(hud.pos.countdownPos2, hud.pos.countdownPos1) then
@@ -2248,11 +2426,9 @@ local function moveMenu()
 end
 
 local function leaderboardWindow()
-	ui.toolWindow('LeaderboardWindow', settings.menuPos, vec2(WIDTH_DIV._2, HEIGHT_DIV._2), true, function()
-		ui.childWindow('childLeaderboard', vec2(WIDTH_DIV._2, HEIGHT_DIV._2), true, function()
-			showLeaderboard()
-			moveMenu()
-		end)
+	ui.toolWindow('LeaderboardWindow', settings.menuPos, vec2(WIDTH_DIV._2, HEIGHT_DIV._2), false, true, function()
+		showLeaderboard()
+		moveMenu()
 	end)
 end
 
@@ -2437,8 +2613,6 @@ end
 
 -------------------------------------------------------------------------------- UPDATE --------------------------------------------------------------------------------
 
-
-
 function script.drawUI()
 	if not shouldRun() then return end
 	if ui.keyboardButtonPressed(ui.KeyIndex.Menu) then menuStates.welcome = not menuStates.welcome end
@@ -2450,14 +2624,12 @@ function script.drawUI()
 		onlineEventMessageUI()
 		raceUI()
 		if menuStates.main then
-			ui.toolWindow('Menu', settings.menuPos, menuSize[currentTab], true, function()
-				ui.childWindow('childMenu', menuSize[currentTab], true, ui.WindowFlags.MenuBar, function()
-					menu()
-					moveMenu()
-				end)
+			ui.toolWindow('Menu', settings.menuPos, menuSize[currentTab], true, true, function()
+				menu()
+				moveMenu()
 			end)
 		end
-		-- if menuStates.leaderboard then leaderboardWindow() end
+		if menuStates.leaderboard then leaderboardWindow() end
 	end
 end
 
@@ -2488,6 +2660,14 @@ local function hidePolice()
 	end
 end
 
+local function updateThefts()
+	if sectorManager.sector.name == "BOBs SCRAPYARD" or sectorManager.sector.name == "DOUBLE TROUBLE" then
+		if sectorManager.sector:isUnderTimeLimit() then
+			player.thefts = player.thefts + 1
+		end
+	end
+end
+
 local function sectorUpdate()
 	if not sectorManager.started and not sectorManager.sector:hasStarted() then
 		sectorManager.started = true
@@ -2499,6 +2679,7 @@ local function sectorUpdate()
 			-- if sectorManager.sector.name ~= 'DOUBLE TROUBLE' then
 			-- 	sectorManager:printToChat()
 			-- end
+			updateThefts()
 			sectorManager.finished = true
 			sectorManager.started = false
 			local shouldSave = player:addSectorRecord(sectorManager.sector.name, sectorManager.sector.finalTime)
@@ -2525,6 +2706,7 @@ end
 local function loadSettings()
 	Settings.allocate(function(allocatedSetting)
 		settings = allocatedSetting
+		leaderboardWrapWidth = settings.fontSize / 1.5
 		initUi()
 	end)
 end
@@ -2534,7 +2716,7 @@ local function loadAllSectors()
 	local url = FIREBASE_URL .. 'Sectors.json'
 	if localTesting then
 		local currentPath = ac.getFolder(ac.FolderID.ScriptOrigin)
-		local file = io.open(currentPath .. '/sectorsResponse.json', 'r')
+		local file = io.open(currentPath .. '/response/sectorsResponse.json', 'r')
 		if not file then
 			ac.error('Failed to open sectorsResponse.json')
 			return
