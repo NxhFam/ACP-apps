@@ -141,23 +141,117 @@ local MISSION_INFOS = const({
 	},
 })
 
+local MISSION_INFO = const("In order to complete the mission, you must complete the sector under the time limit.\nThe time starts when you cross the starting line and stops when you cross the finish line.")
+
 local MISSION_NAMES = const({"DRUG DELIVERY", "BANK HEIST", "BOBs SCRAPYARD"})
 local MISSION_TEXT = const({
 	["DRUG DELIVERY"] = {
 		chat = "* Picking up drugs " .. os.date("%x *"),
-		screen = "You have successfully picked up the drugs! Hurry to the drop off location!",
+		screen = {
+			[0] = "Go to the nightclub. Take the package and drive to the Narco Villa! Wait for the all-clear, then go!",
+			[1] = {"You've got ", " minutes to deliver the package. Floor it, we don't have time!"},
+			[2] = {"The Narcos are pissed! You've got ", " minutes to make this delivery, or it's game over!"},
+			[3] = {"This is your last shot! ", " minutes left, or you're in deep trouble!"},
+		},
+		failed = {
+			"You're late! Even the drugs expired waiting for you.",
+			"The drugs ran out of patience, unlike your slow driving.",
+			"Looks like the drug deal went cold—literally.",
+			"Looks like the drug deal's off... thanks to you.",
+			"Even the cops stopped chasing—they got bored.",
+			"You just set a new record… for being the slowest criminal ever.",
+			"Hope you like walking, because you just lost your getaway ride.",
+			"Maybe next time, use the GPS… or learn to drive.",
+			"They say crime doesn't pay. Guess they were right.",
+			"You're late... Even the cops went home.",
+			"Hope you enjoyed the scenic route. Too bad it cost you the mission.",
+			"Crime waits for no one... except you, apparently.",
+			"Time's up, slowpoke! The loot's long gone.",
+			"I hope you enjoyed your leisurely failure.",
+			"You missed the mark by a mile—literally.",
+			"At this speed, you might as well walk.",
+		},
 	},
 	["BOBs SCRAPYARD"] = {
 		chat = "* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. os.date("%x *"),
-		screen = "You have successfully stolen the " .. string.gsub(string.gsub(CAR_NAME, "%W", " "), "  ", "") .. "! Hurry to the scrapyard!",
+		screen  = {
+			[0] = "Wait at the gas station. We are listening to the police radio. Wait for the go signal!",
+			[1] = {"Get that car to Bob's Scrapeyard in ", " minutes. Step on it, no slowing down!"},
+			[2] = {"Bob's freaking out! We've got ", " minutes, max! Get that car moving!"},
+			[3] = {"This is it! You've got ", " minutes, or the whole job is blown!"},
+		},
+		failed = {
+			"Missed the car heist? Might as well try carpool karaoke next time.",
+			"Car theft? More like car borrowing… indefinitely.",
+			"Looks like the getaway car forgot to show up... oh wait, that's you.",
+			"You've got the speed of a parked car. Try again.",
+			"You've officially been overtaken... by a granny in a Prius.",
+			"Getaway driver? More like get-a-way-slower driver.",
+			"Looks like the car heist was a bust. Maybe try stealing a bike next time.",
+			"Time's up! Maybe you should consider Uber as a career choice.",
+			"Need For Speed? More like Need For a Nap.",
+			"You drive like my grandma, and she doesn't drive.",
+			"Criminal mastermind? More like criminally slow.",
+			"Even the cops are laughing at you.",
+			"Oops, looks like you lost track of time. Literally.",
+			"You missed the deadline… again.",
+			"Slow and steady doesn't win the race in this game.",
+			"You just got smoked—by your own bad driving.",
+		},
 	},
 	["DOUBLE TROUBLE"] = {
 		chat = "* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. os.date("%x *"),
-		screen = "You have successfully stolen the " .. string.gsub(string.gsub(CAR_NAME, "%W", " "), "  ", "") .. "! Hurry to the scrapyard!",
+		screen  = {
+			[0] = "Wait at the gas station. We are listening to the police radio. Wait for the go signal!",
+			[1] = {"Get that car to Bob's Scrapeyard in ", " minutes. Step on it, no slowing down!"},
+			[2] = {"Bob's freaking out! We've got ", " minutes, max! Get that car moving!"},
+			[3] = {"This is it! You've got ", " minutes, or the whole job is blown!"},
+		},
+		failed = {
+			"Missed the car heist? Might as well try carpool karaoke next time.",
+			"Car theft? More like car borrowing… indefinitely.",
+			"Looks like the getaway car forgot to show up... oh wait, that's you.",
+			"You've got the speed of a parked car. Try again.",
+			"You've officially been overtaken... by a granny in a Prius.",
+			"Getaway driver? More like get-a-way-slower driver.",
+			"Looks like the car heist was a bust. Maybe try stealing a bike next time.",
+			"Time's up! Maybe you should consider Uber as a career choice.",
+			"Need For Speed? More like Need For a Nap.",
+			"You drive like my grandma, and she doesn't drive.",
+			"Criminal mastermind? More like criminally slow.",
+			"Even the cops are laughing at you.",
+			"Oops, looks like you lost track of time. Literally.",
+			"You missed the deadline… again.",
+			"Slow and steady doesn't win the race in this game.",
+			"You just got smoked—by your own bad driving.",
+		},
 	},
 	["BANK HEIST"] = {
 		chat = "* Robbing the bank " .. os.date("%x *"),
-		screen = "THE HEIST IS ON, GET READY TO MAKE YOUR GETAWAY!",
+		screen = {
+			[0] = "Wait near the bank. The robbery is happening inside. When the robbers are out, drive to the drop zone!",
+			[1]	= {"You've got ", " minutes to reach the drop zone. Move now, no time to waste!"},
+			[2]	= {"They're getting nervous! We need to reach that place in ", " minutes, or it's over!"},
+			[3]	= {"You're almost out of time! Get there in ", " minutes or it's all over!"},
+		},
+		failed = {
+			"At this rate, you'll be robbing piggy banks, not actual banks.",
+			"The bank called—they said thanks for not bothering.",
+			"Bank job? More like a piggy bank job.",
+			"You're so slow, the bank restocked its vault.",
+			"You've mastered the art of being fashionably late... for a robbery",
+			"The only thing you're robbing is your own time.",
+			"You'd make a great escape artist… if the art was staying put.",
+			"If slow and steady wins the race, you still wouldn't win.",
+			"That's a record! A record for being the slowest.",
+			"Time's up! The cops are laughing at you from the station.",
+			"You ran out of time... and talent.",
+			"Mission: Failed. Maybe consider a desk job?",
+			"I hope your backup plan is better than your driving.",
+			"You should should stick to your day job, losser.",
+			"Maybe you should have think before lighting up that joint.",
+			"You should have stayed in bed today, we would have been better off... Seriously.",
+		}
 	},
 });
 
@@ -218,6 +312,23 @@ local duo = {
 	playerName = "Online Players",
 	sentFinish = false,
 }
+
+
+local missionManager = {
+	msgIndex = 0,
+	msgTime = 0,
+	updateMsgTime = false,
+	msgFailedTime = 0,
+	msgFailedIndex = math.random(1, 16),
+}
+
+local function resetMissionManager()
+	missionManager.msgIndex = 0
+	missionManager.msgTime = 0
+	missionManager.updateMsgTime = false
+	missionManager.msgFailedTime = 0
+	missionManager.msgFailedIndex = math.random(1, 16)
+end
 
 local dataLoaded = {}
 dataLoaded['Settings'] = false
@@ -893,6 +1004,7 @@ end
 function Sector:updateTimeColor()
 	if self:hasStarted() and not self:isUnderTimeLimit() then
 		self.timeColor = rgbm(1, 0, 0, 1)
+		missionManager.msgFailedTime = 10
 	end
 	if self:isFinished() then
 		if self:isUnderTimeLimit() then
@@ -2278,9 +2390,6 @@ local function drawHudText()
 	ui.popDWriteFont()
 end
 
-local stealingTime = 0
-local stealMsgTime = 0
-
 local function getClosestMission()
 	local closestMission = nil
 	local closestDistance = 500
@@ -2319,13 +2428,12 @@ local function drawHudImages()
 	elseif ui.rectHovered(hud.pos.theftPos2, hud.pos.theftPos1) then
 		iconsColorOn[1] = settings.colorHud
 		if uiState.isMouseLeftKeyClicked then
-			
-			if stealingTime == 0 then
+			if missionManager.msgTime == 0 then
 				local closestMission = getClosestMission()
 				if not closestMission then return end
-				stealingTime = 5
 				ac.sendChatMessage(MISSION_TEXT[closestMission.name].chat)
-				stealMsgTime = 7
+				missionManager.msgTime = 7
+				missionManager.msgIndex = 0
 				if sectorManager.sector.name ~= "DOUBLE TROUBLE" then
 					sectorManager:setSector(closestMission.name)
 				elseif closestMission.name == "BOBs SCRAPYARD" then
@@ -2376,11 +2484,6 @@ local function drawHudImages()
 	ui.drawImage(HUD_IMG.countdown, vec2(0, 0), hud.size, iconsColorOn[3])
 	ui.drawImage(HUD_IMG.menu, vec2(0, 0), hud.size, iconsColorOn[4])
 	if countDownState.countdownOn then countdown() end
-	if stealingTime > 0 then
-		stealingTime = stealingTime - ui.deltaTime()
-	elseif stealingTime < 0 then
-		stealingTime = 0
-	end
 	if toolTipOn then
 		ui.tooltip(function()
 			ui.text("Click ALT to Bring up\nThe Welcome Menu")
@@ -2388,17 +2491,44 @@ local function drawHudImages()
 	end
 end
 
-local function showMsgMission()
-	textWithBackground(MISSION_TEXT[sectorManager.sector.name].screen, 1)
+---@param text string
+local function showMsgMission(text)
+	textWithBackground(text, 1)
+end
+
+local function missionMsgOnScreen()
+	if missionManager.msgFailedTime > 0 then
+		showMsgMission(MISSION_TEXT[sectorManager.sector.name].failed[missionManager.msgFailedIndex])
+		missionManager.msgFailedTime = missionManager.msgFailedTime - ui.deltaTime()
+		if missionManager.msgTime > 0 then missionManager.msgTime = 0 end
+	elseif missionManager.msgTime > 0 then
+		local text = MISSION_TEXT[sectorManager.sector.name].screen[missionManager.msgIndex]
+		if type(text) == "table" then
+			text = text[1] .. formatTime(sectorManager.sector.timeLimit - (os.preciseClock() - sectorManager.sector.startTime)) .. text[2]
+		end
+		showMsgMission(text)
+		missionManager.msgTime = missionManager.msgTime - ui.deltaTime()
+	elseif missionManager.msgTime < 0 then
+		missionManager.msgTime = 0
+		if missionManager.msgIndex < #MISSION_TEXT[sectorManager.sector.name].screen then
+			missionManager.msgIndex = missionManager.msgIndex + 1
+			missionManager.updateMsgTime = true
+		end
+	end
+	if sectorManager.sector and missionManager.updateMsgTime and sectorManager.sector.startTime ~= 0 then
+		local timeCheck = sectorManager.sector.timeLimit - sectorManager.sector.timeLimit / (missionManager.msgIndex + 1)
+		local runningtime = os.preciseClock() - sectorManager.sector.startTime
+		ac.debug("timeCheck: ", timeCheck)
+		ac.debug("runningtime: ", runningtime)
+		if timeCheck < runningtime then
+			missionManager.msgTime = 10
+			missionManager.updateMsgTime = false
+		end
+	end
 end
 
 local function hudUI()
-	if stealMsgTime > 0 then
-		showMsgMission()
-		stealMsgTime = stealMsgTime - ui.deltaTime()
-	elseif stealMsgTime < 0 then
-		stealMsgTime = 0
-	end
+	missionMsgOnScreen()
 	ui.beginTransparentWindow("HUD", vec2(settings.hudOffset.x, settings.hudOffset.y), hud.size, true)
 	drawHudImages()
 	drawHudText()
@@ -2807,6 +2937,7 @@ ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlag
 
 --------------------------------------------------------------- AC Callbacks --------------------------------------------------------------
 ac.onCarJumped(0, function(carIndex)
+	resetMissionManager()
 	sectorManager:reset()
 	if not isPoliceCar(CAR_ID) then
 		if online.chased and online.officer then
