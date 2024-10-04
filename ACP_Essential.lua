@@ -1916,6 +1916,7 @@ local function resquestRace()
 	horn.opponentName = ac.getDriverName(opponent.index)
 	if opponent and (not opponent.isHidingLabels) then
 		if dot(vec2(car.look.x, car.look.z), vec2(opponent.look.x, opponent.look.z)) > 0 then
+			if isPoliceCar(ac.getCarID(opponent.index)) then return end
 			acpRace { targetSessionID = opponent.sessionID, messageType = 1 }
 			horn.resquestTime = 10
 		end
