@@ -3,6 +3,7 @@ local car = ac.getCar(0) or error()
 if not car then return end
 local wheels = car.wheels or error()
 local uiState = ac.getUI()
+
 ui.setAsynchronousImagesLoading(true)
 
 local localTesting = ac.dirname() == 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\assettocorsa\\extension\\lua\\online'
@@ -62,6 +63,7 @@ local HEIGHT_DIV = const({
 	_4 = WINDOW_HEIGHT / 4,
 	_12 = WINDOW_HEIGHT / 12,
 	_20 = WINDOW_HEIGHT / 20,
+	_24 = WINDOW_HEIGHT / 24,
 	_40 = WINDOW_HEIGHT / 40,
 	_50 = WINDOW_HEIGHT / 50,
 	_60 = WINDOW_HEIGHT / 60,
@@ -146,7 +148,7 @@ local MISSION_INFO = const("In order to complete the mission, you must complete 
 local MISSION_NAMES = const({"DRUG DELIVERY", "BANK HEIST", "BOBs SCRAPYARD"})
 local MISSION_TEXT = const({
 	["DRUG DELIVERY"] = {
-		chat = "* Picking up drugs " .. os.date("%x *"),
+		chat = "* Picking up drugs *",
 		screen = {
 			[0] = "Go to the nightclub. Take the package and drive to the Narco Villa! Wait for the all-clear, then go!",
 			[1] = {"You've got ", " minutes to deliver the package. Floor it, we don't have time!"},
@@ -173,7 +175,7 @@ local MISSION_TEXT = const({
 		},
 	},
 	["BOBs SCRAPYARD"] = {
-		chat = "* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. os.date("%x *"),
+		chat = "* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. " *",
 		screen  = {
 			[0] = "Wait at the gas station. We are listening to the police radio. Wait for the go signal!",
 			[1] = {"Get that car to Bob's Scrapeyard in ", " minutes. Step on it, no slowing down!"},
@@ -200,7 +202,7 @@ local MISSION_TEXT = const({
 		},
 	},
 	["DOUBLE TROUBLE"] = {
-		chat = "* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. os.date("%x *"),
+		chat = "* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. " *",
 		screen  = {
 			[0] = "Wait at the gas station. We are listening to the police radio. Wait for the go signal!",
 			[1] = {"Get that car to Bob's Scrapeyard in ", " minutes. Step on it, no slowing down!"},
@@ -227,7 +229,7 @@ local MISSION_TEXT = const({
 		},
 	},
 	["BANK HEIST"] = {
-		chat = "* Robbing the bank " .. os.date("%x *"),
+		chat = "* Robbing the bank *",
 		screen = {
 			[0] = "Wait near the bank. The robbery is happening inside. When the robbers are out, drive to the drop zone!",
 			[1]	= {"You've got ", " minutes to reach the drop zone. Move now, no time to waste!"},
@@ -255,29 +257,6 @@ local MISSION_TEXT = const({
 	},
 });
 
-local FINISH_MSG = const({
-	["H1"] = {
-		success = " has finished H1 in ",
-		fail = " has failed to finish H1 under the time limit!",
-	},
-	["BOBs SCRAPYARD"] = {
-		success = " has successfully stolen a " .. string.gsub(CAR_NAME, "%W", " ") .. " and got away with it!",
-		fail = " has failed to steal a " .. string.gsub(CAR_NAME, "%W", " ") .. " under the time limit!",
-	},
-	["DOUBLE TROUBLE"] = {
-		success = " has successfully stolen a " .. string.gsub(CAR_NAME, "%W", " ") .. " and got away with it!",
-		fail = " has failed to steal a " .. string.gsub(CAR_NAME, "%W", " ") .. " under the time limit!",
-	},
-	["DRUG DELIVERY"] = {
-		success = " has successfully delivered the drugs!",
-		fail = " has failed to deliver the drugs under the time limit!",
-	},
-	["BANK HEIST"] = {
-		success = " has successfully robbed the bank!",
-		fail = " has failed to rob the bank under the time limit!",
-	},
-});
-
 local WELCOME_CARD_IMG_POS = const({
 	{ vec2(70, 650),   vec2(320, 910) },
 	{ vec2(2230, 650), vec2(2490, 910) },
@@ -286,6 +265,7 @@ local WELCOME_CARD_IMG_POS = const({
 	{ vec2(1633, 325), vec2(2195, 1234) },
 	{ vec2(31, 106),   vec2(2535, 1370) },
 	{ vec2(2437, 48),  vec2(2510, 100) },
+	{ vec2(2447, 58),  vec2(2500, 90) },
 })
 
 -- Gate related --
@@ -608,12 +588,12 @@ local DEFAULT_SETTINGS = const({
 	essentialSize = 20,
 	policeSize = 20,
 	hudOffset = vec2(0, 0),
-	fontSize = 20,
+	fontSize = 20 / uiState.uiScale,
 	current = 1,
 	colorHud = rgbm(1, 0, 0, 1),
 	timeMsg = 10,
 	msgOffset = vec2(WIDTH_DIV._2, 10),
-	fontSizeMSG = 30,
+	fontSizeMSG = 30 / uiState.uiScale,
 	menuPos = vec2(0, 0),
 	unit = UNIT,
 	unitMult = UNIT_MULT,
@@ -659,12 +639,12 @@ function Settings.tryParse(data)
 		essentialSize = data.essentialSize or 20,
 		policeSize = data.policeSize or 20,
 		hudOffset = hudOffset,
-		fontSize = data.fontSize or 20,
+		fontSize = data.fontSize or (20 / uiState.uiScale),
 		current = data.current or 1,
 		colorHud = colorHud,
 		timeMsg = data.timeMsg or 10,
 		msgOffset = msgOffset,
-		fontSizeMSG = data.fontSizeMSG or 30,
+		fontSizeMSG = data.fontSizeMSG or (30 / uiState.uiScale),
 		menuPos = menuPos,
 		unit = data.unit or UNIT,
 		unitMult = data.unitMult or UNIT_MULT,
@@ -861,7 +841,6 @@ end
 ---@field timeColor rgbm
 ---@field finalTime number
 ---@field startDistance number
----@field distanceDriven number
 ---@field lenght number
 ---@field gateCount integer
 ---@field gateIndex integer
@@ -894,7 +873,6 @@ function Sector.tryParse(data)
 		timeLimit = data.timeLimit,
 		timeColor = white,
 		startDistance = 0,
-		distanceDriven = 0,
 		lenght = data.length,
 		gates = gates,
 	}
@@ -956,7 +934,6 @@ function Sector:reset()
 	self.time = '00:00.000'
 	self.timeColor = white
 	self.startDistance = 0
-	self.distanceDriven = 0
 	self.finalTime = 0
 end
 
@@ -970,18 +947,12 @@ end
 
 ---@return boolean
 function Sector:isFinished()
-	return self.gateIndex > self.gateCount and self.distanceDriven > self.lenght
+	return self.gateIndex > self.gateCount -- and car.distanceDrivenTotalKm - self.startDistance > self.lenght
 end
 
 ---@return boolean
 function Sector:hasStarted()
 	return self.startTime > 0
-end
-
-function Sector:updateDistanceDriven()
-	if self.startDistance > 0 then
-		self.distanceDriven = car.distanceDrivenTotalKm - self.startDistance
-	end
 end
 
 function Sector:updateTime()
@@ -1016,7 +987,6 @@ function Sector:updateTimeColor()
 end
 
 function Sector:update()
-	self:updateDistanceDriven()
 	self:updateTime()
 	self:updateTimeColor()
 	if self.gateIndex > self.gateCount then
@@ -1298,6 +1268,7 @@ end
 ---@field sector Sector
 ---@field started boolean
 ---@field finished boolean
+---@field underTimeLimit boolean
 local SectorManager = class('SectorManager')
 
 ---@return SectorManager
@@ -1324,6 +1295,7 @@ function SectorManager:reset()
 	duo.onlineSender = nil
 	self.started = false
 	self.finished = false
+	self.underTimeLimit = true
 	self.sector:reset()
 end
 
@@ -1360,23 +1332,12 @@ local acpEvent = ac.OnlineEvent({
 	end
 end)
 
-function SectorManager:printToChat()
-	if sectorManager.sector.name == "H1" then
-		ac.sendChatMessage(" has finished H1 in " .. sectorManager.sector.time .. " driving a " .. CAR_NAME_NO_UTF8 .. "!")
-	elseif self.sector:isUnderTimeLimit() then
-		ac.sendChatMessage(FINISH_MSG[self.sector.name].success)
-	else
-		ac.sendChatMessage(FINISH_MSG[self.sector.name].fail)
-	end
-end
-
 function SectorManager:resetDuo()
 	duo.teammate = nil
 	duo.request = false
 	duo.onlineSender = nil
 	duo.teammateHasFinished = false
 	duo.waiting = false
-	self.isDuo = false
 end
 
 function SectorManager:hasTeammateFinished()
@@ -2502,6 +2463,11 @@ local function missionMsgOnScreen()
 		missionManager.msgFailedTime = missionManager.msgFailedTime - ui.deltaTime()
 		if missionManager.msgTime > 0 then missionManager.msgTime = 0 end
 	elseif missionManager.msgTime > 0 then
+		if sectorManager.finished then
+			missionManager.msgTime = 0
+			missionManager.msgIndex = 0
+			missionManager.updateMsgTime = false
+		end
 		local text = MISSION_TEXT[sectorManager.sector.name].screen[missionManager.msgIndex]
 		if type(text) == "table" then
 			text = text[1] .. formatTime(sectorManager.sector.timeLimit - (os.preciseClock() - sectorManager.sector.startTime)) .. text[2]
@@ -2529,10 +2495,10 @@ end
 
 local function hudUI()
 	missionMsgOnScreen()
-	ui.beginTransparentWindow("HUD", vec2(settings.hudOffset.x, settings.hudOffset.y), hud.size, true)
-	drawHudImages()
-	drawHudText()
-	ui.endTransparentWindow()
+	ui.transparentWindow("HUD", vec2(settings.hudOffset.x, settings.hudOffset.y), hud.size, true, function()
+		drawHudImages()
+		drawHudText()
+	end)
 end
 
 -------------------------------------------------------------------------------------------- Menu --------------------------------------------------------------------------------------------
@@ -2716,8 +2682,7 @@ local function drawWelcomeImg()
 				iconCloseColor = settings.colorHud
 				if uiState.isMouseLeftKeyClicked then menuStates.welcome = false end
 			end
-			ui.drawImage(welcomeWindow.closeIMG, WELCOME_CARD_IMG_POS[7][1] + vec2(10, 10), WELCOME_CARD_IMG_POS[7][2] - vec2(10, 10),
-				iconCloseColor)
+			ui.drawImage(welcomeWindow.closeIMG, WELCOME_CARD_IMG_POS[8][1], WELCOME_CARD_IMG_POS[8][2], iconCloseColor)
 			for i = 1, #welcomeNavImgToDraw do ui.drawImage(welcomeNavImgToDraw[i], vec2(0, 0), welcomeWindow.size, cardOutline[i]) end
 			for i = 1, 3 do
 				if welcomeCardsToDisplayed[i] > 7 then
@@ -2743,8 +2708,22 @@ end
 
 -------------------------------------------------------------------------------- UPDATE --------------------------------------------------------------------------------
 
+local function missionFinishedWindow()
+	ui.transparentWindow('MissionFinished', vec2(0, 0), vec2(WINDOW_WIDTH, HEIGHT_DIV._12), false, true, function()
+		ui.pushDWriteFont("Orbitron;Weight=Black")
+		local text = sectorManager.sector.name .. " - " .. sectorManager.sector.time .. os.date(" - %x")
+		local textLenght = ui.measureDWriteText(text, settings.fontSizeMSG * 2)
+		ui.drawRectFilled(vec2(0, 0), vec2(WINDOW_WIDTH, HEIGHT_DIV._12), rgbm(0, 0, 0, 0.5))
+		ui.dwriteDrawText(text, settings.fontSizeMSG * 2, vec2(WIDTH_DIV._2 - textLenght.x / 2, HEIGHT_DIV._60), settings.colorHud)
+		ui.popDWriteFont()
+	end)
+end
+
 function script.drawUI()
 	if not shouldRun() then return end
+	if sectorManager.sector and sectorManager.finished and sectorManager.sector.name ~= "H1" then
+		missionFinishedWindow()
+	end
 	if ui.keyboardButtonPressed(ui.KeyIndex.Menu) then menuStates.welcome = not menuStates.welcome end
 	if menuStates.welcome then
 		drawWelcomeMenu()
@@ -2798,18 +2777,21 @@ local function updateThefts()
 	end
 end
 
+
+
 local function sectorUpdate()
 	if not sectorManager.started and not sectorManager.sector:hasStarted() then
 		sectorManager.started = true
 		sectorManager.finished = false
 	end
-	ac.debug('Sector Finished', sectorManager.finished)
 	if not sectorManager.finished and sectorManager.sector:isFinished() then
 		if sectorManager.sector.name ~= 'DOUBLE TROUBLE' or sectorManager:hasTeammateFinished() then
-			-- if sectorManager.sector.name ~= 'DOUBLE TROUBLE' then
-			-- 	sectorManager:printToChat()
-			-- end
 			updateThefts()
+			if sectorManager.sector:isUnderTimeLimit() then
+				sectorManager.underTimeLimit = true
+			else
+				sectorManager.underTimeLimit = false
+			end
 			sectorManager.finished = true
 			sectorManager.started = false
 			local shouldSave = player:addSectorRecord(sectorManager.sector.name, sectorManager.sector.finalTime)
