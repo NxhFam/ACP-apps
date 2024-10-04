@@ -468,10 +468,10 @@ end
 local function sortLeaderboard(category, rows)
 	if category == "time" then
 		table.sort(rows, function(a, b)
-			return a[3] < b[3]
+			return a[2] < b[2]
 		end)
 		for i, row in ipairs(rows) do
-			row[3] = formatTime(row[3])
+			row[2] = formatTime(row[2])
 		end
 	else
 		table.sort(rows, function(a, b)
@@ -2884,6 +2884,7 @@ local function loadAllSectors()
 			sectors[i] = sector
 		end
 	end
+	-- ac.log(sectors)
 	sectorManager:setSector('H1')
 	dataLoaded['Sectors'] = true
 end
