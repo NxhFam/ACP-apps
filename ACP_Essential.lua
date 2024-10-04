@@ -2884,7 +2884,6 @@ local function loadAllSectors()
 			sectors[i] = sector
 		end
 	end
-	ac.log(sectors)
 	sectorManager:setSector('H1')
 	dataLoaded['Sectors'] = true
 end
