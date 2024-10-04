@@ -27,6 +27,54 @@ if DRIVER_NATION_CODE == "USA" or DRIVER_NATION_CODE == "GBR" then
 	UNIT_MULT = 0.621371
 end
 
+SECTORS_DATA = const({
+	[1] = {
+		name = "H1",
+		timeLimit = 0,
+		length = 8,
+		gates = {
+			{ pos = { -753.56, 138.82, 3541.54 }, dir = { -0.9, 0, -0.43 }, width = 14.75, id = 1 },
+			{ pos = { 3001.98, 72.4, 1027.23 }, dir = { -0.85, 0, 0.52 }, width = 15.65, id = 2 },
+		},
+	},
+	[2] = {
+		name = "DOUBLE TROUBLE",
+		timeLimit = 220,
+		length = 5,
+		gates = {
+			{ pos = { 767.34, 95.8, 2262.69 }, dir = { -0.82, 0, 0.56 }, width = 14.7, id = 1 },
+			{ pos = { -3541.52, 23.48, -206.67 }, dir = { -0.87, 0, 0.49 }, width = 10.27, id = 2 },
+		},
+	},
+	[3] = {
+		name = "BOBs SCRAPYARD",
+		timeLimit = 210,
+		length = 5,
+		gates = {
+			{ pos = { 767.34, 95.8, 2262.69 }, dir = { -0.82, 0, 0.56 }, width = 14.7, id = 1 },
+			{ pos = { -3541.52, 23.48, -206.67 }, dir = { -0.87, 0, 0.49 }, width = 10.27, id = 2 },
+		},
+	},
+	[4] = {
+		name = "BANK HEIST",
+		timeLimit = 500,
+		length = 5,
+		gates = {
+			{ pos = { -700.04, 137.72, 3540.75 }, dir = { -1.67, 0, 1.02 }, width = 12.1, id = 1 },
+			{ pos = { 5188.14, 58.22, -1640.53 }, dir = { -0.07, 0, -1 }, width = 5.56, id = 2 },
+		},
+	},
+	[5] = {
+		name = "DRUG DELIVERY",
+		timeLimit = 360,
+		length = 5,
+		gates = {
+			{ pos = { -395.08, 127.66, 3392.71 }, dir = { -0.7, 0, -0.72 }, width = 35.95, id = 1 },
+			{ pos = { 585.71, -115.77, -3439.67 }, dir = { 0.99, 0, 0.03 }, width = 6.78, id = 2 },
+		},
+	},
+})
+
 local POLICE_CAR = const({ "crown_police" })
 local LEADERBOARDS = const({
 	time = {"H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST" },
@@ -293,7 +341,6 @@ local duo = {
 	sentFinish = false,
 }
 
-
 local missionManager = {
 	msgIndex = 0,
 	msgTime = 0,
@@ -423,6 +470,9 @@ local function sortLeaderboard(category, rows)
 		table.sort(rows, function(a, b)
 			return a[3] < b[3]
 		end)
+		for i, row in ipairs(rows) do
+			row[3] = formatTime(row[3])
+		end
 	else
 		table.sort(rows, function(a, b)
 			return a[2] > b[2]
@@ -447,7 +497,7 @@ function LeaderboardRow.allocate(category, data)
 	local infos = {}
 	if category == "time" then
 		table.insert(infos, data.Driver)
-		table.insert(infos, formatTime(data.Time))
+		table.insert(infos, data.Time)
 		table.insert(infos, data.Car)
 	else
 		table.insert(infos, data.Driver)
@@ -866,6 +916,7 @@ function Sector.tryParse(data)
 	end
 
 	local sector = {
+		name = data.name,
 		gateCount = #gates,
 		gateIndex = 1,
 		startTime = 0,
@@ -2826,45 +2877,16 @@ end
 
 
 local function loadAllSectors()
-	local url = FIREBASE_URL .. 'Sectors.json'
-	if localTesting then
-		local currentPath = ac.getFolder(ac.FolderID.ScriptOrigin)
-		local file = io.open(currentPath .. '/response/sectorsResponse.json', 'r')
-		if not file then
-			ac.error('Failed to open sectorsResponse.json')
-			return
+	for i = 1, #SECTORS_DATA do
+		local sector = Sector.tryParse(SECTORS_DATA[i])
+		if sector then
+			sector.name = sector.name
+			sectors[i] = sector
 		end
-		local data = JSON.parse(file:read('*a'))
-		file:close()
-		local i = 1
-		for key, value in pairs(data) do
-			local sector = Sector.tryParse(value)
-			if sector then
-				sector.name = key
-				sectors[i] = sector
-				i = i + 1
-			end
-		end
-		sectorManager:setSector('H1')
-		dataLoaded['Sectors'] = true
-	else
-		web.get(url, function(err, response)
-			if canProcessRequest(err, response) then
-				local data = JSON.parse(response.body)
-				local i = 1
-				for key, value in pairs(data) do
-					local sector = Sector.tryParse(value)
-					if sector then
-						sector.name = key
-						sectors[i] = sector
-						i = i + 1
-					end
-				end
-				sectorManager:setSector('H1')
-				dataLoaded['Sectors'] = true
-			end
-		end)
 	end
+	ac.log(sectors)
+	sectorManager:setSector('H1')
+	dataLoaded['Sectors'] = true
 end
 
 local function loadPlayerData()
