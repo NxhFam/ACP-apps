@@ -19,8 +19,6 @@ local CAR_NAME = const(ac.getCarName(0))
 local DRIVER_NAME = const(ac.getDriverName(0))
 if CSP_VERSION < CSP_MIN_VERSION then return end
 
-ac.log(car.physicsAvailable)
-ac.log(physics.allowed())
 
 local mapBoostButton = ac.ControlButton('__ACP_BOOST')
 
@@ -31,19 +29,27 @@ local boost = {
 	duration = 100,
 }
 
+
 local function setBoostButton()
 	boost.button:control(vec2(120, 0))
 end
-ac.log('Hold mode', boost.button:holdMode())
+
+
+-- ---Sets car velocity and invalidates current lap time.
+-- ---@param carIndex integer
+-- ---@param velocity vec3
+-- function physics.setCarVelocity(carIndex, velocity) end
+
+-- take dt into account for the force
 local function onBoostPressed(dt)
-	ac.log('Boost Button Pressed')
-	-- if not boost.enabled then return end
 	if boost.enabled and boost.duration > 0 then
 		boost.duration = boost.duration - dt
-		local velocity = vec3(car.velocity.x * 1.01, car.velocity.y, car.velocity.z * 1.01)
-		ac.debug('Boost Duration:', boost.duration)
-		ac.debug('Boost Velocity:', velocity)
-		physics.setCarVelocity(0, velocity)
+		
+		local velocity = car.velocity
+		local multiplier = 1.01  * dt
+		ac.debug('Boosting', multiplier)
+		-- ajust multiplier based on dt to have a constant force
+		physics.setCarVelocity(0, velocity * multiplier)
 	end
 end
 
@@ -205,7 +211,7 @@ local WELCOME_CARD_LINK = const({
 
 local MISSION_INFOS = const({
 	[10] = {
-		start = "Rob : Bank in front of Start/1 TP",
+		start = "Rob : Bank TP",
 		finish = "Deliver : Yellow BHL (Map)",
 		time = "Time Limit: 03:20.000",
 	},
@@ -2703,6 +2709,52 @@ local function drawWelcomeText()
 	ui.popDWriteFont()
 end
 
+local vec = {x=vec3(1,0,0),y=vec3(0,1,0),z=vec3(0,0,1),empty=vec3()}
+local function loadTeleports(ini)
+	local teleports, sorted_teleports = {}, {}
+	for a, b in ini:iterateValues('TELEPORT_DESTINATIONS', 'POINT') do
+		local n = tonumber(b:match('%d+')) + 1
+		if teleports[n] == nil then
+			for i = #teleports, n do
+			if teleports[i] == nil then teleports[i] = {} end
+			end
+		end
+		local suffix = b:match('_(%a+)$')
+		if suffix==nil then teleports[n]['POINT'] = ini:get('TELEPORT_DESTINATIONS', b, 'noname' .. n-1)
+		elseif suffix == 'POS' then teleports[n]['POS'] = ini:get('TELEPORT_DESTINATIONS', b, vec3())
+		elseif suffix == 'HEADING' then teleports[n]['HEADING'] = ini:get('TELEPORT_DESTINATIONS', b, 0)
+		elseif suffix == 'GROUP' then teleports[n]['GROUP'] = ini:get('TELEPORT_DESTINATIONS', b, 'group')
+		end
+		teleports[n]["N"] = n
+		teleports[n]['INDEX'] = 0
+		teleports[n]['LOADED'] = true
+	end
+	for i = 1, #teleports do
+		if teleports[i]["POINT"] ~= nil then
+			teleports[i]['INDEX'] = #sorted_teleports
+			if teleports[i].HEADING == nil then teleports[i]['HEADING'] = 0 end
+			if teleports[i].POS == nil then teleports[i]['POS'] = vec.empty end
+			table.insert(sorted_teleports,teleports[i])
+		end
+	end
+	return sorted_teleports
+end
+
+local onlineConfig = ac.INIConfig.onlineExtras()
+local teleports = loadTeleports(onlineConfig)
+
+local MISSION_TP_INDEX = {
+	[8] = { teleports[52] },
+	[9] = { teleports[132], teleports[133] },
+	[10] = { teleports[69], teleports[70] },
+}
+
+local function tpToMission(i)
+	if i > 7 then
+		physics.setCarPosition(0, MISSION_TP_INDEX[i][1].POS, MISSION_TP_INDEX[i][1].HEADING)
+	end
+end
+
 local function drawWelcomeImg()
 	local iconCloseColor = white
 	local toolTipOn = false
@@ -2750,17 +2802,20 @@ local function drawWelcomeImg()
 				toolTipOn = true
 				cardOutline[3] = settings.colorHud
 				welcomeNavImgToDraw[3] = WELCOME_NAV_IMG.leftBoxOn
-				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(WELCOME_CARD_LINK[welcomeCardsToDisplayed[1]]) end
+				-- if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(WELCOME_CARD_LINK[welcomeCardsToDisplayed[1]]) end
+				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then tpToMission(welcomeCardsToDisplayed[1]) end
 			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[4][1], WELCOME_CARD_IMG_POS[4][2]) then
 				toolTipOn = true
 				cardOutline[4] = settings.colorHud
 				welcomeNavImgToDraw[4] = WELCOME_NAV_IMG.centerBoxOn
-				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(WELCOME_CARD_LINK[welcomeCardsToDisplayed[2]]) end
+				-- if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(WELCOME_CARD_LINK[welcomeCardsToDisplayed[2]]) end
+				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then tpToMission(welcomeCardsToDisplayed[2]) end
 			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[5][1], WELCOME_CARD_IMG_POS[5][2]) then
 				toolTipOn = true
 				cardOutline[5] = settings.colorHud
 				welcomeNavImgToDraw[5] = WELCOME_NAV_IMG.rightBoxOn
-				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(WELCOME_CARD_LINK[welcomeCardsToDisplayed[3]]) end
+				-- if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(WELCOME_CARD_LINK[welcomeCardsToDisplayed[3]]) end
+				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then tpToMission(welcomeCardsToDisplayed[3]) end
 			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[7][1], WELCOME_CARD_IMG_POS[7][2]) then
 				iconCloseColor = settings.colorHud
 				if uiState.isMouseLeftKeyClicked then menuStates.welcome = false end
@@ -2778,9 +2833,13 @@ local function drawWelcomeImg()
 		end)
 	end)
 	if toolTipOn then
-		ui.tooltip(function()
-			ui.text("CTRL + Left Click to open Discord link\nWhere you can find more information")
-		end)
+		for i = 1, 3 do
+			if welcomeCardsToDisplayed[i] > 7 then
+				ui.tooltip(function()
+					ui.text("CTRL + Left Click to teleport to the mission")
+				end)
+			end
+		end
 	end
 end
 
@@ -2930,7 +2989,10 @@ local function loadPlayerData()
 	end)
 end
 
-
+local function debugVelocity()
+	ac.debug('Velocity', car.velocity)
+	ac.debug('Angular Velocity', car.angularVelocity)
+end
 
 function script.update(dt)
 	if initialisation then
@@ -2943,6 +3005,8 @@ function script.update(dt)
 	end
 	if not shouldRun() then return end
 	ac.debug('PATCH COUNT', patchCount)
+	-- debugVelocity()
+	ac.debug('dt', dt)
 	if boost.button:down() then
 		onBoostPressed(dt)
 	end
