@@ -19,6 +19,36 @@ local CAR_NAME = const(ac.getCarName(0))
 local DRIVER_NAME = const(ac.getDriverName(0))
 if CSP_VERSION < CSP_MIN_VERSION then return end
 
+ac.log(car.physicsAvailable)
+ac.log(physics.allowed())
+
+local mapBoostButton = ac.ControlButton('__ACP_BOOST')
+
+local boost = {
+	enabled = true,
+	button = mapBoostButton,
+	cooldown = 0,
+	duration = 100,
+}
+
+local function setBoostButton()
+	boost.button:control(vec2(120, 0))
+end
+ac.log('Hold mode', boost.button:holdMode())
+local function onBoostPressed(dt)
+	ac.log('Boost Button Pressed')
+	-- if not boost.enabled then return end
+	if boost.enabled and boost.duration > 0 then
+		boost.duration = boost.duration - dt
+		local velocity = vec3(car.velocity.x * 1.01, car.velocity.y, car.velocity.z * 1.01)
+		ac.debug('Boost Duration:', boost.duration)
+		ac.debug('Boost Velocity:', velocity)
+		physics.setCarVelocity(0, velocity)
+	end
+end
+
+
+
 local DRIVER_NATION_CODE = const(ac.getDriverNationCode(0))
 local UNIT = "km/h"
 local UNIT_MULT = 1
@@ -1696,6 +1726,7 @@ local function settingsWindow()
 	uiTab()
 	ui.endGroup()
 	updateHudPos()
+	setBoostButton()
 	return 2
 end
 
@@ -2899,6 +2930,8 @@ local function loadPlayerData()
 	end)
 end
 
+
+
 function script.update(dt)
 	if initialisation then
 		initialisation = false
@@ -2910,6 +2943,9 @@ function script.update(dt)
 	end
 	if not shouldRun() then return end
 	ac.debug('PATCH COUNT', patchCount)
+	if boost.button:down() then
+		onBoostPressed(dt)
+	end
 	sectorUpdate()
 	raceUpdate(dt)
 	overtakeUpdate(dt)
