@@ -207,25 +207,41 @@ local function formatTime(time)
 	return ('%02d:%02d.%03d'):format(minutes, seconds, milliseconds)
 end
 
-local MISSION_INFOS = const({
+local MISSIONS = const({
 	[1] = {
+		name = "BOBs SCRAPYARD",
 		start = "Steal : Gas Station 1 TP",
 		finish = "Deliver : Red Car (Map)",
 		time = "Time Limit: " .. formatTime(SECTORS_DATA[3].timeLimit),
+		tp= {
+			[1] = { pos = vec3(785.519, 95.8002, 2235.53), dir = vec3(0.51, -0.03, -0.86) },
+			[2] = { pos = vec3(787.707, 95.5171, 2240.88), dir = vec3(0.58, -0.03, -0.81) },
+			[3] = { pos = vec3(790.921, 95.1569, 2247.45), dir = vec3(0.8, -0.01, -0.60) },
+		},
 	},
 	[2] = {
+		name = "DRUG DELIVERY",
 		start = "Pick Up : Drug Delivery TP",
 		finish = "Drop Off : Pink House (Map)",
 		time = "Time Limit: " .. formatTime(SECTORS_DATA[5].timeLimit),
+		tp = {
+			[1] = { pos = vec3(-369.367, 127.557, 3405.47), dir = vec3(0.8, -0.01, 0.61) },
+			[2] = { pos = vec3(-374.729, 127.558, 3413.13), dir = vec3(0.69, -0.01, 0.73) },
+			[3] = { pos = vec3(-380.176, 127.557, 3419.49), dir = vec3(0.59, -0.01, 0.81) },
+		},
 	},
 	[3] = {
+		name = "BANK HEIST",
 		start = "Rob : Bank TP",
 		finish = "Deliver : Yellow BHL (Map)",
 		time = "Time Limit: " .. formatTime(SECTORS_DATA[4].timeLimit),
+		tp = {
+			[1] = { pos = vec3(-626.316, 135.37, 3509.81), dir = vec3(0.91, 0.03, -0.4) },
+			[2] = { pos = vec3(-635.369, 135.786, 3514.6), dir = vec3(0.92, 0.04, -0.39) },
+			[3] = { pos = vec3(-645.117, 136.215, 3518.99), dir = vec3(0.91, 0.03, -0.42) },
+		},
 	},
 })
-
-local MISSION_INFO = const("In order to complete the mission, you must complete the sector under the time limit.\nThe time starts when you cross the starting line and stops when you cross the finish line.")
 
 local MISSION_NAMES = const({"DRUG DELIVERY", "BANK HEIST", "BOBs SCRAPYARD"})
 local MISSION_TEXT = const({
@@ -350,12 +366,10 @@ local WELCOME_CARD_IMG_POS = const({
 	{ vec2(2447, 58),  vec2(2500, 90) },
 })
 
--- Gate related --
 local GATE_HEIGHT_OFFSET = const(0.2)
 local white = const(rgbm.colors.white)
 local gateColor = const(rgbm(0, 100, 0, 10))
 
--- basic directionnal vectors --
 local vUp = const(vec3(0, 1, 0))
 local vDown = const(vec3(0, -1, 0))
 
@@ -1023,7 +1037,7 @@ end
 
 ---@return boolean
 function Sector:isFinished()
-	return self.gateIndex > self.gateCount -- and car.distanceDrivenTotalKm - self.startDistance > self.lenght
+	return self.gateIndex > self.gateCount and car.distanceDrivenTotalKm - self.startDistance > self.lenght
 end
 
 ---@return boolean
@@ -1516,7 +1530,6 @@ local function textWithBackground(text, sizeMult)
 	ui.dwriteDrawText(text, settings.fontSizeMSG * sizeMult, rectPos1, white)
 end
 
------------------------------------------------------------------------------------------------ Firebase -----------------------------------------------------------------------------------------------
 local boxHeight = HEIGHT_DIV._70
 
 local function displayInGrid()
@@ -1721,7 +1734,6 @@ local function settingsWindow()
 	uiTab()
 	ui.endGroup()
 	updateHudPos()
-	setBoostButton()
 	return 2
 end
 
@@ -2662,13 +2674,13 @@ local function showMissionInfo(i, id)
 		leftCorner.y + ui.measureDWriteText("\n\n\n\n", settings.fontSize).y), rgbm(0, 0, 0, 0.8))
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=BLACK")
-	ui.dwriteDrawText(MISSION_INFOS[id].start, welcomeWindow.fontSize * 0.6, textPos, white)
+	ui.dwriteDrawText(MISSIONS[id].start, welcomeWindow.fontSize * 0.6, textPos, white)
 	textPos.y = textPos.y +
-		ui.measureDWriteText(MISSION_INFOS[id].start, welcomeWindow.fontSize * 0.6).y * 2
-	ui.dwriteDrawText(MISSION_INFOS[id].finish, welcomeWindow.fontSize * 0.6, textPos,
+		ui.measureDWriteText(MISSIONS[id].start, welcomeWindow.fontSize * 0.6).y * 2
+	ui.dwriteDrawText(MISSIONS[id].finish, welcomeWindow.fontSize * 0.6, textPos,
 		white)
-	textPos.y = textPos.y + ui.measureDWriteText(MISSION_INFOS[id].finish, welcomeWindow.fontSize * 0.6).y * 2
-	ui.dwriteDrawText(MISSION_INFOS[id].time, welcomeWindow.fontSize * 0.6, textPos, white)
+	textPos.y = textPos.y + ui.measureDWriteText(MISSIONS[id].finish, welcomeWindow.fontSize * 0.6).y * 2
+	ui.dwriteDrawText(MISSIONS[id].time, welcomeWindow.fontSize * 0.6, textPos, white)
 	ui.popDWriteFont()
 end
 
@@ -2698,25 +2710,6 @@ local function drawWelcomeText()
 	ui.popDWriteFont()
 end
 
-
-local MISSION_TP_INDEX = const({
-	[1] = { -- BOBs
-		[1] = { pos = vec3(785.519, 95.8002, 2235.53), dir = vec3(0.51, -0.03, -0.86) },
-		[2] = { pos = vec3(787.707, 95.5171, 2240.88), dir = vec3(0.58, -0.03, -0.81) },
-		[3] = { pos = vec3(790.921, 95.1569, 2247.45), dir = vec3(0.8, -0.01, -0.60) },
-	},
-	[2] = { -- Drug
-		[1] = { pos = vec3(-369.367, 127.557, 3405.47), dir = vec3(0.8, -0.01, 0.61) },
-		[2] = { pos = vec3(-374.729, 127.558, 3413.13), dir = vec3(0.69, -0.01, 0.73) },
-		[3] = { pos = vec3(-380.176, 127.557, 3419.49), dir = vec3(0.59, -0.01, 0.81) },
-	},
-	[3] = { -- Bank
-		[1] = { pos = vec3(-626.316, 135.37, 3509.81), dir = vec3(0.91, 0.03, -0.4) },
-		[2] = { pos = vec3(-635.369, 135.786, 3514.6), dir = vec3(0.92, 0.04, -0.39) },
-		[3] = { pos = vec3(-645.117, 136.215, 3518.99), dir = vec3(0.91, 0.03, -0.42) },
-	},
-})
-
 ---@param tpPos vec3
 local function willCollide(tpPos)
 	for i, c in ac.iterateCars.ordered() do
@@ -2729,9 +2722,10 @@ end
 
 local function tpToMission(i)
 	if i < 4 and car.speedKmh < 30 then
-		for j = 1, #MISSION_TP_INDEX[i] do
-			if not willCollide(MISSION_TP_INDEX[i][j].pos) then
-				physics.setCarPosition(0, MISSION_TP_INDEX[i][j].pos, MISSION_TP_INDEX[i][j].dir)
+		for j = 1, #MISSIONS[i].tp do
+			if not willCollide(MISSIONS[i].tp[j].pos) then
+				physics.setCarPosition(0, MISSIONS[i].tp[j].pos, MISSIONS[i].tp[j].dir)
+				sectorManager:setSector(MISSIONS[i].name)
 				break
 			end
 		end
@@ -2785,19 +2779,16 @@ local function drawWelcomeImg()
 				toolTipOn = true
 				cardOutline[3] = settings.colorHud
 				welcomeNavImgToDraw[3] = WELCOME_NAV_IMG.leftBoxOn
-				-- if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(WELCOME_CARD_LINK[welcomeCardsToDisplayed[1]]) end
 				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then tpToMission(welcomeCardsToDisplayed[1]) end
 			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[4][1], WELCOME_CARD_IMG_POS[4][2]) then
 				toolTipOn = true
 				cardOutline[4] = settings.colorHud
 				welcomeNavImgToDraw[4] = WELCOME_NAV_IMG.centerBoxOn
-				-- if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(WELCOME_CARD_LINK[welcomeCardsToDisplayed[2]]) end
 				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then tpToMission(welcomeCardsToDisplayed[2]) end
 			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[5][1], WELCOME_CARD_IMG_POS[5][2]) then
 				toolTipOn = true
 				cardOutline[5] = settings.colorHud
 				welcomeNavImgToDraw[5] = WELCOME_NAV_IMG.rightBoxOn
-				-- if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then os.openURL(WELCOME_CARD_LINK[welcomeCardsToDisplayed[3]]) end
 				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then tpToMission(welcomeCardsToDisplayed[3]) end
 			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[7][1], WELCOME_CARD_IMG_POS[7][2]) then
 				iconCloseColor = settings.colorHud
@@ -2957,7 +2948,6 @@ local function loadAllSectors()
 			sectors[i] = sector
 		end
 	end
-	-- ac.log(sectors)
 	sectorManager:setSector('H1')
 	dataLoaded['Sectors'] = true
 end
@@ -2983,9 +2973,6 @@ function script.update(dt)
 	end
 	if not shouldRun() then return end
 	ac.debug('PATCH COUNT', patchCount)
-	-- if boost.button:down() then
-	-- 	onBoostPressed(dt)
-	-- end
 	sectorUpdate()
 	raceUpdate(dt)
 	overtakeUpdate(dt)
@@ -2996,9 +2983,6 @@ end
 
 local function drawGate()
 	if sectorManager.sector and not sectorManager.sector:isFinished() then
-		-- for i = 1, sectorManager.sector.gateCount do
-		-- 	render.debugLine(sectorManager.sector.gates[i].point1, sectorManager.sector.gates[i].point2, gateColor)
-		-- end
 		local gateIndex = sectorManager.sector.gateIndex
 		if gateIndex > sectorManager.sector.gateCount then gateIndex = sectorManager.sector.gateCount end
 		render.debugLine(sectorManager.sector.gates[gateIndex].point1,
