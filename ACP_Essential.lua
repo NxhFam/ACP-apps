@@ -362,7 +362,7 @@ local vUp = const(vec3(0, 1, 0))
 local vDown = const(vec3(0, -1, 0))
 
 local menuStates = {
-	welcome = true,
+	welcome = false,
 	main = false,
 	leaderboard = false,
 }
@@ -2709,49 +2709,43 @@ local function drawWelcomeText()
 	ui.popDWriteFont()
 end
 
-local vec = {x=vec3(1,0,0),y=vec3(0,1,0),z=vec3(0,0,1),empty=vec3()}
-local function loadTeleports(ini)
-	local teleports, sorted_teleports = {}, {}
-	for a, b in ini:iterateValues('TELEPORT_DESTINATIONS', 'POINT') do
-		local n = tonumber(b:match('%d+')) + 1
-		if teleports[n] == nil then
-			for i = #teleports, n do
-			if teleports[i] == nil then teleports[i] = {} end
-			end
-		end
-		local suffix = b:match('_(%a+)$')
-		if suffix==nil then teleports[n]['POINT'] = ini:get('TELEPORT_DESTINATIONS', b, 'noname' .. n-1)
-		elseif suffix == 'POS' then teleports[n]['POS'] = ini:get('TELEPORT_DESTINATIONS', b, vec3())
-		elseif suffix == 'HEADING' then teleports[n]['HEADING'] = ini:get('TELEPORT_DESTINATIONS', b, 0)
-		elseif suffix == 'GROUP' then teleports[n]['GROUP'] = ini:get('TELEPORT_DESTINATIONS', b, 'group')
-		end
-		teleports[n]["N"] = n
-		teleports[n]['INDEX'] = 0
-		teleports[n]['LOADED'] = true
-	end
-	for i = 1, #teleports do
-		if teleports[i]["POINT"] ~= nil then
-			teleports[i]['INDEX'] = #sorted_teleports
-			if teleports[i].HEADING == nil then teleports[i]['HEADING'] = 0 end
-			if teleports[i].POS == nil then teleports[i]['POS'] = vec.empty end
-			table.insert(sorted_teleports,teleports[i])
+
+local MISSION_TP_INDEX = const({
+	[8] = { -- BOBs
+		[1] = { pos = vec3(785.519, 95.8002, 2235.53), dir = vec3(0.51, -0.03, -0.86) },
+		[2] = { pos = vec3(787.707, 95.5171, 2240.88), dir = vec3(0.58, -0.03, -0.81) },
+		[3] = { pos = vec3(790.921, 95.1569, 2247.45), dir = vec3(0.8, -0.01, -0.60) },
+	},
+	[9] = { -- Drug
+		[1] = { pos = vec3(-369.367, 127.557, 3405.47), dir = vec3(0.8, -0.01, 0.61) },
+		[2] = { pos = vec3(-374.729, 127.558, 3413.13), dir = vec3(0.69, -0.01, 0.73) },
+		[3] = { pos = vec3(-380.176, 127.557, 3419.49), dir = vec3(0.59, -0.01, 0.81) },
+	},
+	[10] = { -- Bank
+		[1] = { pos = vec3(-626.316, 135.37, 3509.81), dir = vec3(0.91, 0.03, -0.4) },
+		[2] = { pos = vec3(-635.369, 135.786, 3514.6), dir = vec3(0.92, 0.04, -0.39) },
+		[3] = { pos = vec3(-645.117, 136.215, 3518.99), dir = vec3(0.91, 0.03, -0.42) },
+	},
+})
+
+---@param tpPos vec3
+local function willCollide(tpPos)
+	for i, c in ac.iterateCars.ordered() do
+		if c.position:distanceSquared(tpPos) < 4 then
+			return true
 		end
 	end
-	return sorted_teleports
+	return false
 end
-
-local onlineConfig = ac.INIConfig.onlineExtras()
-local teleports = loadTeleports(onlineConfig)
-
-local MISSION_TP_INDEX = {
-	[8] = { teleports[52] },
-	[9] = { teleports[132], teleports[133] },
-	[10] = { teleports[69], teleports[70] },
-}
 
 local function tpToMission(i)
 	if i > 7 then
-		physics.setCarPosition(0, MISSION_TP_INDEX[i][1].POS, MISSION_TP_INDEX[i][1].HEADING)
+		for j = 1, #MISSION_TP_INDEX[i] do
+			if not willCollide(MISSION_TP_INDEX[i][j].pos) then
+				physics.setCarPosition(0, MISSION_TP_INDEX[i][j].pos, MISSION_TP_INDEX[i][j].dir)
+				break
+			end
+		end
 	end
 end
 
@@ -2989,11 +2983,6 @@ local function loadPlayerData()
 	end)
 end
 
-local function debugVelocity()
-	ac.debug('Velocity', car.velocity)
-	ac.debug('Angular Velocity', car.angularVelocity)
-end
-
 function script.update(dt)
 	if initialisation then
 		initialisation = false
@@ -3005,8 +2994,8 @@ function script.update(dt)
 	end
 	if not shouldRun() then return end
 	ac.debug('PATCH COUNT', patchCount)
-	-- debugVelocity()
-	ac.debug('dt', dt)
+	ac.debug('Pos:', car.position)
+	ac.debug('Dir:', car.look)
 	if boost.button:down() then
 		onBoostPressed(dt)
 	end
