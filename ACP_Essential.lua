@@ -198,21 +198,30 @@ local WELCOME_CARD_LINK = const({
 	"",
 })
 
+---@param time number
+---@return string
+local function formatTime(time)
+	local minutes = math.floor(time / 60)
+	local seconds = math.floor(time % 60)
+	local milliseconds = math.floor((time % 1) * 1000)
+	return ('%02d:%02d.%03d'):format(minutes, seconds, milliseconds)
+end
+
 local MISSION_INFOS = const({
 	[1] = {
 		start = "Steal : Gas Station 1 TP",
 		finish = "Deliver : Red Car (Map)",
-		time = "Time Limit: 07:20.000",
+		time = "Time Limit: " .. formatTime(SECTORS_DATA[3].timeLimit),
 	},
 	[2] = {
 		start = "Pick Up : Drug Delivery TP",
 		finish = "Drop Off : Pink House (Map)",
-		time = "Time Limit: 05:40.000",
+		time = "Time Limit: " .. formatTime(SECTORS_DATA[5].timeLimit),
 	},
 	[3] = {
 		start = "Rob : Bank TP",
 		finish = "Deliver : Yellow BHL (Map)",
-		time = "Time Limit: 03:20.000",
+		time = "Time Limit: " .. formatTime(SECTORS_DATA[4].timeLimit),
 	},
 })
 
@@ -476,15 +485,6 @@ local function snapToTrack(v)
 		physics.raycastTrack(v, vUp, 20, v)
 	end
 	return v
-end
-
----@param time number
----@return string
-local function formatTime(time)
-	local minutes = math.floor(time / 60)
-	local seconds = math.floor(time % 60)
-	local milliseconds = math.floor((time % 1) * 1000)
-	return ('%02d:%02d.%03d'):format(minutes, seconds, milliseconds)
 end
 
 ---@param category string
