@@ -1172,6 +1172,7 @@ end
 ---@field overtake integer
 ---@field wins integer
 ---@field losses integer
+---@field elo integer
 local Player = class('Player')
 
 ---@return Player
@@ -1185,6 +1186,7 @@ function Player.new()
 		overtake = 0,
 		wins = 0,
 		losses = 0,
+		elo = 1200,
 	}
 	setmetatable(player, { __index = Player })
 	return player
@@ -1214,6 +1216,7 @@ function Player.tryParse(data)
 		overtake = data.overtake or 0,
 		wins = data.wins or 0,
 		losses = data.losses or 0,
+		elo = data.elo or 1200,
 	}
 	setmetatable(player, { __index = Player })
 	return player
@@ -1285,6 +1288,9 @@ function Player:export(key)
 	end
 	if self.losses > 0 then
 		data.losses = self.losses
+	end
+	if self.elo ~= 1200 then
+		data.elo = self.elo
 	end
 
 	local sectors = {}
@@ -1863,6 +1869,7 @@ local raceState = {
 	distance = 0,
 	message = false,
 	time = 0,
+	opponentElo = 1200,
 }
 
 local raceFinish = {
@@ -1882,6 +1889,7 @@ end
 local function resetRequest()
 	horn.resquestTime = 0
 	raceState.opponent = nil
+	raceState.opponentElo = 1200
 	horn.opponentName = ""
 	resetHorn()
 end
@@ -1903,7 +1911,20 @@ local function showRaceLights()
 	end
 end
 
-local function hasWin(winner)
+local function calculateElo()
+	local elo = player.elo
+	local opponentElo = raceState.opponentElo
+	local expectedScore = 1 / (1 + 10 ^ ((opponentElo - elo) / 400))
+	local k = 32
+	local score = 1
+	if raceFinish.winner == raceState.opponent then
+		score = 0
+	end
+	local newElo = elo + k * (score - expectedScore)
+	player.elo = newElo
+end
+
+local function hasWonRace(winner)
 	raceFinish.winner = winner
 	raceFinish.finished = true
 	raceFinish.time = 10
@@ -1915,6 +1936,7 @@ local function hasWin(winner)
 	else
 		player.losses = player.losses + 1
 	end
+	calculateElo()
 	player:save()
 	raceState.opponent = nil
 end
@@ -1922,12 +1944,15 @@ end
 local acpRace = ac.OnlineEvent({
 	targetSessionID = ac.StructItem.int16(),
 	messageType = ac.StructItem.int16(),
+	elo = ac.StructItem.int16(),
 }, function(sender, data)
 	if data.targetSessionID == car.sessionID and data.messageType == 1 then
 		raceState.opponent = sender
+		raceState.opponentElo = data.elo
 		horn.resquestTime = 7
 	elseif data.targetSessionID == car.sessionID and data.messageType == 2 then
 		raceState.opponent = sender
+		raceState.opponentElo = data.elo
 		raceState.inRace = true
 		resetHorn()
 		horn.resquestTime = 0
@@ -1935,7 +1960,7 @@ local acpRace = ac.OnlineEvent({
 		raceState.time = 2
 		timeStartRace = 7
 	elseif data.targetSessionID == car.sessionID and data.messageType == 3 then
-		hasWin(car)
+		hasWonRace(car)
 	end
 end)
 
@@ -1957,12 +1982,12 @@ end
 
 local function hasPit()
 	if not raceState.opponent or raceState.opponent and not raceState.opponent.isConnected then
-		hasWin(car)
+		hasWonRace(car)
 		return false
 	end
 	if car.isInPit then
 		acpRace { targetSessionID = raceState.opponent.sessionID, messageType = 3 }
-		hasWin(raceState.opponent)
+		hasWonRace(raceState.opponent)
 		return false
 	end
 	return true
@@ -1974,7 +1999,7 @@ local function inRace()
 	if raceState.distance < 50 then
 		whosInFront()
 	elseif raceState.distance > 250 then
-		hasWin(raceState.inFront)
+		hasWonRace(raceState.inFront)
 	end
 end
 
@@ -2006,7 +2031,7 @@ local function resquestRace()
 	if opponent and (not opponent.isHidingLabels) then
 		if dot(vec2(car.look.x, car.look.z), vec2(opponent.look.x, opponent.look.z)) > 0 then
 			if isPoliceCar(ac.getCarID(opponent.index)) then return end
-			acpRace { targetSessionID = opponent.sessionID, messageType = 1 }
+			acpRace { targetSessionID = opponent.sessionID, messageType = 1, elo = player.elo }
 			horn.resquestTime = 10
 		end
 	end
@@ -2014,7 +2039,7 @@ end
 
 local function acceptingRace()
 	if dot(vec2(car.look.x, car.look.z), vec2(raceState.opponent.look.x, raceState.opponent.look.z)) > 0 then
-		acpRace { targetSessionID = raceState.opponent.sessionID, messageType = 2 }
+		acpRace { targetSessionID = raceState.opponent.sessionID, messageType = 2, elo = player.elo }
 		raceState.inRace = true
 		horn.resquestTime = 0
 		timeStartRace = 7
