@@ -1687,7 +1687,7 @@ local function uiTab()
 	settings.fontSizeMSG = ui.slider('##' .. 'Font Size MSG', settings.fontSizeMSG, 10, 50, 'Font Size' .. ': %.0f')
 	settings.msgOffset.y = ui.slider('##' .. 'Msg On Screen Offset Y', settings.msgOffset.y, 0, WINDOW_HEIGHT, 'Msg On Screen Offset Y' .. ': %.0f')
 	settings.msgOffset.x = ui.slider('##' .. 'Msg On Screen Offset X', settings.msgOffset.x, 0, WINDOW_WIDTH, 'Msg On Screen Offset X' .. ': %.0f')
-	if ui.button('MSG Offset X to center') then settings.msgOffsetX = WIDTH_DIV._2 end
+	if ui.button('MSG Offset X to center') then settings.msgOffset.x = WIDTH_DIV._2 end
 	ui.newLine()
 	ui.text('Stars : ')
 	settings.starsPos.x = ui.slider('##' .. 'Stars Offset X', settings.starsPos.x, 0, WINDOW_WIDTH, 'Stars Offset X' .. ': %.0f')
@@ -1912,16 +1912,15 @@ local function showRaceLights()
 end
 
 local function calculateElo()
-	local elo = player.elo
-	local opponentElo = raceState.opponentElo
-	local expectedScore = 1 / (1 + 10 ^ ((opponentElo - elo) / 400))
-	local k = 32
-	local score = 1
-	if raceFinish.winner == raceState.opponent then
-		score = 0
-	end
-	local newElo = elo + k * (score - expectedScore)
-	player.elo = newElo
+	local K = 32
+	local R1 = 10 ^ (player.elo / 400)
+	local R2 = 10 ^ (raceState.opponentElo / 400)
+	local E1 = R1 / (R1 + R2)
+	local E2 = R2 / (R1 + R2)
+	local S1 = 1
+	local S2 = 0
+	player.elo = player.elo + K * (S1 - E1)
+	raceState.opponentElo = raceState.opponentElo + K * (S2 - E2)
 end
 
 local function hasWonRace(winner)
@@ -2238,8 +2237,8 @@ local function distanceBar()
 	ui.sameLine()
 	ui.beginRotation()
 	ui.progressBar(raceState.distance / 250, vec2(WIDTH_DIV._3, HEIGHT_DIV._60), playerInFront)
-	ui.endRotation(90, vec2(settings.msgOffsetX - WIDTH_DIV._2 - textLenght.x / 2, settings.msgOffset.y))
-	ui.dwriteDrawText(text, 30, vec2(settings.msgOffsetX - textLenght.x / 2, settings.msgOffset.y), white)
+	ui.endRotation(90, vec2(settings.msgOffset.x - WIDTH_DIV._2 - textLenght.x / 2, settings.msgOffset.y))
+	ui.dwriteDrawText(text, 30, vec2(settings.msgOffset.x - textLenght.x / 2, settings.msgOffset.y), white)
 end
 
 local function raceUI()
