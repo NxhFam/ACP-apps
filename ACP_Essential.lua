@@ -1912,15 +1912,11 @@ local function showRaceLights()
 end
 
 local function calculateElo()
-	local K = 32
-	local R1 = 10 ^ (player.elo / 400)
-	local R2 = 10 ^ (raceState.opponentElo / 400)
-	local E1 = R1 / (R1 + R2)
-	local E2 = R2 / (R1 + R2)
-	local S1 = 1
-	local S2 = 0
-	player.elo = player.elo + K * (S1 - E1)
-	raceState.opponentElo = raceState.opponentElo + K * (S2 - E2)
+	local k = 32
+	local opponentElo = raceState.opponentElo
+	local expectedScore = 1 / (1 + 10 ^ ((opponentElo - player.elo) / 400))
+	local newElo = player.elo + k * (1 - expectedScore)
+	return math.floor(newElo)
 end
 
 local function hasWonRace(winner)
