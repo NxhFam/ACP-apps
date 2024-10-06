@@ -19,6 +19,16 @@ local CAR_NAME = const(ac.getCarName(0))
 local DRIVER_NAME = const(ac.getDriverName(0))
 if CSP_VERSION < CSP_MIN_VERSION then return end
 
+-- local longestCarName = 20
+
+-- for i, c in ac.iterateCars() do
+-- 	local name = c:name()
+-- 	ac.log('Car:', name)
+-- 	if #name > longestCarName then
+-- 		longestCarName = #name
+-- 	end
+-- end
+
 -- local mapBoostButton = ac.ControlButton('__ACP_BOOST')
 
 -- local boost = {
@@ -105,7 +115,7 @@ local LEADERBOARDS = const({
 	time = {"H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST" },
 	score = { "arrests", "getaways", "thefts", "overtake" },
 })
-local LEADERBOARD_NAMES = const({ "H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST", "arrests", "getaways", "thefts", "overtake" })
+local LEADERBOARD_NAMES = const({ "Your Stats", "H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST", "arrests", "getaways", "thefts", "overtake" })
 local patchCount = 0
 
 -- URL --
@@ -127,6 +137,8 @@ local WIDTH_DIV = const({
 	_20 = WINDOW_WIDTH / 20,
 	_25 = WINDOW_WIDTH / 25,
 	_32 = WINDOW_WIDTH / 32,
+	_40 = WINDOW_WIDTH / 40,
+	_50 = WINDOW_WIDTH / 50,
 })
 
 local WINDOW_HEIGHT = const(sim.windowHeight / uiState.uiScale)
@@ -135,6 +147,7 @@ local HEIGHT_DIV = const({
 	_3 = WINDOW_HEIGHT / 3,
 	_4 = WINDOW_HEIGHT / 4,
 	_12 = WINDOW_HEIGHT / 12,
+	_14 = WINDOW_HEIGHT / 14,
 	_20 = WINDOW_HEIGHT / 20,
 	_24 = WINDOW_HEIGHT / 24,
 	_40 = WINDOW_HEIGHT / 40,
@@ -374,9 +387,9 @@ local vUp = const(vec3(0, 1, 0))
 local vDown = const(vec3(0, -1, 0))
 
 local menuStates = {
-	welcome = true,
+	welcome = false,
 	main = false,
-	leaderboard = false,
+	leaderboard = true,
 }
 
 local duo = {
@@ -522,7 +535,7 @@ end
 
 ---@type Leaderboard[]
 local leaderboards = {}
----@type Leaderboard
+---@type Leaderboard | Player
 local currentLeaderboard = nil
 
 ---@class LeaderboardRow
@@ -1166,6 +1179,7 @@ end
 ---@class Player
 ---@field name string
 ---@field sectors SectorStats[]
+---@field sectorsFormated table<string, table<string, string>>
 ---@field arrests integer
 ---@field getaways integer
 ---@field thefts integer
@@ -1180,6 +1194,7 @@ function Player.new()
 	local player = {
 		name = DRIVER_NAME,
 		sectors = {},
+		sectorsFormated = {},
 		arrests = 0,
 		getaways = 0,
 		thefts = 0,
@@ -1210,6 +1225,7 @@ function Player.tryParse(data)
 	local player = {
 		name = DRIVER_NAME,
 		sectors = sectors,
+		sectorsFormated = {},
 		arrests = data.arrests or 0,
 		getaways = data.getaways or 0,
 		thefts = data.thefts or 0,
@@ -1267,6 +1283,22 @@ function Player.allocate(callback)
 	Player.fetch(url, function(player)
 		callback(player)
 	end)
+end
+
+function Player:formatSectors()
+	for _, sector in ipairs(self.sectors) do
+		local entries = {}
+		for carName, time in pairs(sector.records) do
+			table.insert(entries, { carName, time })
+		end
+		table.sort(entries, function(a, b)
+			return a[2] < b[2]
+		end)
+		for i, entry in ipairs(entries) do
+			entries[i][2] = formatTime(entry[2])
+		end
+		self.sectorsFormated[sector.name] = entries
+	end
 end
 
 ---@param key string
@@ -1555,7 +1587,7 @@ local function displayInGrid()
 		ui.sameLine(box1.x + colWidth / 2 + colWidth * (i - 1) - textLenght / 2)
 		ui.dwriteTextWrapped(currentLeaderboard.header[i], leaderboardWrapWidth, settings.colorHud)
 	end
-	ui.drawLine(vec2(0, HEIGHT_DIV._12), vec2(WIDTH_DIV._2, HEIGHT_DIV._12), white, 2)
+	ui.drawLine(vec2(0, HEIGHT_DIV._14), vec2(WIDTH_DIV._2, HEIGHT_DIV._14), white, 2)
 	ui.newLine()
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=Regular")
@@ -1586,20 +1618,85 @@ local function displayInGrid()
 	end
 end
 
+local function playerStats()
+	ui.pushDWriteFont("Orbitron;Weight=Black")
+	ui.dwriteTextAligned("Player Stats", settings.fontSizeMSG * 1.5, ui.Alignment.Center, ui.Alignment.Start, vec2(WIDTH_DIV._2, HEIGHT_DIV._20), false, settings.colorHud)
+	ui.popDWriteFont()
+	-- ui.drawLine(vec2(0, HEIGHT_DIV._14), vec2(WIDTH_DIV._2, HEIGHT_DIV._14), white, 2)
+	ui.pushDWriteFont("Orbitron;Weight=Regular")
+	ui.newLine()
+	ui.sameLine(WIDTH_DIV._40)
+	ui.dwriteTextWrapped("Sectors: ", settings.fontSizeMSG * 1.5, settings.colorHud)
+	
+	ui.newLine()
+	ui.sameLine(WIDTH_DIV._40)
+	ui.beginGroup()
+
+	for sectorName, times in pairs(player.sectorsFormated) do
+		ui.separator()
+		ui.dwriteTextWrapped(sectorName .. ": ", settings.fontSizeMSG, white)
+		ui.beginSubgroup(WIDTH_DIV._50)
+		for i = 1, #times do
+			ui.dwriteTextWrapped(times[i][1] .. ": ", settings.fontSizeMSG, settings.colorHud)
+			ui.sameLine()
+			ui.dwriteTextWrapped(times[i][2], settings.fontSizeMSG, white)
+		end
+		ui.endSubgroup()
+	end
+	ui.endGroup()
+	ui.separator()
+	ui.newLine()
+	ui.sameLine(WIDTH_DIV._40)
+	ui.dwriteTextWrapped("Scores: ", settings.fontSizeMSG * 1.5, settings.colorHud)
+	ui.newLine()
+	ui.sameLine(WIDTH_DIV._40)
+	ui.beginGroup()
+	ui.dwriteTextWrapped("Arrests: ", settings.fontSizeMSG, settings.colorHud)
+	ui.sameLine()
+	ui.dwriteTextWrapped(player.arrests, settings.fontSizeMSG, white)
+	ui.dwriteTextWrapped("Getaways: ", settings.fontSizeMSG, settings.colorHud)
+	ui.sameLine()
+	ui.dwriteTextWrapped(player.getaways, settings.fontSizeMSG, white)
+	ui.dwriteTextWrapped("Thefts: ", settings.fontSizeMSG, settings.colorHud)
+	ui.sameLine()
+	ui.dwriteTextWrapped(player.thefts, settings.fontSizeMSG, white)
+	ui.dwriteTextWrapped("Overtake: ", settings.fontSizeMSG, settings.colorHud)
+	ui.sameLine()
+	ui.dwriteTextWrapped(player.overtake, settings.fontSizeMSG, white)
+	ui.dwriteTextWrapped("Wins: ", settings.fontSizeMSG, settings.colorHud)
+	ui.sameLine()
+	ui.dwriteTextWrapped(player.wins, settings.fontSizeMSG, white)
+	ui.dwriteTextWrapped("Losses: ", settings.fontSizeMSG, settings.colorHud)
+	ui.sameLine()
+	ui.dwriteTextWrapped(player.losses, settings.fontSizeMSG, white)
+	ui.dwriteTextWrapped("Elo: ", settings.fontSizeMSG, settings.colorHud)
+	ui.sameLine()
+	ui.dwriteTextWrapped(player.elo, settings.fontSizeMSG, white)
+	ui.endGroup()
+	ui.popDWriteFont()
+end
+
 local function showLeaderboard()
 	ui.setNextItemWidth(WIDTH_DIV._12)
-	ui.combo("leaderboard", currentLeaderboard and currentLeaderboard.name or "Select Leaderboard", function()
+	ui.combo("leaderboard", currentLeaderboard.name, function()
 		for i = 1, #LEADERBOARD_NAMES do
-			if ui.selectable(LEADERBOARD_NAMES[i], currentLeaderboard and currentLeaderboard.name == LEADERBOARD_NAMES[i]) then
-				Leaderboard.allocate(LEADERBOARD_NAMES[i])
+			if ui.selectable(LEADERBOARD_NAMES[i], currentLeaderboard.name == LEADERBOARD_NAMES[i]) then
+				if LEADERBOARD_NAMES[i] == "Your Stats" then
+					currentLeaderboard = player
+				else
+					Leaderboard.allocate(LEADERBOARD_NAMES[i])
+				end
 			end
 		end
 	end)
 	
 	ui.sameLine(WIDTH_DIV._2 - 110)
 	if ui.button('Close', vec2(100, HEIGHT_DIV._50)) then menuStates.leaderboard = false end
-	ui.newLine()
-	if currentLeaderboard and currentLeaderboard.rows and currentLeaderboard.header then
+	-- ui.newLine()
+	if not currentLeaderboard then return end
+	if currentLeaderboard.name == player.name then
+		playerStats()
+	else
 		displayInGrid()
 	end
 end
@@ -2976,9 +3073,11 @@ local function loadPlayerData()
 		if allocatedPlayer then
 			player = allocatedPlayer
 			dataLoaded['PlayerData'] = true
-			player:export()
 		end
 	end)
+	player:formatSectors()
+	ac.log(player.sectorsFormated)
+	currentLeaderboard = player
 end
 
 function script.update(dt)
