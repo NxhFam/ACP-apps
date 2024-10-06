@@ -1479,6 +1479,14 @@ local hud = {
 
 ----------------------------------------------------------------------------------------------- Math -----------------------------------------------------------------------------------------------
 
+local function calculateElo(opponentElo, youWon)
+	local k = 32
+	local expectedScore = 1 / (1 + 10 ^ ((opponentElo - player.elo) / 400))
+	local score = youWon and 1 or 0
+	local newElo = player.elo + k * (score - expectedScore)
+	return math.floor(newElo)
+end
+
 local function cross(vector1, vector2)
 	return vec2(vector1.x + vector2.x, vector1.y + vector2.y)
 end
@@ -1848,6 +1856,7 @@ local function sectorUI()
 	end
 	discordLinks()
 	ui.newLine()
+	ui.endGroup()
 	return 1
 end
 
@@ -1911,14 +1920,6 @@ local function showRaceLights()
 	end
 end
 
-local function calculateElo()
-	local k = 32
-	local opponentElo = raceState.opponentElo
-	local expectedScore = 1 / (1 + 10 ^ ((opponentElo - player.elo) / 400))
-	local newElo = player.elo + k * (1 - expectedScore)
-	return math.floor(newElo)
-end
-
 local function hasWonRace(winner)
 	raceFinish.winner = winner
 	raceFinish.finished = true
@@ -1931,7 +1932,7 @@ local function hasWonRace(winner)
 	else
 		player.losses = player.losses + 1
 	end
-	calculateElo()
+	player.elo = calculateElo(raceState.opponentElo, winner == car)
 	player:save()
 	raceState.opponent = nil
 end
