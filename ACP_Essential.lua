@@ -184,6 +184,9 @@ local WELCOME_NAV_IMG = const({
 })
 
 local WELCOME_CARD_IMG = const({
+	"https://i.postimg.cc/bv0shBYj/cartheft.jpg",
+	"https://i.postimg.cc/Jn1t45tH/drugdealer.jpg",
+	"https://i.postimg.cc/mrm2J2xf/BANK-HEIST.png",
 	"https://i.postimg.cc/5tW6DVV3/aboutacp.jpg",
 	"https://i.postimg.cc/MHLG5k51/earnmoney.jpg",
 	"https://i.postimg.cc/4yydp46J/leaderboard.jpg",
@@ -191,9 +194,6 @@ local WELCOME_CARD_IMG = const({
 	"https://i.postimg.cc/15LtNQfQ/police.jpg",
 	"https://i.postimg.cc/WbKD6ZYx/buycars.jpg",
 	"https://i.postimg.cc/sfLftrPh/tuning.jpg",
-	"https://i.postimg.cc/bv0shBYj/cartheft.jpg",
-	"https://i.postimg.cc/Jn1t45tH/drugdealer.jpg",
-	"https://i.postimg.cc/mrm2J2xf/BANK-HEIST.png",
 })
 
 local WELCOME_CARD_LINK = const({
@@ -210,20 +210,20 @@ local WELCOME_CARD_LINK = const({
 })
 
 local MISSION_INFOS = const({
-	[10] = {
-		start = "Rob : Bank TP",
-		finish = "Deliver : Yellow BHL (Map)",
-		time = "Time Limit: 03:20.000",
+	[1] = {
+		start = "Steal : Gas Station 1 TP",
+		finish = "Deliver : Red Car (Map)",
+		time = "Time Limit: 07:20.000",
 	},
-	[9] = {
+	[2] = {
 		start = "Pick Up : Drug Delivery TP",
 		finish = "Drop Off : Pink House (Map)",
 		time = "Time Limit: 05:40.000",
 	},
-	[8] = {
-		start = "Steal : Gas Station 1 TP",
-		finish = "Deliver : Red Car (Map)",
-		time = "Time Limit: 07:20.000",
+	[3] = {
+		start = "Rob : Bank TP",
+		finish = "Deliver : Yellow BHL (Map)",
+		time = "Time Limit: 03:20.000",
 	},
 })
 
@@ -362,7 +362,7 @@ local vUp = const(vec3(0, 1, 0))
 local vDown = const(vec3(0, -1, 0))
 
 local menuStates = {
-	welcome = false,
+	welcome = true,
 	main = false,
 	leaderboard = false,
 }
@@ -2711,17 +2711,17 @@ end
 
 
 local MISSION_TP_INDEX = const({
-	[8] = { -- BOBs
+	[1] = { -- BOBs
 		[1] = { pos = vec3(785.519, 95.8002, 2235.53), dir = vec3(0.51, -0.03, -0.86) },
 		[2] = { pos = vec3(787.707, 95.5171, 2240.88), dir = vec3(0.58, -0.03, -0.81) },
 		[3] = { pos = vec3(790.921, 95.1569, 2247.45), dir = vec3(0.8, -0.01, -0.60) },
 	},
-	[9] = { -- Drug
+	[2] = { -- Drug
 		[1] = { pos = vec3(-369.367, 127.557, 3405.47), dir = vec3(0.8, -0.01, 0.61) },
 		[2] = { pos = vec3(-374.729, 127.558, 3413.13), dir = vec3(0.69, -0.01, 0.73) },
 		[3] = { pos = vec3(-380.176, 127.557, 3419.49), dir = vec3(0.59, -0.01, 0.81) },
 	},
-	[10] = { -- Bank
+	[3] = { -- Bank
 		[1] = { pos = vec3(-626.316, 135.37, 3509.81), dir = vec3(0.91, 0.03, -0.4) },
 		[2] = { pos = vec3(-635.369, 135.786, 3514.6), dir = vec3(0.92, 0.04, -0.39) },
 		[3] = { pos = vec3(-645.117, 136.215, 3518.99), dir = vec3(0.91, 0.03, -0.42) },
@@ -2739,7 +2739,7 @@ local function willCollide(tpPos)
 end
 
 local function tpToMission(i)
-	if i > 7 then
+	if i < 4 and car.speedKmh < 30 then
 		for j = 1, #MISSION_TP_INDEX[i] do
 			if not willCollide(MISSION_TP_INDEX[i][j].pos) then
 				physics.setCarPosition(0, MISSION_TP_INDEX[i][j].pos, MISSION_TP_INDEX[i][j].dir)
@@ -2817,7 +2817,7 @@ local function drawWelcomeImg()
 			ui.drawImage(welcomeWindow.closeIMG, WELCOME_CARD_IMG_POS[8][1], WELCOME_CARD_IMG_POS[8][2], iconCloseColor)
 			for i = 1, #welcomeNavImgToDraw do ui.drawImage(welcomeNavImgToDraw[i], vec2(0, 0), welcomeWindow.size, cardOutline[i]) end
 			for i = 1, 3 do
-				if welcomeCardsToDisplayed[i] > 7 then
+				if welcomeCardsToDisplayed[i] < 4 then
 					ui.drawImage(WELCOME_CARD_IMG[welcomeCardsToDisplayed[i]], WELCOME_CARD_IMG_POS[i + 2][1], WELCOME_CARD_IMG_POS[i + 2][2], white)
 					showMissionInfo(i, welcomeCardsToDisplayed[i])
 				else
@@ -2828,7 +2828,7 @@ local function drawWelcomeImg()
 	end)
 	if toolTipOn then
 		for i = 1, 3 do
-			if welcomeCardsToDisplayed[i] > 7 then
+			if welcomeCardsToDisplayed[i] < 4 then
 				ui.tooltip(function()
 					ui.text("CTRL + Left Click to teleport to the mission")
 				end)
