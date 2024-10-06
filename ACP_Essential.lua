@@ -1289,9 +1289,7 @@ function Player:export(key)
 	if self.losses > 0 then
 		data.losses = self.losses
 	end
-	if self.elo ~= 1200 then
-		data.elo = self.elo
-	end
+	data.elo = self.elo
 
 	local sectors = {}
 	for _, sector in ipairs(self.sectors) do
