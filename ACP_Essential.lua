@@ -19,40 +19,29 @@ local CAR_NAME = const(ac.getCarName(0))
 local DRIVER_NAME = const(ac.getDriverName(0))
 if CSP_VERSION < CSP_MIN_VERSION then return end
 
+-- local mapBoostButton = ac.ControlButton('__ACP_BOOST')
 
-local mapBoostButton = ac.ControlButton('__ACP_BOOST')
-
-local boost = {
-	enabled = true,
-	button = mapBoostButton,
-	cooldown = 0,
-	duration = 100,
-}
-
-
-local function setBoostButton()
-	boost.button:control(vec2(120, 0))
-end
+-- local boost = {
+-- 	enabled = true,
+-- 	button = mapBoostButton,
+-- 	cooldown = 0,
+-- 	duration = 100,
+-- }
 
 
--- ---Sets car velocity and invalidates current lap time.
--- ---@param carIndex integer
--- ---@param velocity vec3
--- function physics.setCarVelocity(carIndex, velocity) end
+-- local function setBoostButton()
+-- 	boost.button:control(vec2(120, 0))
+-- end
 
--- take dt into account for the force
-local function onBoostPressed(dt)
-	if boost.enabled and boost.duration > 0 then
-		boost.duration = boost.duration - dt
-		
-		local velocity = car.velocity
-		local multiplier = 1.01  * dt
-		ac.debug('Boosting', multiplier)
-		-- ajust multiplier based on dt to have a constant force
-		physics.setCarVelocity(0, velocity * multiplier)
-	end
-end
-
+-- local function onBoostPressed(dt)
+-- 	if boost.enabled and boost.duration > 0 then
+-- 		boost.duration = boost.duration - dt
+-- 		local velocity = car.velocity
+-- 		local multiplier = 2 ^ dt
+-- 		ac.debug('Boosting:', multiplier)
+-- 		physics.setCarVelocity(0, velocity * multiplier)
+-- 	end
+-- end
 
 
 local DRIVER_NATION_CODE = const(ac.getDriverNationCode(0))
@@ -2994,11 +2983,9 @@ function script.update(dt)
 	end
 	if not shouldRun() then return end
 	ac.debug('PATCH COUNT', patchCount)
-	ac.debug('Pos:', car.position)
-	ac.debug('Dir:', car.look)
-	if boost.button:down() then
-		onBoostPressed(dt)
-	end
+	-- if boost.button:down() then
+	-- 	onBoostPressed(dt)
+	-- end
 	sectorUpdate()
 	raceUpdate(dt)
 	overtakeUpdate(dt)
