@@ -106,7 +106,7 @@ local LEADERBOARDS = const({
 	time = {"H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST" },
 	score = { "arrests", "getaways", "thefts", "overtake" },
 })
-local LEADERBOARD_NAMES = const({ "Your Stats", "H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST", "arrests", "getaways", "thefts", "overtake" })
+local LEADERBOARD_NAMES = const({ "Your Stats", "H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST", "arrests", "getaways", "thefts", "overtake", "elo" })
 local patchCount = 0
 
 -- URL --
@@ -3067,10 +3067,10 @@ local function loadPlayerData()
 		if allocatedPlayer then
 			player = allocatedPlayer
 			dataLoaded['PlayerData'] = true
+			player:formatSectors()
+			currentLeaderboard = player
 		end
 	end)
-	player:formatSectors()
-	currentLeaderboard = player
 end
 
 function script.update(dt)
