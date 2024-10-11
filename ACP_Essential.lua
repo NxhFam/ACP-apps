@@ -57,6 +57,7 @@ SECTORS_DATA = const({
 	[1] = {
 		name = "H1",
 		timeLimit = 0,
+		addTimeLimit = { 0, 0, 0 },
 		length = 8,
 		gates = {
 			{ pos = { -753.56, 138.82, 3541.54 }, dir = { -0.9, 0, -0.43 }, width = 14.75, id = 1 },
@@ -66,6 +67,7 @@ SECTORS_DATA = const({
 	[2] = {
 		name = "DOUBLE TROUBLE",
 		timeLimit = 220,
+		addTimeLimit = { 0, 10, 25 },
 		length = 5,
 		gates = {
 			{ pos = { 767.34, 95.8, 2262.69 }, dir = { -0.82, 0, 0.56 }, width = 14.7, id = 1 },
@@ -75,6 +77,7 @@ SECTORS_DATA = const({
 	[3] = {
 		name = "BOBs SCRAPYARD",
 		timeLimit = 210,
+		addTimeLimit = { 0, 10, 25 },
 		length = 5,
 		gates = {
 			{ pos = { 767.34, 95.8, 2262.69 }, dir = { -0.82, 0, 0.56 }, width = 14.7, id = 1 },
@@ -83,7 +86,8 @@ SECTORS_DATA = const({
 	},
 	[4] = {
 		name = "BANK HEIST",
-		timeLimit = 500,
+		timeLimit = 480,
+		addTimeLimit = { 0, 45, 90 },
 		length = 5,
 		gates = {
 			{ pos = { -700.04, 137.72, 3540.75 }, dir = { -1.67, 0, 1.02 }, width = 12.1, id = 1 },
@@ -92,7 +96,8 @@ SECTORS_DATA = const({
 	},
 	[5] = {
 		name = "DRUG DELIVERY",
-		timeLimit = 360,
+		timeLimit = 315,
+		addTimeLimit = { 0, 40, 80 },
 		length = 5,
 		gates = {
 			{ pos = { -395.08, 127.66, 3392.71 }, dir = { -0.7, 0, -0.72 }, width = 35.95, id = 1 },
@@ -923,6 +928,7 @@ end
 ---@field startTime number
 ---@field time string
 ---@field timeLimit number
+---@field addTimeLimit number[]
 ---@field timeColor rgbm
 ---@field finalTime number
 ---@field startDistance number
@@ -957,6 +963,7 @@ function Sector.tryParse(data)
 		startTime = 0,
 		time = '00:00.000',
 		timeLimit = data.timeLimit,
+		addTimeLimit = data.addTimeLimit,
 		timeColor = white,
 		startDistance = 0,
 		lenght = data.length,
@@ -1051,23 +1058,37 @@ function Sector:updateTime()
 	end
 end
 
+---@return integer
 function Sector:isUnderTimeLimit()
 	if self.timeLimit > 0 then
-		return os.preciseClock() - self.startTime < self.timeLimit
+		local time = os.preciseClock() - self.startTime
+		if time < self.timeLimit + self.addTimeLimit[1] then
+			return 1
+		elseif time < self.timeLimit + self.addTimeLimit[2] then
+			return 2
+		elseif time < self.timeLimit + self.addTimeLimit[3] then
+			return 3
+		end
+		return 0
 	end
-	return true
+	return 1
 end
 
 function Sector:updateTimeColor()
 	if self:hasStarted() and not self:isUnderTimeLimit() then
-		self.timeColor = rgbm(1, 0, 0, 1)
+		self.timeColor = rgbm.colors.red
 		missionManager.msgFailedTime = 10
 	end
 	if self:isFinished() then
-		if self:isUnderTimeLimit() then
-			self.timeColor = rgbm(0, 1, 0, 1)
+		local underTimeLimit = self:isUnderTimeLimit()
+		if underTimeLimit == 1 then
+			self.timeColor = rgbm.colors.green
+		elseif underTimeLimit == 2 then
+			self.timeColor = rgbm.colors.yellow
+		elseif underTimeLimit == 3 then
+			self.timeColor = rgbm.colors.orange
 		else
-			self.timeColor = rgbm(1, 0, 0, 1)
+			self.timeColor = rgbm.colors.red
 		end
 	end
 end
@@ -2933,7 +2954,8 @@ end
 local function missionFinishedWindow()
 	ui.transparentWindow('MissionFinished', vec2(0, 0), vec2(WINDOW_WIDTH, HEIGHT_DIV._12), false, true, function()
 		ui.pushDWriteFont("Orbitron;Weight=Black")
-		local text = sectorManager.sector.name .. " - " .. sectorManager.sector.time .. os.date(" - %x")
+		local timeMsg = sectorManager.underTimeLimit and sectorManager.sector.time or "FAILED"
+		local text = sectorManager.sector.name .. " - " .. timeMsg .. os.date(" - %x")
 		local textLenght = ui.measureDWriteText(text, settings.fontSizeMSG * 2)
 		ui.drawRectFilled(vec2(0, 0), vec2(WINDOW_WIDTH, HEIGHT_DIV._12), rgbm(0, 0, 0, 0.5))
 		ui.dwriteDrawText(text, settings.fontSizeMSG * 2, vec2(WIDTH_DIV._2 - textLenght.x / 2, HEIGHT_DIV._60), settings.colorHud)
