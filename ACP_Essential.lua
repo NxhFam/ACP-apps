@@ -21,30 +21,6 @@ if CSP_VERSION < CSP_MIN_VERSION then return end
 
 local longestCarName = ''
 
--- local mapBoostButton = ac.ControlButton('__ACP_BOOST')
-
--- local boost = {
--- 	enabled = true,
--- 	button = mapBoostButton,
--- 	cooldown = 0,
--- 	duration = 100,
--- }
-
-
--- local function setBoostButton()
--- 	boost.button:control(vec2(120, 0))
--- end
-
--- local function onBoostPressed(dt)
--- 	if boost.enabled and boost.duration > 0 then
--- 		boost.duration = boost.duration - dt
--- 		local velocity = car.velocity
--- 		local multiplier = 2 ^ dt
--- 		ac.debug('Boosting:', multiplier)
--- 		physics.setCarVelocity(0, velocity * multiplier)
--- 	end
--- end
-
 local DRIVER_NATION_CODE = const(ac.getDriverNationCode(0))
 local UNIT = "km/h"
 local UNIT_MULT = 1
@@ -76,7 +52,7 @@ SECTORS_DATA = const({
 	},
 	[3] = {
 		name = "BOBs SCRAPYARD",
-		timeLimit = 210,
+		timeLimit = 205,
 		addTimeLimit = { 0, 10, 25 },
 		length = 5,
 		gates = {
@@ -96,7 +72,7 @@ SECTORS_DATA = const({
 	},
 	[5] = {
 		name = "DRUG DELIVERY",
-		timeLimit = 315,
+		timeLimit = 320,
 		addTimeLimit = { 0, 40, 80 },
 		length = 5,
 		gates = {
@@ -256,12 +232,7 @@ local MISSION_NAMES = const({"DRUG DELIVERY", "BANK HEIST", "BOBs SCRAPYARD"})
 local MISSION_TEXT = const({
 	["DRUG DELIVERY"] = {
 		chat = "* Picking up drugs *",
-		screen = {
-			[0] = "Go to the nightclub. Take the package and drive to the Narco Villa! Wait for the all-clear, then go!",
-			[1] = {"You've got ", " minutes to deliver the package. Floor it, we don't have time!"},
-			[2] = {"The Narcos are pissed! You've got ", " minutes to make this delivery, or it's game over!"},
-			[3] = {"This is your last shot! ", " minutes left, or you're in deep trouble!"},
-		},
+		intro = { "You have ", " minutes to pick up the drugs. Deliver the drugs to the Pink House!" },
 		failed = {
 			"You're late! Even the drugs expired waiting for you.",
 			"The drugs ran out of patience, unlike your slow driving.",
@@ -283,12 +254,7 @@ local MISSION_TEXT = const({
 	},
 	["BOBs SCRAPYARD"] = {
 		chat = "* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. " *",
-		screen  = {
-			[0] = "Wait at the gas station. We are listening to the police radio. Wait for the go signal!",
-			[1] = {"Get that car to Bob's Scrapeyard in ", " minutes. Step on it, no slowing down!"},
-			[2] = {"Bob's freaking out! We've got ", " minutes, max! Get that car moving!"},
-			[3] = {"This is it! You've got ", " minutes, or the whole job is blown!"},
-		},
+		intro = { "You have ", " minutes to steal the car. Deliver the car to Bobs Scrapyard!" },
 		failed = {
 			"Missed the car heist? Might as well try carpool karaoke next time.",
 			"Car theft? More like car borrowing… indefinitely.",
@@ -310,12 +276,7 @@ local MISSION_TEXT = const({
 	},
 	["DOUBLE TROUBLE"] = {
 		chat = "* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. " *",
-		screen  = {
-			[0] = "Wait at the gas station. We are listening to the police radio. Wait for the go signal!",
-			[1] = {"Get that car to Bob's Scrapeyard in ", " minutes. Step on it, no slowing down!"},
-			[2] = {"Bob's freaking out! We've got ", " minutes, max! Get that car moving!"},
-			[3] = {"This is it! You've got ", " minutes, or the whole job is blown!"},
-		},
+		intro = { "You have ", " minutes to steal the car. Deliver the car to Bobs Scrapyard!" },
 		failed = {
 			"Missed the car heist? Might as well try carpool karaoke next time.",
 			"Car theft? More like car borrowing… indefinitely.",
@@ -337,12 +298,7 @@ local MISSION_TEXT = const({
 	},
 	["BANK HEIST"] = {
 		chat = "* Robbing the bank *",
-		screen = {
-			[0] = "Wait near the bank. The robbery is happening inside. When the robbers are out, drive to the drop zone!",
-			[1]	= {"You've got ", " minutes to reach the drop zone. Move now, no time to waste!"},
-			[2]	= {"They're getting nervous! We need to reach that place in ", " minutes, or it's over!"},
-			[3]	= {"You're almost out of time! Get there in ", " minutes or it's all over!"},
-		},
+		intro = { "You have ", " minutes to rob the bank. Deliver the loot to the Yellow BHL!" },
 		failed = {
 			"At this rate, you'll be robbing piggy banks, not actual banks.",
 			"The bank called—they said thanks for not bothering.",
@@ -399,19 +355,15 @@ local duo = {
 }
 
 local missionManager = {
-	msgIndex = 0,
 	msgTime = 0,
-	updateMsgTime = false,
-	msgFailedTime = 0,
-	msgFailedIndex = math.random(1, 16),
+	showIntro = false,
+	msgFailedIndex = os.time() % 16 + 1,
 }
 
 local function resetMissionManager()
-	missionManager.msgIndex = 0
 	missionManager.msgTime = 0
-	missionManager.updateMsgTime = false
-	missionManager.msgFailedTime = 0
-	missionManager.msgFailedIndex = math.random(1, 16)
+	missionManager.showIntro = false
+	missionManager.msgFailedIndex = os.time() % 16 + 1
 end
 
 local dataLoaded = {}
@@ -1075,14 +1027,14 @@ function Sector:isUnderTimeLimit()
 end
 
 function Sector:updateTimeColor()
-	if self:hasStarted() and not self:isUnderTimeLimit() then
-		self.timeColor = rgbm.colors.red
-		missionManager.msgFailedTime = 10
-	end
-	if self:isFinished() then
-		local underTimeLimit = self:isUnderTimeLimit()
+	local underTimeLimit = self:isUnderTimeLimit()
+	if self:hasStarted() then
 		if underTimeLimit == 1 then
-			self.timeColor = rgbm.colors.green
+			if self:isFinished() then
+				self.timeColor = rgbm.colors.green
+			else
+				self.timeColor = rgbm.colors.white
+			end
 		elseif underTimeLimit == 2 then
 			self.timeColor = rgbm.colors.yellow
 		elseif underTimeLimit == 3 then
@@ -2610,8 +2562,8 @@ local function drawHudImages()
 				local closestMission = getClosestMission()
 				if not closestMission then return end
 				ac.sendChatMessage(MISSION_TEXT[closestMission.name].chat)
-				missionManager.msgTime = 7
-				missionManager.msgIndex = 0
+				missionManager.msgTime = 10
+				missionManager.showIntro = true
 				if sectorManager.sector.name ~= "DOUBLE TROUBLE" then
 					sectorManager:setSector(closestMission.name)
 				elseif closestMission.name == "BOBs SCRAPYARD" then
@@ -2675,37 +2627,15 @@ local function showMsgMission(text)
 end
 
 local function missionMsgOnScreen()
-	if missionManager.msgFailedTime > 0 then
+	if sectorManager.sector == nil or sectorManager.sector.name == "H1" then return end
+	if sectorManager.sector:isUnderTimeLimit() == 0 then
 		showMsgMission(MISSION_TEXT[sectorManager.sector.name].failed[missionManager.msgFailedIndex])
-		missionManager.msgFailedTime = missionManager.msgFailedTime - ui.deltaTime()
-		if missionManager.msgTime > 0 then missionManager.msgTime = 0 end
-	elseif missionManager.msgTime > 0 then
-		if sectorManager.finished then
-			missionManager.msgTime = 0
-			missionManager.msgIndex = 0
-			missionManager.updateMsgTime = false
-		end
-		local text = MISSION_TEXT[sectorManager.sector.name].screen[missionManager.msgIndex]
-		if type(text) == "table" then
-			text = text[1] .. formatTime(sectorManager.sector.timeLimit - (os.preciseClock() - sectorManager.sector.startTime)) .. text[2]
-		end
-		showMsgMission(text)
+	elseif missionManager.showIntro and missionManager.msgTime > 0 then
+		showMsgMission(MISSION_TEXT[sectorManager.sector.name].intro[1] .. formatTime(sectorManager.sector.timeLimit) .. MISSION_TEXT[sectorManager.sector.name].intro[2])
 		missionManager.msgTime = missionManager.msgTime - ui.deltaTime()
-	elseif missionManager.msgTime < 0 then
-		missionManager.msgTime = 0
-		if missionManager.msgIndex < #MISSION_TEXT[sectorManager.sector.name].screen then
-			missionManager.msgIndex = missionManager.msgIndex + 1
-			missionManager.updateMsgTime = true
-		end
-	end
-	if sectorManager.sector and missionManager.updateMsgTime and sectorManager.sector.startTime ~= 0 then
-		local timeCheck = sectorManager.sector.timeLimit - sectorManager.sector.timeLimit / (missionManager.msgIndex + 1)
-		local runningtime = os.preciseClock() - sectorManager.sector.startTime
-		ac.debug("timeCheck: ", timeCheck)
-		ac.debug("runningtime: ", runningtime)
-		if timeCheck < runningtime then
-			missionManager.msgTime = 10
-			missionManager.updateMsgTime = false
+		if missionManager.msgTime < 0 then
+			missionManager.msgTime = 0
+			missionManager.showIntro = false
 		end
 	end
 end
@@ -3019,7 +2949,7 @@ end
 
 local function updateThefts()
 	if sectorManager.sector.name == "BOBs SCRAPYARD" or sectorManager.sector.name == "DOUBLE TROUBLE" then
-		if sectorManager.sector:isUnderTimeLimit() then
+		if sectorManager.sector:isUnderTimeLimit() ~= 0 then
 			player.thefts = player.thefts + 1
 		end
 	end
@@ -3035,11 +2965,7 @@ local function sectorUpdate()
 	if not sectorManager.finished and sectorManager.sector:isFinished() then
 		if sectorManager.sector.name ~= 'DOUBLE TROUBLE' or sectorManager:hasTeammateFinished() then
 			updateThefts()
-			if sectorManager.sector:isUnderTimeLimit() then
-				sectorManager.underTimeLimit = true
-			else
-				sectorManager.underTimeLimit = false
-			end
+			sectorManager.underTimeLimit = sectorManager.sector:isUnderTimeLimit() ~= 0
 			sectorManager.finished = true
 			sectorManager.started = false
 			local shouldSave = player:addSectorRecord(sectorManager.sector.name, sectorManager.sector.finalTime)
