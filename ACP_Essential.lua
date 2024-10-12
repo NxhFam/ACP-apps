@@ -50,10 +50,6 @@ SECTORS_DATA = const({
 			{ pos = { 767.34, 95.8, 2262.69 }, dir = { -0.82, 0, 0.56 }, width = 14.7, id = 1 },
 			{ pos = { -3541.52, 23.48, -206.67 }, dir = { -0.87, 0, 0.49 }, width = 10.27, id = 2 },
 		},
-		-- Double Trouble
-		-- Lvl 1: 04:00.000
-		-- Lvl 2: 03:45.000
-		-- Lvl 3: 03:35.000
 	},
 	[3] = {
 		name = "BOBs SCRAPYARD",
@@ -64,10 +60,6 @@ SECTORS_DATA = const({
 			{ pos = { 767.34, 95.8, 2262.69 }, dir = { -0.82, 0, 0.56 }, width = 14.7, id = 1 },
 			{ pos = { -3541.52, 23.48, -206.67 }, dir = { -0.87, 0, 0.49 }, width = 10.27, id = 2 },
 		},
-		-- Bob's Scrapyard
-		-- Lvl 1: 03:50.000
-		-- Lvl 2: 03:35.000
-		-- Lvl 3: 03:25.000
 	},
 	[4] = {
 		name = "BANK HEIST",
@@ -78,10 +70,6 @@ SECTORS_DATA = const({
 			{ pos = { -700.04, 137.72, 3540.75 }, dir = { -1.67, 0, 1.02 }, width = 12.1, id = 1 },
 			{ pos = { 5188.14, 58.22, -1640.53 }, dir = { -0.07, 0, -1 }, width = 5.56, id = 2 },
 		},
-		-- Bank Heist
-		-- Lvl 1: 09:30.000
-		-- Lvl 2: 08:45.000
-		-- Lvl 3: 08:00.000
 	},
 	[5] = {
 		name = "DRUG DELIVERY",
@@ -92,10 +80,6 @@ SECTORS_DATA = const({
 			{ pos = { -395.08, 127.66, 3392.71 }, dir = { -0.7, 0, -0.72 }, width = 35.95, id = 1 },
 			{ pos = { 585.71, -115.77, -3439.67 }, dir = { 0.99, 0, 0.03 }, width = 6.78, id = 2 },
 		},
-		-- Drug Delivery
-		-- Lvl 1: 06:40.000
-		-- Lvl 2: 06:00.000
-		-- Lvl 3: 05:20.000
 	},
 })
 
@@ -2644,7 +2628,7 @@ local function showMsgMission(text)
 end
 
 local function missionMsgOnScreen()
-	if sectorManager.sector == nil or sectorManager.sector.name == "H1" and sectorManager.sector:hasStarted() then return end
+	if sectorManager.sector == nil or sectorManager.sector.name == "H1" or not sectorManager.sector:hasStarted() then return end
 	if sectorManager.sector:isUnderTimeLimit() == 0 then
 		showMsgMission(MISSION_TEXT[sectorManager.sector.name].failed[missionManager.msgFailedIndex])
 	elseif missionManager.showIntro and missionManager.msgTime > 0 then
@@ -2884,7 +2868,7 @@ local function drawWelcomeImg()
 		for i = 1, 3 do
 			if welcomeCardsToDisplayed[i] < 4 then
 				ui.tooltip(function()
-					ui.text("CTRL + Left Click to teleport to the mission")
+					ui.text("Left Click to teleport to the mission")
 				end)
 			end
 		end
