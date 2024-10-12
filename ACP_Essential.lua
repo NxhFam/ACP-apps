@@ -2837,17 +2837,17 @@ local function drawWelcomeImg()
 				toolTipOn = true
 				cardOutline[3] = settings.colorHud
 				welcomeNavImgToDraw[3] = WELCOME_NAV_IMG.leftBoxOn
-				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then tpToMission(welcomeCardsToDisplayed[1]) end
+				if uiState.isMouseLeftKeyClicked then tpToMission(welcomeCardsToDisplayed[1]) end
 			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[4][1], WELCOME_CARD_IMG_POS[4][2]) then
 				toolTipOn = true
 				cardOutline[4] = settings.colorHud
 				welcomeNavImgToDraw[4] = WELCOME_NAV_IMG.centerBoxOn
-				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then tpToMission(welcomeCardsToDisplayed[2]) end
+				if uiState.isMouseLeftKeyClicked then tpToMission(welcomeCardsToDisplayed[2]) end
 			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[5][1], WELCOME_CARD_IMG_POS[5][2]) then
 				toolTipOn = true
 				cardOutline[5] = settings.colorHud
 				welcomeNavImgToDraw[5] = WELCOME_NAV_IMG.rightBoxOn
-				if uiState.isMouseLeftKeyClicked and uiState.ctrlDown then tpToMission(welcomeCardsToDisplayed[3]) end
+				if uiState.isMouseLeftKeyClicked then tpToMission(welcomeCardsToDisplayed[3]) end
 			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[7][1], WELCOME_CARD_IMG_POS[7][2]) then
 				iconCloseColor = settings.colorHud
 				if uiState.isMouseLeftKeyClicked then menuStates.welcome = false end
