@@ -8,6 +8,7 @@ ui.setAsynchronousImagesLoading(true)
 
 local localTesting = ac.dirname() == 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\assettocorsa\\extension\\lua\\online'
 ac.log('Local Testing:', localTesting)
+ac.log('Script Dir', ac.dirname())
 local initialisation = true
 
 -- Constants --
