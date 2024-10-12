@@ -2628,8 +2628,8 @@ local function showMsgMission(text)
 end
 
 local function missionMsgOnScreen()
-	if sectorManager.sector == nil or sectorManager.sector.name == "H1" or not sectorManager.sector:hasStarted() then return end
-	if sectorManager.sector:isUnderTimeLimit() == 0 then
+	if sectorManager.sector == nil or sectorManager.sector.name == "H1" then return end
+	if sectorManager.sector:isUnderTimeLimit() == 0 and sectorManager.sector:hasStarted() then
 		showMsgMission(MISSION_TEXT[sectorManager.sector.name].failed[missionManager.msgFailedIndex])
 	elseif missionManager.showIntro and missionManager.msgTime > 0 then
 		showMsgMission(MISSION_TEXT[sectorManager.sector.name].intro[1] .. formatTime(sectorManager.sector.timeLimit) .. MISSION_TEXT[sectorManager.sector.name].intro[2])
