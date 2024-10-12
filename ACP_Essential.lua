@@ -14,7 +14,7 @@ local initialisation = true
 -- Constants --
 local STEAMID = const(ac.getUserSteamID())
 local CSP_VERSION = const(ac.getPatchVersionCode())
-local CSP_MIN_VERSION = const(3045)
+local CSP_MIN_VERSION = const(3044)
 local CAR_ID = const(ac.getCarID(0))
 local CAR_NAME = const(ac.getCarName(0))
 local DRIVER_NAME = const(ac.getDriverName(0))
