@@ -340,8 +340,8 @@ local vUp = const(vec3(0, 1, 0))
 local vDown = const(vec3(0, -1, 0))
 
 local menuStates = {
-	welcome = true,
-	main = false,
+	welcome = false,
+	main = true,
 	leaderboard = false,
 }
 
@@ -1655,7 +1655,7 @@ local function showLeaderboard()
 	end)
 	
 	ui.sameLine(WIDTH_DIV._2 - 110)
-	if ui.button('Close', vec2(100, HEIGHT_DIV._50)) then menuStates.leaderboard = false end
+	if ui.button('Close') then menuStates.leaderboard = false end
 	-- ui.newLine()
 	if not currentLeaderboard then return end
 	if currentLeaderboard.name == player.name then
@@ -1792,7 +1792,7 @@ local function settingsWindow()
 		settings.unitMult = 1
 	end
 	ui.sameLine(WIDTH_DIV._6 - WIDTH_DIV._20)
-	if ui.button('Close', vec2(WIDTH_DIV._25, HEIGHT_DIV._50)) then
+	if ui.button('Close') then
 		menuStates.main = false
 		settings:save()
 	end
@@ -1888,7 +1888,7 @@ local function sectorSelect()
 		end
 	end)
 	ui.sameLine(WIDTH_DIV._5 - 120)
-	if ui.button('Close', vec2(100, HEIGHT_DIV._50)) then
+	if ui.button('Close') then
 		menuStates.main = false
 	end
 end
@@ -1916,6 +1916,7 @@ local function sectorUI()
 	discordLinks()
 	ui.newLine()
 	ui.endGroup()
+
 	return 1
 end
 
@@ -2651,10 +2652,8 @@ end
 
 -------------------------------------------------------------------------------------------- Menu --------------------------------------------------------------------------------------------
 
-local menuSize = { vec2(WIDTH_DIV._5, HEIGHT_DIV._4), vec2(WIDTH_DIV._6, WINDOW_HEIGHT * 2 / 3), vec2(
-	WIDTH_DIV._3, HEIGHT_DIV._3) }
+local menuSize = { vec2(WIDTH_DIV._5, HEIGHT_DIV._4), vec2(WIDTH_DIV._6, WINDOW_HEIGHT * 2 / 3), vec2(WIDTH_DIV._3, HEIGHT_DIV._3) }
 local currentTab = 1
-local buttonPressed = false
 
 local function menu()
 	ui.tabBar('MainTabBar', ui.TabBarFlags.Reorderable, function()
@@ -2663,11 +2662,49 @@ local function menu()
 	end)
 end
 
+local windowAction = 0
+local leftClickDown = false
 local function moveMenu()
-	if ui.windowHovered() and ui.mouseDown() then buttonPressed = true end
-	if ui.mouseReleased() then buttonPressed = false end
-	if buttonPressed then settings.menuPos = settings.menuPos + ui.mouseDelta() end
+	ac.debug('leftClickDown', leftClickDown)
+	if ui.windowHovered() then
+		local mousePos = ui.mouseLocalPos()
+		if not leftClickDown and ui.mouseDown() then
+			leftClickDown = true
+			windowAction = 3
+			if mousePos.y > menuSize[currentTab].y - 50 then
+				if mousePos.x < 50 then
+					windowAction = 1
+				elseif mousePos.x > menuSize[currentTab].x - 50 then
+					windowAction = 2
+				end
+			end
+		end
+		if mousePos.y > menuSize[currentTab].y - 50 then
+			if mousePos.x < 50 then
+				ui.setMouseCursor(ui.MouseCursor.ResizeNESW)
+			elseif mousePos.x > menuSize[currentTab].x - 50 then
+				ui.setMouseCursor(ui.MouseCursor.ResizeNWSE)
+			end
+		end
+	end
+	if ui.mouseReleased() then
+		leftClickDown = false
+		windowAction = 0
+	end
+
+	if leftClickDown then
+		if windowAction == 1 then
+			menuSize[currentTab].x = menuSize[currentTab].x - ui.mouseDelta().x
+			menuSize[currentTab].y = menuSize[currentTab].y + ui.mouseDelta().y
+			settings.menuPos.x = settings.menuPos.x + ui.mouseDelta().x
+		elseif windowAction == 2 then
+			menuSize[currentTab] = menuSize[currentTab] + ui.mouseDelta()
+		elseif windowAction == 3 then
+			settings.menuPos = settings.menuPos + ui.mouseDelta()
+		end
+	end
 end
+
 
 local function leaderboardWindow()
 	ui.toolWindow('LeaderboardWindow', settings.menuPos, vec2(WIDTH_DIV._2, HEIGHT_DIV._2), false, true, function()
@@ -2917,6 +2954,7 @@ function script.drawUI()
 				moveMenu()
 			end)
 		end
+		-- ac.debug('Window Width', ui.windowWidth())
 		if menuStates.leaderboard then leaderboardWindow() end
 	end
 end
@@ -2955,8 +2993,6 @@ local function updateThefts()
 		end
 	end
 end
-
-
 
 local function sectorUpdate()
 	if not sectorManager.started and not sectorManager.sector:hasStarted() then
@@ -2997,7 +3033,6 @@ local function loadSettings()
 		initUi()
 	end)
 end
-
 
 local function loadAllSectors()
 	for i = 1, #SECTORS_DATA do
@@ -3058,7 +3093,7 @@ function script.draw3D()
 	drawGate()
 end
 
-ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
+-- ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 
 --------------------------------------------------------------- AC Callbacks --------------------------------------------------------------
 ac.onCarJumped(0, function(carIndex)
