@@ -340,8 +340,8 @@ local vUp = const(vec3(0, 1, 0))
 local vDown = const(vec3(0, -1, 0))
 
 local menuStates = {
-	welcome = false,
-	main = true,
+	welcome = true,
+	main = false,
 	leaderboard = false,
 }
 
