@@ -88,7 +88,10 @@ local LEADERBOARDS = const({
 	time = {"H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST" },
 	score = { "arrests", "getaways", "thefts", "overtake" },
 })
-local LEADERBOARD_NAMES = const({ "Your Stats", "H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST", "arrests", "getaways", "thefts", "overtake", "elo" })
+local LEADERBOARD_NAMES = const({
+	{ "Your Stats", "H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST", "arrests", "getaways", "thefts", "overtake", "elo" },
+	{ "Your Stats", "H1", "Bobs Scrapyard", "Double Trouble", "Drug Delivery", "Bank Heist", "Arrestations", "Getaways", "Car thefts", "Overtake", "Racing" }
+})
 local patchCount = 0
 
 -- URL --
@@ -1656,12 +1659,13 @@ end
 local function showLeaderboard()
 	ui.setNextItemWidth(WIDTH_DIV._12)
 	ui.combo("leaderboard", currentLeaderboard.name, function()
-		for i = 1, #LEADERBOARD_NAMES do
-			if ui.selectable(LEADERBOARD_NAMES[i], currentLeaderboard.name == LEADERBOARD_NAMES[i]) then
-				if LEADERBOARD_NAMES[i] == "Your Stats" then
+		for i = 1, #LEADERBOARD_NAMES[2] do
+			if ui.selectable(LEADERBOARD_NAMES[2][i], currentLeaderboard.name == LEADERBOARD_NAMES[2][i]) then
+				if LEADERBOARD_NAMES[1][i] == "Your Stats" then
 					currentLeaderboard = player
 				else
-					Leaderboard.allocate(LEADERBOARD_NAMES[i])
+					Leaderboard.allocate(LEADERBOARD_NAMES[1][i])
+					currentLeaderboard.name = LEADERBOARD_NAMES[2][i]
 				end
 			end
 		end
@@ -2683,7 +2687,7 @@ local function moveMenu()
 		if not leftClickDown and ui.mouseDown() then
 			leftClickDown = true
 			windowAction = 3
-			if mousePos.y > menuSize[currentTab].y - 50 then
+			if not menuStates.leaderboard and mousePos.y > menuSize[currentTab].y - 50 then
 				if mousePos.x < 50 then
 					windowAction = 1
 				elseif mousePos.x > menuSize[currentTab].x - 50 then
@@ -2691,7 +2695,7 @@ local function moveMenu()
 				end
 			end
 		end
-		if mousePos.y > menuSize[currentTab].y - 50 then
+		if not menuStates.leaderboard and mousePos.y > menuSize[currentTab].y - 50 then
 			if mousePos.x < 50 then
 				ui.setMouseCursor(ui.MouseCursor.ResizeNESW)
 			elseif mousePos.x > menuSize[currentTab].x - 50 then
