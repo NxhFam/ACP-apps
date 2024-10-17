@@ -43,7 +43,7 @@ SECTORS_DATA = const({
 	},
 	[2] = {
 		name = "DOUBLE TROUBLE",
-		timeLimit = 215,
+		timeLimit = 210,
 		addTimeLimit = { 0, 10, 25 },
 		length = 5,
 		gates = {
@@ -53,7 +53,7 @@ SECTORS_DATA = const({
 	},
 	[3] = {
 		name = "BOBs SCRAPYARD",
-		timeLimit = 205,
+		timeLimit = 200,
 		addTimeLimit = { 0, 10, 25 },
 		length = 5,
 		gates = {
@@ -63,7 +63,7 @@ SECTORS_DATA = const({
 	},
 	[4] = {
 		name = "BANK HEIST",
-		timeLimit = 480,
+		timeLimit = 475,
 		addTimeLimit = { 0, 45, 90 },
 		length = 5,
 		gates = {
@@ -73,7 +73,7 @@ SECTORS_DATA = const({
 	},
 	[5] = {
 		name = "DRUG DELIVERY",
-		timeLimit = 320,
+		timeLimit = 315,
 		addTimeLimit = { 0, 40, 80 },
 		length = 5,
 		gates = {
@@ -196,9 +196,13 @@ end
 local MISSIONS = const({
 	[1] = {
 		name = "BOBs SCRAPYARD",
-		start = "Steal : Gas Station 1 TP",
-		finish = "Deliver : Red Car (Map)",
-		time = "Time Limit: " .. formatTime(SECTORS_DATA[3].timeLimit),
+		start = { "Steal :", "Gas Station 1 TP" },
+		finish = { "Deliver :", "Red Car (Map)" },
+		levels = {
+			formatTime(SECTORS_DATA[3].timeLimit + SECTORS_DATA[3].addTimeLimit[3]),
+			formatTime(SECTORS_DATA[3].timeLimit + SECTORS_DATA[3].addTimeLimit[2]),
+			formatTime(SECTORS_DATA[3].timeLimit + SECTORS_DATA[3].addTimeLimit[1]),
+		},
 		tp= {
 			[1] = { pos = vec3(785.519, 95.8002, 2235.53), dir = vec3(0.51, -0.03, -0.86) },
 			[2] = { pos = vec3(787.707, 95.5171, 2240.88), dir = vec3(0.58, -0.03, -0.81) },
@@ -207,9 +211,13 @@ local MISSIONS = const({
 	},
 	[2] = {
 		name = "DRUG DELIVERY",
-		start = "Pick Up : Drug Delivery TP",
-		finish = "Drop Off : Pink House (Map)",
-		time = "Time Limit: " .. formatTime(SECTORS_DATA[5].timeLimit),
+		start = { "Pick Up :", "Drug Delivery TP" },
+		finish = { "Drop Off :", "Pink House (Map)" },
+		levels = {
+			formatTime(SECTORS_DATA[5].timeLimit + SECTORS_DATA[5].addTimeLimit[3]),
+			formatTime(SECTORS_DATA[5].timeLimit + SECTORS_DATA[5].addTimeLimit[2]),
+			formatTime(SECTORS_DATA[5].timeLimit + SECTORS_DATA[5].addTimeLimit[1]),
+		},
 		tp = {
 			[1] = { pos = vec3(-369.367, 127.557, 3405.47), dir = vec3(0.8, -0.01, 0.61) },
 			[2] = { pos = vec3(-374.729, 127.558, 3413.13), dir = vec3(0.69, -0.01, 0.73) },
@@ -218,9 +226,13 @@ local MISSIONS = const({
 	},
 	[3] = {
 		name = "BANK HEIST",
-		start = "Rob : Bank TP",
-		finish = "Deliver : Yellow BHL (Map)",
-		time = "Time Limit: " .. formatTime(SECTORS_DATA[4].timeLimit),
+		start = { "Rob :", "Bank TP" },
+		finish = { "Deliver :", "Yellow BHL (Map)" },
+		levels = {
+			formatTime(SECTORS_DATA[4].timeLimit + SECTORS_DATA[4].addTimeLimit[3]),
+			formatTime(SECTORS_DATA[4].timeLimit + SECTORS_DATA[4].addTimeLimit[2]),
+			formatTime(SECTORS_DATA[4].timeLimit + SECTORS_DATA[4].addTimeLimit[1]),
+		},
 		tp = {
 			[1] = { pos = vec3(-626.316, 135.37, 3509.81), dir = vec3(0.91, 0.03, -0.4) },
 			[2] = { pos = vec3(-635.369, 135.786, 3514.6), dir = vec3(0.92, 0.04, -0.39) },
@@ -359,12 +371,14 @@ local missionManager = {
 	msgTime = 0,
 	showIntro = false,
 	msgFailedIndex = os.time() % 16 + 1,
+	level = 3,
 }
 
 local function resetMissionManager()
 	missionManager.msgTime = 0
 	missionManager.showIntro = false
 	missionManager.msgFailedIndex = os.time() % 16 + 1
+	missionManager.level = 3
 end
 
 local dataLoaded = {}
@@ -1016,21 +1030,22 @@ function Sector:isUnderTimeLimit()
 	if self.timeLimit > 0 then
 		local time = os.preciseClock() - self.startTime
 		if time < self.timeLimit + self.addTimeLimit[1] then
-			return 1
+			return 3
 		elseif time < self.timeLimit + self.addTimeLimit[2] then
 			return 2
 		elseif time < self.timeLimit + self.addTimeLimit[3] then
-			return 3
+			return 1
 		end
+		missionManager.level = 0
 		return 0
 	end
 	return 1
 end
 
 function Sector:updateTimeColor()
-	local underTimeLimit = self:isUnderTimeLimit()
 	if self:hasStarted() then
-		if underTimeLimit == 1 then
+		local underTimeLimit = self:isUnderTimeLimit()
+		if underTimeLimit == 3 then
 			if self:isFinished() then
 				self.timeColor = rgbm.colors.green
 			else
@@ -1038,7 +1053,7 @@ function Sector:updateTimeColor()
 			end
 		elseif underTimeLimit == 2 then
 			self.timeColor = rgbm.colors.yellow
-		elseif underTimeLimit == 3 then
+		elseif underTimeLimit == 1 then
 			self.timeColor = rgbm.colors.orange
 		else
 			self.timeColor = rgbm.colors.red
@@ -1353,7 +1368,6 @@ end
 ---@field sector Sector
 ---@field started boolean
 ---@field finished boolean
----@field underTimeLimit boolean
 local SectorManager = class('SectorManager')
 
 ---@return SectorManager
@@ -1380,7 +1394,6 @@ function SectorManager:reset()
 	duo.onlineSender = nil
 	self.started = false
 	self.finished = false
-	self.underTimeLimit = true
 	self.sector:reset()
 end
 
@@ -2630,7 +2643,7 @@ end
 
 local function missionMsgOnScreen()
 	if sectorManager.sector == nil or sectorManager.sector.name == "H1" then return end
-	if sectorManager.sector:isUnderTimeLimit() == 0 and sectorManager.sector:hasStarted() then
+	if sectorManager.started and missionManager.level == 0 then
 		showMsgMission(MISSION_TEXT[sectorManager.sector.name].failed[missionManager.msgFailedIndex])
 	elseif missionManager.showIntro and missionManager.msgTime > 0 then
 		showMsgMission(MISSION_TEXT[sectorManager.sector.name].intro[1] .. formatTime(sectorManager.sector.timeLimit) .. MISSION_TEXT[sectorManager.sector.name].intro[2])
@@ -2665,7 +2678,6 @@ end
 local windowAction = 0
 local leftClickDown = false
 local function moveMenu()
-	ac.debug('leftClickDown', leftClickDown)
 	if ui.windowHovered() then
 		local mousePos = ui.mouseLocalPos()
 		if not leftClickDown and ui.mouseDown() then
@@ -2740,6 +2752,7 @@ local welcomeWindow = {
 	font = ui.DWriteFont("Orbitron;Weight=REGULAR"),
 	closeIMG = "https://acstuff.ru/images/icons_24/cancel.png",
 	fontSize = WINDOW_HEIGHT / 35,
+	missionInfoFontSize = (WINDOW_HEIGHT / 35) * 0.6,
 }
 
 
@@ -2760,39 +2773,55 @@ local function scaleWelcomeMenu()
 		WELCOME_CARD_IMG_POS[6][1].y + welcomeWindow.size.y / 100) + welcomeWindow.offset
 end
 
+local timeLevelsOffset = vec2(0,0)
+
 local function showMissionInfo(i, id)
 	local leftCorner = vec2(WELCOME_CARD_IMG_POS[i + 2][1].x, WELCOME_CARD_IMG_POS[i + 2][1].y) +
 		vec2(welcomeWindow.size.x / 100, welcomeWindow.size.y / 10)
 	local textPos = leftCorner + welcomeWindow.size / 100
 	ui.drawRectFilled(leftCorner,
 		vec2(WELCOME_CARD_IMG_POS[i + 2][2].x - welcomeWindow.size.x / 100,
-		leftCorner.y + ui.measureDWriteText("\n\n\n\n", settings.fontSize).y), rgbm(0, 0, 0, 0.8))
+		leftCorner.y + ui.measureDWriteText("\n\n\n\n\n\n\n\n\n", settings.fontSize).y), rgbm(0, 0, 0, 0.8))
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=BLACK")
-	ui.dwriteDrawText(MISSIONS[id].start, welcomeWindow.fontSize * 0.6, textPos, white)
-	textPos.y = textPos.y +
-		ui.measureDWriteText(MISSIONS[id].start, welcomeWindow.fontSize * 0.6).y * 2
-	ui.dwriteDrawText(MISSIONS[id].finish, welcomeWindow.fontSize * 0.6, textPos,
-		white)
-	textPos.y = textPos.y + ui.measureDWriteText(MISSIONS[id].finish, welcomeWindow.fontSize * 0.6).y * 2
-	ui.dwriteDrawText(MISSIONS[id].time, welcomeWindow.fontSize * 0.6, textPos, white)
+	local textOffsetY = ui.measureDWriteText("TEXT", welcomeWindow.missionInfoFontSize).y * 2
+	local textOffsetX = ui.measureDWriteText("LEVEL 3:---", welcomeWindow.missionInfoFontSize).x
+	ui.dwriteDrawText(MISSIONS[id].start[1], welcomeWindow.missionInfoFontSize, textPos, settings.colorHud)
+	textPos.x = textPos.x + textOffsetX
+	ui.dwriteDrawText(MISSIONS[id].start[2], welcomeWindow.missionInfoFontSize, textPos, white)
+	textPos.y = textPos.y + textOffsetY
+	textPos.x = textPos.x - textOffsetX
+	ui.dwriteDrawText(MISSIONS[id].finish[1], welcomeWindow.missionInfoFontSize, textPos, settings.colorHud)
+	textPos.x = textPos.x + textOffsetX
+	ui.dwriteDrawText(MISSIONS[id].finish[2], welcomeWindow.missionInfoFontSize, textPos, white)
+	textPos.y = textPos.y + textOffsetY
+	textPos.x = textPos.x - textOffsetX
+	ui.dwriteDrawText("Time Limits :", welcomeWindow.fontSize * 0.8, textPos, settings.colorHud)
+	textPos.y = textPos.y + textOffsetY
+	for j = 1, #MISSIONS[id].levels do
+		ui.dwriteDrawText("LEVEL " .. j .. " :" , welcomeWindow.missionInfoFontSize, textPos, settings.colorHud)
+		timeLevelsOffset.y = textPos.y
+		timeLevelsOffset.x = textOffsetX + textPos.x
+		ui.dwriteDrawText(MISSIONS[id].levels[j], welcomeWindow.missionInfoFontSize, timeLevelsOffset, white)
+		textPos.y = textPos.y + textOffsetY
+	end
 	ui.popDWriteFont()
 end
 
 local function drawWelcomeText()
 	ui.popDWriteFont()
 	ui.pushDWriteFont(welcomeWindow.font)
-	ui.dwriteDrawText("WELCOME BACK,", welcomeWindow.fontSize * 0.6, welcomeWindow.topLeft, white)
+	ui.dwriteDrawText("WELCOME BACK,", welcomeWindow.missionInfoFontSize, welcomeWindow.topLeft, white)
 	ui.popDWriteFont()
 	ui.pushDWriteFont(welcomeWindow.fontBold)
 	ui.dwriteDrawText(DRIVER_NAME, welcomeWindow.fontSize,
 		vec2(welcomeWindow.topLeft.x,
-			welcomeWindow.topLeft.y + ui.measureDWriteText("WELCOME BACK,", welcomeWindow.fontSize * 0.6).y),
+			welcomeWindow.topLeft.y + ui.measureDWriteText("WELCOME BACK,", welcomeWindow.missionInfoFontSize).y),
 		settings.colorHud)
 	ui.popDWriteFont()
 	ui.pushDWriteFont(welcomeWindow.font)
-	ui.dwriteDrawText("CURRENT CAR", welcomeWindow.fontSize * 0.6,
-		vec2(welcomeWindow.topRight.x - ui.measureDWriteText("CURRENT CAR", welcomeWindow.fontSize * 0.6).x,
+	ui.dwriteDrawText("CURRENT CAR", welcomeWindow.missionInfoFontSize,
+		vec2(welcomeWindow.topRight.x - ui.measureDWriteText("CURRENT CAR", welcomeWindow.missionInfoFontSize).x,
 			welcomeWindow.topRight.y), white)
 	ui.popDWriteFont()
 	ui.pushDWriteFont(welcomeWindow.fontBold)
@@ -2800,7 +2829,7 @@ local function drawWelcomeText()
 		vec2(
 			welcomeWindow.topRight.x -
 			ui.measureDWriteText(string.gsub(string.gsub(CAR_NAME_NO_UTF8, "%W", " "), "  ", ""), welcomeWindow.fontSize).x,
-			welcomeWindow.topRight.y + ui.measureDWriteText("CURRENT CAR", welcomeWindow.fontSize * 0.6).y),
+			welcomeWindow.topRight.y + ui.measureDWriteText("CURRENT CAR", welcomeWindow.missionInfoFontSize).y),
 		settings.colorHud)
 	ui.popDWriteFont()
 end
@@ -2922,7 +2951,8 @@ end
 local function missionFinishedWindow()
 	ui.transparentWindow('MissionFinished', vec2(0, 0), vec2(WINDOW_WIDTH, HEIGHT_DIV._12), false, true, function()
 		ui.pushDWriteFont("Orbitron;Weight=Black")
-		local timeMsg = sectorManager.underTimeLimit and sectorManager.sector.time or "FAILED"
+		local timeMsg = "FAILED"
+		if missionManager.level ~= 0 then timeMsg = "LEVEL " .. missionManager.level end
 		local text = sectorManager.sector.name .. " - " .. timeMsg .. os.date(" - %x")
 		local textLenght = ui.measureDWriteText(text, settings.fontSizeMSG * 2)
 		ui.drawRectFilled(vec2(0, 0), vec2(WINDOW_WIDTH, HEIGHT_DIV._12), rgbm(0, 0, 0, 0.5))
@@ -2954,7 +2984,6 @@ function script.drawUI()
 				moveMenu()
 			end)
 		end
-		-- ac.debug('Window Width', ui.windowWidth())
 		if menuStates.leaderboard then leaderboardWindow() end
 	end
 end
@@ -3002,7 +3031,7 @@ local function sectorUpdate()
 	if not sectorManager.finished and sectorManager.sector:isFinished() then
 		if sectorManager.sector.name ~= 'DOUBLE TROUBLE' or sectorManager:hasTeammateFinished() then
 			updateThefts()
-			sectorManager.underTimeLimit = sectorManager.sector:isUnderTimeLimit() ~= 0
+			missionManager.level = sectorManager.sector:isUnderTimeLimit()
 			sectorManager.finished = true
 			sectorManager.started = false
 			local shouldSave = player:addSectorRecord(sectorManager.sector.name, sectorManager.sector.finalTime)
