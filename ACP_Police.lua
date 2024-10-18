@@ -1,21 +1,35 @@
 local sim = ac.getSim()
 local car = ac.getCar(0) or error()
 if not car then return end
+
 local wheels = car.wheels or error()
 local uiState = ac.getUI()
 ui.setAsynchronousImagesLoading(true)
 
-local localTesting = false
+local localTesting = ac.dirname() == 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\assettocorsa\\extension\\lua\\online'
 local initialisation = true
 
 -- Constants --
 local STEAMID = const(ac.getUserSteamID())
 local CSP_VERSION = const(ac.getPatchVersionCode())
-local CSP_MIN_VERSION = const(2253)
+local CSP_MIN_VERSION = const(3116)
 local CAR_ID = const(ac.getCarID(0))
 local CAR_NAME = const(ac.getCarName(0))
+local POLICE_CAR = { "chargerpolice_acpursuit", "crown_police" }
+if localTesting then
+	POLICE_CAR = { "ks_porsche_911_gt3_r_2016" }
+end
 local DRIVER_NAME = const(ac.getDriverName(0))
-if CSP_VERSION < CSP_MIN_VERSION then return end
+---@param carID string
+local function isPoliceCar(carID)
+	for _, carName in ipairs(POLICE_CAR) do
+		if carID == carName then
+			return true
+		end
+	end
+	return false
+end
+if CSP_VERSION < CSP_MIN_VERSION or not isPoliceCar(CAR_ID) then return end
 
 local DRIVER_NATION_CODE = const(ac.getDriverNationCode(0))
 local UNIT = "km/h"
@@ -25,14 +39,7 @@ if DRIVER_NATION_CODE == "USA" or DRIVER_NATION_CODE == "GBR" then
 	UNIT_MULT = 0.621371
 end
 
-local POLICE_CAR = { "chargerpolice_acpursuit", "crown_police" }
-if localTesting then
-	POLICE_CAR = { "supra_acp24" }
-end
-
 -- URL --
-local GOOGLE_APP_SCRIPT_URL = const(
-	'https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec')
 local FIREBASE_URL = const('https://acp-server-97674-default-rtdb.firebaseio.com/')
 
 -- UI --
@@ -164,18 +171,6 @@ local MSG_ENGAGE = const({
 local dataLoaded = {}
 dataLoaded['Settings'] = false
 dataLoaded['PlayerData'] = false
-
----@param carID string
-local function isPoliceCar(carID)
-	for _, carName in ipairs(POLICE_CAR) do
-		if carID == carName then
-			return true
-		end
-	end
-	return false
-end
-
-if not isPoliceCar(CAR_ID) then return end
 
 --------- Utils ------------
 ---@param keys string[]
@@ -313,7 +308,7 @@ end
 function Settings.fetch(url, callback)
 	if localTesting then
 		local currentPath = ac.getFolder(ac.FolderID.ScriptOrigin)
-		local file = io.open(currentPath .. '/settingsResponse.json', 'r')
+		local file = io.open(currentPath .. '/response/settingsResponse.json', 'r')
 		if not file then
 			ac.error('Failed to open response.json')
 			callback(Settings.new())
@@ -463,7 +458,7 @@ end
 function Player.fetch(url, callback)
 	if localTesting then
 		local currentPath = ac.getFolder(ac.FolderID.ScriptOrigin)
-		local file = io.open(currentPath .. '/playerResponse.json', 'r')
+		local file = io.open(currentPath .. '/response/playerResponse.json', 'r')
 		if not file then
 			ac.error('Failed to open playerResponse.json')
 			callback(Player.new())
@@ -606,35 +601,6 @@ end
 
 ---------------------------------------------------------------------------------------------- Firebase ----------------------------------------------------------------------------------------------
 
--- local function updateSheets()
--- 	local str = '{"category" : "Arrestations"}'
--- 	web.post(urlAppScript, str, function(err, response)
--- 		if err then
--- 			print(err)
--- 			return
--- 		else
--- 			print(response.body)
--- 		end
--- 	end)
--- end
-
--- local function updatefirebaseData(node, data)
--- 	local str = dataStringify(data)
--- 	web.request('PATCH', firebaseUrlData .. node .. ".json", str, function(err, response)
--- 		if err then
--- 			print(err)
--- 			return
--- 		else
--- 			print(response.body)
--- 			updateSheets()
--- 		end
--- 	end)
--- end
-
-
-
----------------------------------------------------------------------------------------------- settings ----------------------------------------------------------------------------------------------
-
 local acpPolice = ac.OnlineEvent({
     message = ac.StructItem.string(110),
 	messageType = ac.StructItem.int16(),
@@ -659,7 +625,8 @@ local function updateStarsPos()
 	starsUI.starsSize = vec2(settings.starsPos.x - settings.starsSize * 2, settings.starsPos.y + settings.starsSize * 2)
 	starsUI.startSpace = settings.starsSize / 1.5
 end
-
+local buttonSize = vec2(0,0)
+local buttonOffsetX = 20
 local function updateHudPos()
 	imageSize = vec2(WINDOW_HEIGHT/80 * settings.policeSize, WINDOW_HEIGHT/80 * settings.policeSize)
 	iconPos.arrest1 = vec2(imageSize.x - imageSize.x/12, imageSize.y/3.2)
@@ -677,7 +644,8 @@ local function updateHudPos()
 	textSize.box = vec2(imageSize.x*3/5, settings.fontSize/1.3)
 	textSize.window1 = vec2(settings.hudOffset.x + imageSize.x / 9.5, settings.hudOffset.y + imageSize.y / 5.3)
 	textSize.window2 = vec2(imageSize.x*3/5, imageSize.y/2.8)
-
+	buttonSize = vec2(textSize.window2.x - textSize.window2.x / 10, ui.measureDWriteText("Button", settings.fontSize).y * 0.9)
+	buttonOffsetX = textSize.window2.x / 20
 	textPos.box1 = vec2(0, 0)
 	textPos.box2 = vec2(textSize.size.x, textSize.size.y*1.8)
 	textPos.addBox = vec2(0, textSize.size.y * 1.8)
@@ -965,32 +933,21 @@ local function drawText()
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=Regular")
 	ui.dwriteDrawText("NEARBY VEHICULE SPEED SCANNING", settings.fontSize/3, vec2((textPos.box2.x - ui.measureDWriteText("NEARBY VEHICULE SPEED SCANNING", settings.fontSize/3).x)/2, settings.fontSize/1.5), rgbm.colors.red)
-
-	local colorText = rgbm.colors.white
-	textPos.box1 = vec2(0, textSize.size.y*2.5)
-	ui.dummy(vec2(textPos.box2.x,settings.fontSize))
+	ui.dummy(settings.fontSize)
+	ui.beginSubgroup(buttonOffsetX)
 	for i = 1, #playersInRange do
-		colorText = rgbm.colors.white
-		ui.drawRect(vec2(textPos.box2.x/9,textPos.box1.y), vec2(textPos.box2.x*8/9, textPos.box1.y + textPos.box2.y), rgbm(1,1,1,0.1), 1)
-		if ui.rectHovered(textPos.box1, textPos.box1 + textPos.box2) then
-			colorText = rgbm.colors.red
-			if uiState.isMouseLeftKeyClicked then
-				playerSelected(playersInRange[i].player)
-			end
+		if ui.modernButton(playersInRange[i].text, buttonSize) then
+			playerSelected(playersInRange[i].player)
 		end
-		ui.dwriteDrawText(playersInRange[i].text, settings.fontSize/2, vec2((textPos.box2.x - ui.measureDWriteText(ac.getDriverName(playersInRange[i].player.index) .. " - 000 " .. settings.unit, settings.fontSize/2).x)/2, textPos.box1.y + textSize.size.y/5), colorText)
-		textPos.box1 = textPos.box1 + textPos.addBox
-		ui.dummy(vec2(textPos.box2.x, i * settings.fontSize/5))
 	end
+	ui.endSubgroup()
 	ui.popDWriteFont()
 end
 
 local function radarUI()
-	ui.toolWindow('radarText', textSize.window1, textSize.window2, true, function ()
-		ui.childWindow('childradar', textSize.window2, true , function ()
-			if pursuit.suspect then hudInChase()
-			else drawText() end
-		end)
+	ui.toolWindow('radarText', textSize.window1, textSize.window2, true, true, function ()
+		if pursuit.suspect then hudInChase()
+		else drawText() end
 	end)
 	ui.transparentWindow('radar', vec2(settings.hudOffset.x, settings.hudOffset.y), imageSize, true, function ()
 		drawImage()
@@ -1021,11 +978,11 @@ local function radarUpdate()
 	for i, c in ac.iterateCars.serverSlots() do
 	  if not c.isHidingLabels and not isPoliceCar(c:id()) then
 			if c.position.x > car.position.x - RADAR_RANGE and c.position.z > car.position.z - RADAR_RANGE and c.position.x < car.position.x + RADAR_RANGE and c.position.z < car.position.z + RADAR_RANGE then
-			playersInRange[j] = {}
-			playersInRange[j].player = c
-			playersInRange[j].text = ac.getDriverName(c.index) .. string.format(" - %d ", c.speedKmh * settings.unitMult) .. settings.unit
-			j = j + 1
-			if j == 9 then break end
+				playersInRange[j] = {}
+				playersInRange[j].player = c
+				playersInRange[j].text = ac.getDriverName(c.index) .. string.format(" - %d ", c.speedKmh * settings.unitMult) .. settings.unit
+				j = j + 1
+				if j == 9 then break end
 			end
 		end
 	end
@@ -1226,8 +1183,14 @@ end
 
 ---------------------------------------------------------------------------------------------- updates ----------------------------------------------------------------------------------------------
 
+local initUiSize = false
+
 function script.drawUI()
 	if not shouldRun() then return end
+	if not initUiSize then
+		initsettings()
+		initUiSize = true
+	end
 	radarUI()
 	if pursuit.suspect then showStarsPursuit() end
 	showPursuitMsg()
@@ -1250,7 +1213,6 @@ local function loadSettings()
 	Settings.allocate(function(allocatedSetting)
 		ac.log("Settings Allocated")
 		settings = allocatedSetting
-		initsettings()
 		dataLoaded['Settings'] = true
 	end)
 end
