@@ -29,8 +29,7 @@ local function isPoliceCar(carID)
 	end
 	return false
 end
-ac.log('CAR ID:', CAR_ID)
-ac.log('Police Car:', isPoliceCar(CAR_ID))
+
 if CSP_VERSION < CSP_MIN_VERSION or not isPoliceCar(CAR_ID) then return end
 
 local DRIVER_NATION_CODE = const(ac.getDriverNationCode(0))
@@ -590,9 +589,38 @@ local pursuit = {
 
 local arrestations = {}
 
-local textSize = {}
-
-local textPos = {}
+local playerInRangeUI = {
+	fontSize = {
+		div_2 = 20 / 2,
+		div_2_5 = 20 / 2.5,
+		div_3 = 20 / 3,
+		div_1_5 = 20 / 1.5,
+		div_1_2 = 20 / 1.2,
+	},
+	window = {
+		pos = vec2(0, 0),
+		size = vec2(0, 0),
+	},
+	box = {
+		pos1 = vec2(0, 0),
+		pos2 = vec2(0, 0),
+		offsetY = 0,
+	},
+	text = {
+		pos = vec2(0, 0),
+		size = vec2(0, 0),
+		offsetY = 0,
+	},
+	header = {
+		radar = {
+			pos = vec2(0, 0),
+		},
+		nearby = {
+			pos = vec2(0, 0),
+		},
+	},
+	color = rgbm(1, 1, 1, 0.5),
+}
 
 local iconPos = {}
 
@@ -627,8 +655,7 @@ local function updateStarsPos()
 	starsUI.starsSize = vec2(settings.starsPos.x - settings.starsSize * 2, settings.starsPos.y + settings.starsSize * 2)
 	starsUI.startSpace = settings.starsSize / 1.5
 end
-local buttonSize = vec2(0,0)
-local buttonOffsetX = 20
+
 local function updateHudPos()
 	imageSize = vec2(WINDOW_HEIGHT/80 * settings.policeSize, WINDOW_HEIGHT/80 * settings.policeSize)
 	iconPos.arrest1 = vec2(imageSize.x - imageSize.x/12, imageSize.y/3.2)
@@ -642,16 +669,29 @@ local function updateHudPos()
 	iconPos.cams1 = vec2(imageSize.x/1.215, imageSize.y/2.35)
 	iconPos.cams2 = vec2(imageSize.x/1.39, imageSize.y/3.2)
 
-	textSize.size = vec2(imageSize.x*3/5, settings.fontSize/2)
-	textSize.box = vec2(imageSize.x*3/5, settings.fontSize/1.3)
-	textSize.window1 = vec2(settings.hudOffset.x + imageSize.x / 9.5, settings.hudOffset.y + imageSize.y / 5.3)
-	textSize.window2 = vec2(imageSize.x*3/5, imageSize.y/2.8)
-	buttonSize = vec2(textSize.window2.x - textSize.window2.x / 10, ui.measureDWriteText("Button", settings.fontSize).y * 0.9)
-	buttonOffsetX = textSize.window2.x / 20
-	textPos.box1 = vec2(0, 0)
-	textPos.box2 = vec2(textSize.size.x, textSize.size.y*1.8)
-	textPos.addBox = vec2(0, textSize.size.y * 1.8)
 	settings.fontSize = settings.policeSize * FONT_MULT
+	playerInRangeUI.fontSize.div_2 = settings.fontSize / 2
+	playerInRangeUI.fontSize.div_2_5 = settings.fontSize / 2.5
+	playerInRangeUI.fontSize.div_3 = settings.fontSize / 3
+	playerInRangeUI.fontSize.div_1_5 = settings.fontSize / 1.5
+	playerInRangeUI.fontSize.div_1_2 = settings.fontSize / 1.2
+
+	playerInRangeUI.window.pos = vec2(settings.hudOffset.x + imageSize.x / 9.5, settings.hudOffset.y + imageSize.y / 5.3)
+	playerInRangeUI.window.size = vec2(imageSize.x * 3 / 5, imageSize.y / 2.8)
+	playerInRangeUI.box.pos1 = vec2(playerInRangeUI.window.size.x / 20, playerInRangeUI.window.size.y / 20)
+	playerInRangeUI.box.pos2 = vec2(playerInRangeUI.window.size.x - playerInRangeUI.window.size.x / 20, playerInRangeUI.window.size.y / 20)
+	playerInRangeUI.box.offsetY = playerInRangeUI.window.size.y / 10 + playerInRangeUI.box.pos2.y
+	ui.pushDWriteFont("Orbitron;Weight=Bold")
+	playerInRangeUI.header.radar.pos = vec2((playerInRangeUI.window.size.x - ui.measureDWriteText("RADAR ACTIVE", playerInRangeUI.fontSize.div_1_5).x) / 2, 0)
+	ui.popDWriteFont()
+	ui.pushDWriteFont("Orbitron;Weight=Regular")
+	playerInRangeUI.header.nearby.pos = vec2((playerInRangeUI.window.size.x - ui.measureDWriteText("NEARBY VEHICULE SPEED SCANNING", playerInRangeUI.fontSize.div_2_5).x) / 2, playerInRangeUI.fontSize.div_1_2)
+	ui.popDWriteFont()
+	playerInRangeUI.text.pos = vec2(playerInRangeUI.window.size.x / 20, 0)
+	playerInRangeUI.text.size = vec2(playerInRangeUI.window.size.x - playerInRangeUI.window.size.x / 10, playerInRangeUI.window.size.y / 5)
+	ui.pushDWriteFont("Orbitron;Weight=Regular")
+	playerInRangeUI.text.offsetY = (playerInRangeUI.window.size.y / 20 - ui.measureDWriteText("Player In Range", settings.fontSize / 20).y) / 2
+	ui.popDWriteFont()
 end
 
 local function showStarsPursuit()
@@ -931,24 +971,34 @@ end
 
 local function drawText()
 	ui.pushDWriteFont("Orbitron;Weight=Bold")
-	ui.dwriteDrawText("RADAR ACTIVE", settings.fontSize/2, vec2((textPos.box2.x - ui.measureDWriteText("RADAR ACTIVE", settings.fontSize/2).x)/2, 0), rgbm.colors.red)
+	ui.dwriteDrawText("RADAR ACTIVE", playerInRangeUI.fontSize.div_1_5, playerInRangeUI.header.radar.pos, rgbm.colors.red)
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=Regular")
-	ui.dwriteDrawText("NEARBY VEHICULE SPEED SCANNING", settings.fontSize/3, vec2((textPos.box2.x - ui.measureDWriteText("NEARBY VEHICULE SPEED SCANNING", settings.fontSize/3).x)/2, settings.fontSize/1.5), rgbm.colors.red)
-	ui.dummy(settings.fontSize)
-	ui.beginSubgroup(buttonOffsetX)
+	ui.dwriteDrawText("NEARBY VEHICULE SPEED SCANNING", playerInRangeUI.fontSize.div_2_5, playerInRangeUI.header.nearby.pos, rgbm.colors.white)
+
+	playerInRangeUI.box.pos1.y = playerInRangeUI.header.nearby.pos.y + playerInRangeUI.fontSize.div_1_2
+	playerInRangeUI.box.pos2.y = playerInRangeUI.box.pos1.y + playerInRangeUI.box.offsetY
 	for i = 1, #playersInRange do
-		if ui.modernButton(playersInRange[i].text, buttonSize) then
-			ac.log("Player selected", playersInRange[i].player.index)
-			playerSelected(playersInRange[i].player)
+		playerInRangeUI.color = rgbm(1,1,1,0.7)
+		ui.drawRect(playerInRangeUI.box.pos1, playerInRangeUI.box.pos2, rgbm(1,1,1,0.1), 1)
+		if ui.rectHovered(playerInRangeUI.box.pos1, playerInRangeUI.box.pos2) then
+			playerInRangeUI.color = rgbm(1,0,0,1)
+			if ui.mouseClicked(0) then
+				playerSelected(playersInRange[i].player)
+			end
 		end
+		playerInRangeUI.text.pos.x = (playerInRangeUI.window.size.x - ui.measureDWriteText(playersInRange[i].text, playerInRangeUI.fontSize.div_2).x) / 2
+		playerInRangeUI.text.pos.y = playerInRangeUI.box.pos1.y + playerInRangeUI.text.offsetY
+		ui.dwriteDrawText(playersInRange[i].text, settings.fontSize/2, vec2(playerInRangeUI.text.pos), playerInRangeUI.color)
+		playerInRangeUI.box.pos1.y = playerInRangeUI.box.pos1.y + playerInRangeUI.box.offsetY
+		playerInRangeUI.box.pos2.y = playerInRangeUI.box.pos1.y + playerInRangeUI.box.offsetY
 	end
-	ui.endSubgroup()
+	ui.dummy(playerInRangeUI.box.pos1)
 	ui.popDWriteFont()
 end
 
 local function radarUI()
-	ui.toolWindow('radarText', textSize.window1, textSize.window2, true, true, function ()
+	ui.toolWindow('radarText', playerInRangeUI.window.pos, playerInRangeUI.window.size, true, true, function ()
 		if pursuit.suspect then hudInChase()
 		else drawText() end
 	end)
@@ -979,11 +1029,11 @@ local function radarUpdate()
 	local previousSize = #playersInRange
 	local j = 1
 	for i, c in ac.iterateCars.serverSlots() do
-	  if not isPoliceCar(c:id()) then -- not c.isHidingLabels and 
+	  if not c.isHidingLabels and not isPoliceCar(c:id()) then
 			if c.position.x > car.position.x - RADAR_RANGE and c.position.z > car.position.z - RADAR_RANGE and c.position.x < car.position.x + RADAR_RANGE and c.position.z < car.position.z + RADAR_RANGE then
 				playersInRange[j] = {}
 				playersInRange[j].player = c
-				playersInRange[j].text = ac.getDriverName(c.index) .. string.format(" - %d ", c.speedKmh * settings.unitMult) .. settings.unit
+				playersInRange[j].text = string.sub(ac.getDriverName(c.index), 1, 20) .. string.format(" - %d ", c.speedKmh * settings.unitMult) .. settings.unit
 				j = j + 1
 				if j == 9 then break end
 			end
@@ -1080,6 +1130,7 @@ local function arrestSuspect()
 		pursuit.startedTime = 0
 		pursuit.suspect = nil
 		pursuit.timerArrest = 1
+		Player:save()
 	elseif pursuit.hasArrested then
 		if pursuit.timerArrest > 0 then
 			pursuit.timerArrest = pursuit.timerArrest - ui.deltaTime()
