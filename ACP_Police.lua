@@ -29,6 +29,7 @@ local function isPoliceCar(carID)
 	end
 	return false
 end
+ac.log('CAR ID:', CAR_ID)
 ac.log('Police Car:', isPoliceCar(CAR_ID))
 if CSP_VERSION < CSP_MIN_VERSION or not isPoliceCar(CAR_ID) then return end
 
@@ -938,6 +939,7 @@ local function drawText()
 	ui.beginSubgroup(buttonOffsetX)
 	for i = 1, #playersInRange do
 		if ui.modernButton(playersInRange[i].text, buttonSize) then
+			ac.log("Player selected", playersInRange[i].player.index)
 			playerSelected(playersInRange[i].player)
 		end
 	end
@@ -1093,10 +1095,6 @@ local function arrestSuspect()
 			pursuit.nextMessage = 20
 			pursuit.lostSight = false
 			pursuit.timeLostSight = 0
-			local data = {
-				["Arrests"] = player.arrests,
-			}
-			-- Update Player Data Arrests
 		end
 	end
 end
