@@ -1,35 +1,26 @@
 local sim = ac.getSim()
 local car = ac.getCar(0) or error()
 if not car then return end
-
 local wheels = car.wheels or error()
 local uiState = ac.getUI()
+
 ui.setAsynchronousImagesLoading(true)
 
 local localTesting = ac.dirname() == 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\assettocorsa\\extension\\lua\\online'
+ac.log('Local Testing:', localTesting)
+
 local initialisation = true
 
 -- Constants --
 local STEAMID = const(ac.getUserSteamID())
 local CSP_VERSION = const(ac.getPatchVersionCode())
-local CSP_MIN_VERSION = const(3116)
+local CSP_MIN_VERSION = const(3044)
 local CAR_ID = const(ac.getCarID(0))
 local CAR_NAME = const(ac.getCarName(0))
-local POLICE_CAR = { "chargerpolice_acpursuit", "crown_police" }
-if localTesting then
-	POLICE_CAR = { "ks_porsche_911_gt3_r_2016" }
-end
 local DRIVER_NAME = const(ac.getDriverName(0))
----@param carID string
-local function isPoliceCar(carID)
-	for _, carName in ipairs(POLICE_CAR) do
-		if carID == carName then
-			return true
-		end
-	end
-	return false
-end
-if CSP_VERSION < CSP_MIN_VERSION or not isPoliceCar(CAR_ID) then return end
+if CSP_VERSION < CSP_MIN_VERSION then return end
+
+local longestCarName = ''
 
 local DRIVER_NATION_CODE = const(ac.getDriverNationCode(0))
 local UNIT = "km/h"
@@ -39,7 +30,73 @@ if DRIVER_NATION_CODE == "USA" or DRIVER_NATION_CODE == "GBR" then
 	UNIT_MULT = 0.621371
 end
 
+SECTORS_DATA = const({
+	[1] = {
+		name = "H1",
+		timeLimit = 0,
+		addTimeLimit = { 0, 0, 0 },
+		length = 8,
+		gates = {
+			{ pos = { -753.56, 138.82, 3541.54 }, dir = { -0.9, 0, -0.43 }, width = 14.75, id = 1 },
+			{ pos = { 3001.98, 72.4, 1027.23 }, dir = { -0.85, 0, 0.52 }, width = 15.65, id = 2 },
+		},
+	},
+	[2] = {
+		name = "DOUBLE TROUBLE",
+		timeLimit = 210,
+		addTimeLimit = { 0, 10, 25 },
+		length = 5,
+		gates = {
+			{ pos = { 767.34, 95.8, 2262.69 }, dir = { -0.82, 0, 0.56 }, width = 14.7, id = 1 },
+			{ pos = { -3541.52, 23.48, -206.67 }, dir = { -0.87, 0, 0.49 }, width = 10.27, id = 2 },
+		},
+	},
+	[3] = {
+		name = "BOBs SCRAPYARD",
+		timeLimit = 200,
+		addTimeLimit = { 0, 10, 25 },
+		length = 5,
+		gates = {
+			{ pos = { 767.34, 95.8, 2262.69 }, dir = { -0.82, 0, 0.56 }, width = 14.7, id = 1 },
+			{ pos = { -3541.52, 23.48, -206.67 }, dir = { -0.87, 0, 0.49 }, width = 10.27, id = 2 },
+		},
+	},
+	[4] = {
+		name = "BANK HEIST",
+		timeLimit = 475,
+		addTimeLimit = { 0, 45, 90 },
+		length = 5,
+		gates = {
+			{ pos = { -700.04, 137.72, 3540.75 }, dir = { -1.67, 0, 1.02 }, width = 12.1, id = 1 },
+			{ pos = { 5188.14, 58.22, -1640.53 }, dir = { -0.07, 0, -1 }, width = 5.56, id = 2 },
+		},
+	},
+	[5] = {
+		name = "DRUG DELIVERY",
+		timeLimit = 315,
+		addTimeLimit = { 0, 40, 80 },
+		length = 5,
+		gates = {
+			{ pos = { -395.08, 127.66, 3392.71 }, dir = { -0.7, 0, -0.72 }, width = 35.95, id = 1 },
+			{ pos = { 585.71, -115.77, -3439.67 }, dir = { 0.99, 0, 0.03 }, width = 6.78, id = 2 },
+		},
+	},
+})
+
+local POLICE_CAR = const({ "crown_police" })
+local LEADERBOARDS = const({
+	time = {"H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST" },
+	score = { "arrests", "getaways", "thefts", "overtake" },
+})
+local LEADERBOARD_NAMES = const({
+	{ "Your Stats", "H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST", "arrests", "getaways", "thefts", "overtake", "elo" },
+	{ "Your Stats", "H1", "Bobs Scrapyard", "Double Trouble", "Drug Delivery", "Bank Heist", "Arrestations", "Getaways", "Car thefts", "Overtake", "Racing" }
+})
+local patchCount = 0
+
 -- URL --
+local GOOGLE_APP_SCRIPT_URL = const(
+	'https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec')
 local FIREBASE_URL = const('https://acp-server-97674-default-rtdb.firebaseio.com/')
 
 -- UI --
@@ -56,6 +113,8 @@ local WIDTH_DIV = const({
 	_20 = WINDOW_WIDTH / 20,
 	_25 = WINDOW_WIDTH / 25,
 	_32 = WINDOW_WIDTH / 32,
+	_40 = WINDOW_WIDTH / 40,
+	_50 = WINDOW_WIDTH / 50,
 })
 
 local WINDOW_HEIGHT = const(sim.windowHeight / uiState.uiScale)
@@ -64,7 +123,9 @@ local HEIGHT_DIV = const({
 	_3 = WINDOW_HEIGHT / 3,
 	_4 = WINDOW_HEIGHT / 4,
 	_12 = WINDOW_HEIGHT / 12,
+	_14 = WINDOW_HEIGHT / 14,
 	_20 = WINDOW_HEIGHT / 20,
+	_24 = WINDOW_HEIGHT / 24,
 	_40 = WINDOW_HEIGHT / 40,
 	_50 = WINDOW_HEIGHT / 50,
 	_60 = WINDOW_HEIGHT / 60,
@@ -75,102 +136,286 @@ local HEIGHT_DIV = const({
 local FONT_MULT = const(WINDOW_HEIGHT / 1440)
 
 local HUD_IMG = const({
-	base = "https://i.postimg.cc/h4sPMmvp/hudBase.png",
-	arrest = "https://i.postimg.cc/DwJv2YgM/icon-Arrest.png",
-	cams = "https://i.postimg.cc/15zRdzNP/iconCams.png",
-	logs = "https://i.postimg.cc/VNXztr29/iconLogs.png",
-	lost = "https://i.postimg.cc/DyYf3KqG/iconLost.png",
-	menu = "https://i.postimg.cc/SxByj71N/iconMenu.png",
-	radar = "https://i.postimg.cc/4dZsQ4TD/icon-Radar.png",
+	base = "https://i.postimg.cc/ZKbvKVkP/hudBase.png",
+	center = "https://i.postimg.cc/fyZtdvVN/hud-Center.png",
+	left = "https://i.postimg.cc/y8WJ0x8k/hudLeft.png",
+	right = "https://i.postimg.cc/d0yLSfdF/hudRight.png",
+	countdown = "https://i.postimg.cc/FHqYpvYG/icon-Countdown.png",
+	menu = "https://i.postimg.cc/2ywq7BWB/iconMenu.png",
+	ranks = "https://i.postimg.cc/66LGXFP5/icon-Ranks.png",
+	theft = "https://i.postimg.cc/9FLR4ZV6/icon-Theft.png",
 })
 
-local CAMERAS = const({
-	{
+local WELCOME_NAV_IMG = const({
+	base = "https://i.postimg.cc/pX9rTTVC/baseacp.png",
+	logo = "https://i.postimg.cc/brZysCPr/logoacp.png",
+	leftBoxOff = "https://i.postimg.cc/MTKK8Zry/left-Box-Off.png",
+	leftBoxOn = "https://i.postimg.cc/xdPT7Ngf/left-Box-On.png",
+	centerBoxOff = "https://i.postimg.cc/G2qtBTs7/center-Box-Off.png",
+	centerBoxOn = "https://i.postimg.cc/2j93rvY3/center-Box-On.png",
+	rightBoxOff = "https://i.postimg.cc/kXtMCpwh/right-Box-Off.png",
+	rightBoxOn = "https://i.postimg.cc/13hm3rjR/right-Box-On.png",
+	leftArrowOff = "https://i.postimg.cc/cLwJRbn8/left-Arrow-Off.png",
+	leftArrowOn = "https://i.postimg.cc/B6YZZWdR/left-Arrow-On.png",
+	rightArrowOff = "https://i.postimg.cc/cLRsgtpR/right-Arrow-Off.png",
+	rightArrowOn = "https://i.postimg.cc/BbRqDTZg/right-Arrow-On.png",
+})
+
+local WELCOME_CARD_IMG = const({
+	"https://i.postimg.cc/bv0shBYj/cartheft.jpg",
+	"https://i.postimg.cc/Jn1t45tH/drugdealer.jpg",
+	"https://i.postimg.cc/mrm2J2xf/BANK-HEIST.png",
+	"https://i.postimg.cc/5tW6DVV3/aboutacp.jpg",
+	"https://i.postimg.cc/MHLG5k51/earnmoney.jpg",
+	"https://i.postimg.cc/4yydp46J/leaderboard.jpg",
+	"https://i.postimg.cc/T3DKkPZ1/bank.jpg",
+	"https://i.postimg.cc/15LtNQfQ/police.jpg",
+	"https://i.postimg.cc/WbKD6ZYx/buycars.jpg",
+	"https://i.postimg.cc/sfLftrPh/tuning.jpg",
+})
+
+local WELCOME_CARD_LINK = const({
+	"https://discord.com/channels/358562025032646659/1062186611091185784", --FAQ
+	"https://discord.com/channels/358562025032646659/1147217487524528138", --earn
+	"https://discord.com/channels/358562025032646659/1127619394328076318", --leaderboard
+	"https://discord.com/channels/358562025032646659/1075578309443858522", --bank
+	"https://discord.com/channels/358562025032646659/1095681142197325975", --police
+	"https://discord.com/channels/358562025032646659/1076123906362056784", --car
+	"https://discord.com/channels/358562025032646659/1079799948306034708", --tuning
+	"https://discord.com/channels/358562025032646659/1096470595392241704", --car theft
+	"",
+	"",
+})
+
+---@param time number
+---@return string
+local function formatTime(time)
+	local minutes = math.floor(time / 60)
+	local seconds = math.floor(time % 60)
+	local milliseconds = math.floor((time % 1) * 1000)
+	return ('%02d:%02d.%03d'):format(minutes, seconds, milliseconds)
+end
+
+local MISSIONS = const({
+	[1] = {
 		name = "BOBs SCRAPYARD",
-		pos = vec3(-3564, 31.5, -103),
-		dir = -8,
-		fov = 60,
+		start = { "Steal :", "Gas Station 1 TP" },
+		finish = { "Deliver :", "Red Car (Map)" },
+		levels = {
+			formatTime(SECTORS_DATA[3].timeLimit + SECTORS_DATA[3].addTimeLimit[3]),
+			formatTime(SECTORS_DATA[3].timeLimit + SECTORS_DATA[3].addTimeLimit[2]),
+			formatTime(SECTORS_DATA[3].timeLimit + SECTORS_DATA[3].addTimeLimit[1]),
+		},
+		tp= {
+			[1] = { pos = vec3(785.519, 95.8002, 2235.53), dir = vec3(0.51, -0.03, -0.86) },
+			[2] = { pos = vec3(787.707, 95.5171, 2240.88), dir = vec3(0.58, -0.03, -0.81) },
+			[3] = { pos = vec3(790.921, 95.1569, 2247.45), dir = vec3(0.8, -0.01, -0.60) },
+		},
 	},
-	{
-		name = "ARENA",
-		pos = vec3(-2283, 115.5, 3284),
-		dir = 128,
-		fov = 70,
+	[2] = {
+		name = "DRUG DELIVERY",
+		start = { "Pick Up :", "Drug Delivery TP" },
+		finish = { "Drop Off :", "Pink House (Map)" },
+		levels = {
+			formatTime(SECTORS_DATA[5].timeLimit + SECTORS_DATA[5].addTimeLimit[3]),
+			formatTime(SECTORS_DATA[5].timeLimit + SECTORS_DATA[5].addTimeLimit[2]),
+			formatTime(SECTORS_DATA[5].timeLimit + SECTORS_DATA[5].addTimeLimit[1]),
+		},
+		tp = {
+			[1] = { pos = vec3(-369.367, 127.557, 3405.47), dir = vec3(0.8, -0.01, 0.61) },
+			[2] = { pos = vec3(-374.729, 127.558, 3413.13), dir = vec3(0.69, -0.01, 0.73) },
+			[3] = { pos = vec3(-380.176, 127.557, 3419.49), dir = vec3(0.59, -0.01, 0.81) },
+		},
 	},
-	{
-		name = "BANK",
-		pos = vec3(-716, 151, 3556.4),
-		dir = 12,
-		fov = 95,
-	},
-	{
-		name = "STREET RUNNERS",
-		pos = vec3(-57.3, 103.5, 2935.5),
-		dir = 16,
-		fov = 67,
-	},
-	{
-		name = "ROAD CRIMINALS",
-		pos = vec3(-2332, 101.1, 3119.2),
-		dir = 121,
-		fov = 60,
-	},
-	{
-		name = "RECKLESS RENEGADES",
-		pos = vec3(-2993.7, -24.4, -601.7),
-		dir = -64,
-		fov = 60,
-	},
-	{
-		name = "MOTION MASTERS",
-		pos = vec3(-2120.4, -11.8, -1911.5),
-		dir = 102,
-		fov = 60,
+	[3] = {
+		name = "BANK HEIST",
+		start = { "Rob :", "Bank TP" },
+		finish = { "Deliver :", "Yellow BHL (Map)" },
+		levels = {
+			formatTime(SECTORS_DATA[4].timeLimit + SECTORS_DATA[4].addTimeLimit[3]),
+			formatTime(SECTORS_DATA[4].timeLimit + SECTORS_DATA[4].addTimeLimit[2]),
+			formatTime(SECTORS_DATA[4].timeLimit + SECTORS_DATA[4].addTimeLimit[1]),
+		},
+		tp = {
+			[1] = { pos = vec3(-626.316, 135.37, 3509.81), dir = vec3(0.91, 0.03, -0.4) },
+			[2] = { pos = vec3(-635.369, 135.786, 3514.6), dir = vec3(0.92, 0.04, -0.39) },
+			[3] = { pos = vec3(-645.117, 136.215, 3518.99), dir = vec3(0.91, 0.03, -0.42) },
+		},
 	},
 })
 
-local MSG_ARREST = const({
-	"`NAME` has been arrested for Speeding. The individual was driving a `CAR`.",
-	"We have apprehended `NAME` for Speeding. The suspect was behind the wheel of a `CAR`.",
-	"The driver of a `CAR`, identified as `NAME`, has been arrested for Speeding.",
-	"`NAME` has been taken into custody for Illegal Racing. The suspect was driving a `CAR`.",
-	"We have successfully apprehended `NAME` for Illegal Racing. The individual was operating a `CAR`.",
-	"The driver of a `CAR`, identified as `NAME`, has been arrested for Illegal Racing.",
-	"`NAME` has been apprehended for Speeding. The suspect was operating a `CAR` at the time of the arrest.",
-	"We have successfully detained `NAME` for Illegal Racing. The individual was driving a `CAR`.",
-	"`NAME` driving a `CAR` has been arrested for Speeding",
-	"`NAME` driving a `CAR` has been arrested for Illegal Racing."
+local MISSION_NAMES = const({"DRUG DELIVERY", "BANK HEIST", "BOBs SCRAPYARD"})
+local MISSION_TEXT = const({
+	["DRUG DELIVERY"] = {
+		chat = "* Picking up drugs *",
+		intro = { "You have ", " minutes to pick up the drugs. Deliver the drugs to the Pink House!" },
+		failed = {
+			"You're late! Even the drugs expired waiting for you.",
+			"The drugs ran out of patience, unlike your slow driving.",
+			"Looks like the drug deal went cold—literally.",
+			"Looks like the drug deal's off... thanks to you.",
+			"Even the cops stopped chasing—they got bored.",
+			"You just set a new record… for being the slowest criminal ever.",
+			"Hope you like walking, because you just lost your getaway ride.",
+			"Maybe next time, use the GPS… or learn to drive.",
+			"They say crime doesn't pay. Guess they were right.",
+			"You're late... Even the cops went home.",
+			"Hope you enjoyed the scenic route. Too bad it cost you the mission.",
+			"Crime waits for no one... except you, apparently.",
+			"Time's up, slowpoke! The loot's long gone.",
+			"I hope you enjoyed your leisurely failure.",
+			"You missed the mark by a mile—literally.",
+			"At this speed, you might as well walk.",
+		},
+	},
+	["BOBs SCRAPYARD"] = {
+		chat = "* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. " *",
+		intro = { "You have ", " minutes to steal the car. Deliver the car to Bobs Scrapyard!" },
+		failed = {
+			"Missed the car heist? Might as well try carpool karaoke next time.",
+			"Car theft? More like car borrowing… indefinitely.",
+			"Looks like the getaway car forgot to show up... oh wait, that's you.",
+			"You've got the speed of a parked car. Try again.",
+			"You've officially been overtaken... by a granny in a Prius.",
+			"Getaway driver? More like get-a-way-slower driver.",
+			"Looks like the car heist was a bust. Maybe try stealing a bike next time.",
+			"Time's up! Maybe you should consider Uber as a career choice.",
+			"Need For Speed? More like Need For a Nap.",
+			"You drive like my grandma, and she doesn't drive.",
+			"Criminal mastermind? More like criminally slow.",
+			"Even the cops are laughing at you.",
+			"Oops, looks like you lost track of time. Literally.",
+			"You missed the deadline… again.",
+			"Slow and steady doesn't win the race in this game.",
+			"You just got smoked—by your own bad driving.",
+		},
+	},
+	["DOUBLE TROUBLE"] = {
+		chat = "* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. " *",
+		intro = { "You have ", " minutes to steal the car. Deliver the car to Bobs Scrapyard!" },
+		failed = {
+			"Missed the car heist? Might as well try carpool karaoke next time.",
+			"Car theft? More like car borrowing… indefinitely.",
+			"Looks like the getaway car forgot to show up... oh wait, that's you.",
+			"You've got the speed of a parked car. Try again.",
+			"You've officially been overtaken... by a granny in a Prius.",
+			"Getaway driver? More like get-a-way-slower driver.",
+			"Looks like the car heist was a bust. Maybe try stealing a bike next time.",
+			"Time's up! Maybe you should consider Uber as a career choice.",
+			"Need For Speed? More like Need For a Nap.",
+			"You drive like my grandma, and she doesn't drive.",
+			"Criminal mastermind? More like criminally slow.",
+			"Even the cops are laughing at you.",
+			"Oops, looks like you lost track of time. Literally.",
+			"You missed the deadline… again.",
+			"Slow and steady doesn't win the race in this game.",
+			"You just got smoked—by your own bad driving.",
+		},
+	},
+	["BANK HEIST"] = {
+		chat = "* Robbing the bank *",
+		intro = { "You have ", " minutes to rob the bank. Deliver the loot to the Yellow BHL!" },
+		failed = {
+			"At this rate, you'll be robbing piggy banks, not actual banks.",
+			"The bank called—they said thanks for not bothering.",
+			"Bank job? More like a piggy bank job.",
+			"You're so slow, the bank restocked its vault.",
+			"You've mastered the art of being fashionably late... for a robbery",
+			"The only thing you're robbing is your own time.",
+			"You'd make a great escape artist… if the art was staying put.",
+			"If slow and steady wins the race, you still wouldn't win.",
+			"That's a record! A record for being the slowest.",
+			"Time's up! The cops are laughing at you from the station.",
+			"You ran out of time... and talent.",
+			"Mission: Failed. Maybe consider a desk job?",
+			"I hope your backup plan is better than your driving.",
+			"You should should stick to your day job, losser.",
+			"Maybe you should have think before lighting up that joint.",
+			"You should have stayed in bed today, we would have been better off... Seriously.",
+		}
+	},
+});
+
+local WELCOME_CARD_IMG_POS = const({
+	{ vec2(70, 650),   vec2(320, 910) },
+	{ vec2(2230, 650), vec2(2490, 910) },
+	{ vec2(357, 325),  vec2(920, 1234) },
+	{ vec2(993, 325),  vec2(1557, 1234) },
+	{ vec2(1633, 325), vec2(2195, 1234) },
+	{ vec2(31, 106),   vec2(2535, 1370) },
+	{ vec2(2437, 48),  vec2(2510, 100) },
+	{ vec2(2447, 58),  vec2(2500, 90) },
 })
 
-local MSG_LOST = const({
-	"We've lost sight of the suspect. The vehicle involved is described as a `CAR` driven by `NAME`.",
-	"Attention all units, we have lost visual contact with the suspect. The vehicle involved is a `CAR` driven by `NAME`.",
-	"We have temporarily lost track of the suspect. The vehicle description is a `CAR` with `NAME` as the driver.",
-	"Visual contact with the suspect has been lost. The suspect is driving a `CAR` and identified as `NAME`.",
-	"We have lost the suspect's visual trail. The vehicle in question is described as a `CAR` driven by `NAME`.",
-	"Suspect have been lost, Vehicle Description:`CAR` driven by `NAME`",
-	"Visual contact with the suspect has been lost. The suspect is driving a `CAR` and identified as `NAME`.",
-	"We have lost the suspect's visual trail. The vehicle in question is described as a `CAR` driven by `NAME`.",
-})
+local GATE_HEIGHT_OFFSET = const(0.2)
+local white = const(rgbm.colors.white)
+local gateColor = const(rgbm(0, 100, 0, 10))
 
-local MSG_ENGAGE = const({
-	"Control! I am engaging on a `CAR` traveling at `SPEED`",
-	"Pursuit in progress! I am chasing a `CAR` exceeding `SPEED`",
-	"Control, be advised! Pursuit is active on a `CAR` driving over `SPEED`",
-	"Attention! Pursuit initiated! Im following a `CAR` going above `SPEED`",
-	"Pursuit engaged! `CAR` driving at a high rate of speed over `SPEED`",
-	"Attention all units, we have a pursuit in progress! Suspect driving a `CAR` exceeding `SPEED`",
-	"Attention units! We have a suspect fleeing in a `CAR` at high speed, pursuing now at `SPEED`",
-	"Engaging on a high-speed chase! Suspect driving a `CAR` exceeding `SPEED`!",
-	"Attention all units! we have a pursuit in progress! Suspect driving a `CAR` exceeding `SPEED`",
-	"High-speed chase underway, suspect driving `CAR` over `SPEED`",
-	"Control, `CAR` exceeding `SPEED`, pursuit active.",
-	"Engaging on a `CAR` exceeding `SPEED`, pursuit initiated."
-})
+local vUp = const(vec3(0, 1, 0))
+local vDown = const(vec3(0, -1, 0))
+
+local menuStates = {
+	welcome = true,
+	main = false,
+	leaderboard = false,
+}
+
+local duo = {
+	teammate = nil,
+	request = false,
+	onlineSender = nil,
+	teammateHasFinished = false,
+	waiting = false,
+	playerName = "Online Players",
+	sentFinish = false,
+}
+
+local missionManager = {
+	msgTime = 0,
+	showIntro = false,
+	msgFailedIndex = os.time() % 16 + 1,
+	level = 3,
+}
+
+local function resetMissionManager()
+	missionManager.msgTime = 0
+	missionManager.showIntro = false
+	missionManager.msgFailedIndex = os.time() % 16 + 1
+	missionManager.level = 3
+end
 
 local dataLoaded = {}
 dataLoaded['Settings'] = false
+dataLoaded['Leaderboard'] = false
 dataLoaded['PlayerData'] = false
+dataLoaded['Sectors'] = false
+
+---@param carID string
+local function isPoliceCar(carID)
+	for _, carName in ipairs(POLICE_CAR) do
+		if carID == carName then
+			return true
+		end
+	end
+	return false
+end
+
+---@param key string
+local function removeUtf8Char(key)
+	local newKey = ''
+	for i = 1, #key do
+		local c = key:sub(i, i)
+		if c:byte() < 128 then
+			newKey = newKey .. c
+		end
+	end
+	newKey = newKey:match('^%s*(.-)%s*$')
+	return newKey
+end
+
+local CAR_NAME_NO_UTF8 = removeUtf8Char(CAR_NAME)
+
+if isPoliceCar(CAR_ID) then return end
 
 --------- Utils ------------
 ---@param keys string[]
@@ -234,22 +479,189 @@ local function snapToTrack(v)
 	end
 	return v
 end
+
+---@param category string
+---@param rows LeaderboardRow[]
+---@return LeaderboardRow[]
+local function sortLeaderboard(category, rows)
+	if category == "time" then
+		table.sort(rows, function(a, b)
+			return a[2] < b[2]
+		end)
+		for i, row in ipairs(rows) do
+			row[2] = formatTime(row[2])
+		end
+	else
+		table.sort(rows, function(a, b)
+			return a[2] > b[2]
+		end)
+	end
+	return rows
+end
+
+---@type Leaderboard[]
+local leaderboards = {}
+---@type Leaderboard | Player
+local currentLeaderboard = nil
+
+---@class LeaderboardRow
+---@field infos string[]
+local LeaderboardRow = class('LeaderboardRow')
+
+---@param category string
+---@param data table
+---@return LeaderboardRow
+function LeaderboardRow.allocate(category, data)
+	local infos = {}
+	if category == "time" then
+		table.insert(infos, data.Driver)
+		table.insert(infos, data.Time)
+		table.insert(infos, data.Car)
+	else
+		table.insert(infos, data.Driver)
+		table.insert(infos, data.Score)
+	end
+	setmetatable(infos, { __index = LeaderboardRow })
+	return infos
+end
+
+---@class Leaderboard
+---@field name string
+---@field category string
+---@field header string[]
+---@field rows LeaderboardRow[]
+---@field rowCount integer
+---@field nbCols integer
+local Leaderboard = class('Leaderboard')
+
+---@param name string
+function Leaderboard.noData(name)
+	local category = "score"
+	local header = { "Driver", "Score" }
+	local row = { "No Data", "No Data" }
+	for _, cat in ipairs(LEADERBOARDS.time) do
+		if cat == name then
+			header = { "Driver", "Time", "Car" }
+			category = "time"
+			row = { "No Data", "No Data", "No Data" }
+			break
+		end
+	end
+	local leaderboard = {
+		name = name,
+		category = category,
+		header = header,
+		rows = { row },
+		rowCount = 1,
+		nbCols = category == "time" and 3 or 2,
+	}
+	setmetatable(leaderboard, { __index = Leaderboard })
+	return leaderboard
+end
+
+---@param name string
+---@param data table
+---@return Leaderboard
+function Leaderboard.tryParse(name, data)
+	local rowCount = 0
+	local category = "score"
+	local header = { "Driver", "Score" }
+	for _, cat in ipairs(LEADERBOARDS.time) do
+		if cat == name then
+			header = { "Driver", "Time", "Car" }
+			category = "time"
+			break
+		end
+	end
+	local rows = {}
+	for steamID, record in pairs(data) do
+		local row = LeaderboardRow.allocate(category, record)
+		table.insert(rows, row)
+		rowCount = rowCount + 1
+	end
+	rows = sortLeaderboard(category, rows)
+	local leaderboard = {
+		name = name,
+		category = category,
+		header = header,
+		rows = rows,
+		rowCount = rowCount,
+		nbCols = category == "time" and 3 or 2,
+	}
+	setmetatable(leaderboard, { __index = Leaderboard })
+	return leaderboard
+end
+
+---@param name string
+function Leaderboard.fetch(name)
+	if localTesting then
+		local currentPath = ac.getFolder(ac.FolderID.ScriptOrigin)
+		local file = io.open(currentPath .. '/response/leaderboardsResponse.json', 'r')
+		if not file then
+			ac.error('Failed to open leaderboardResponse.json')
+			return
+		end
+		local data = JSON.parse(file:read('*a'))
+		file:close()
+		data = data[name]
+		if data then
+			local leaderboard = Leaderboard.tryParse(name, data)
+			if leaderboard then
+				leaderboards[name] = leaderboard
+				currentLeaderboard = leaderboard
+				return
+			end
+		end
+		local leaderboard = Leaderboard.noData(name)
+		leaderboards[name] = leaderboard
+		currentLeaderboard = leaderboard
+		ac.error('Failed to parse leaderboard data.')
+	else
+		if leaderboards[name] then return end
+		local url = FIREBASE_URL .. 'Leaderboards/' .. name .. '.json'
+		web.get(url, function(err, response)
+			if canProcessRequest(err, response) then
+				local data = JSON.parse(response.body)
+				if data then
+					local leaderboard = Leaderboard.tryParse(name, data)
+					if leaderboard then
+						leaderboards[name] = leaderboard
+						currentLeaderboard = leaderboard
+						return
+					end
+				end
+			end
+			local leaderboard = Leaderboard.noData(name)
+			leaderboards[name] = leaderboard
+			currentLeaderboard = leaderboard
+			ac.error('No leaderboard data found:', name)
+		end)
+	end
+end
+
+---@param name string
+function Leaderboard.allocate(name)
+	Leaderboard.fetch(name)
+end
+
 local DEFAULT_SETTINGS = const({
 	essentialSize = 20,
 	policeSize = 20,
 	hudOffset = vec2(0, 0),
-	fontSize = 20,
+	fontSize = 20 / uiState.uiScale,
 	current = 1,
 	colorHud = rgbm(1, 0, 0, 1),
 	timeMsg = 10,
 	msgOffset = vec2(WIDTH_DIV._2, 10),
-	fontSizeMSG = 30,
+	fontSizeMSG = 30 / uiState.uiScale,
 	menuPos = vec2(0, 0),
 	unit = UNIT,
 	unitMult = UNIT_MULT,
 	starsSize = 20,
-	starsPos = vec2(WINDOW_WIDTH, 0),
+	starsPos = vec2(WIDTH_DIV._2, 0),
 })
+
+local leaderboardWrapWidth = DEFAULT_SETTINGS.fontSize / 1.5
 
 ---@class Settings
 ---@field essentialSize number
@@ -287,12 +699,12 @@ function Settings.tryParse(data)
 		essentialSize = data.essentialSize or 20,
 		policeSize = data.policeSize or 20,
 		hudOffset = hudOffset,
-		fontSize = data.fontSize or 20,
+		fontSize = data.fontSize or (20 / uiState.uiScale),
 		current = data.current or 1,
 		colorHud = colorHud,
 		timeMsg = data.timeMsg or 10,
 		msgOffset = msgOffset,
-		fontSizeMSG = data.fontSizeMSG or 30,
+		fontSizeMSG = data.fontSizeMSG or (30 / uiState.uiScale),
 		menuPos = menuPos,
 		unit = data.unit or UNIT,
 		unitMult = data.unitMult or UNIT_MULT,
@@ -310,7 +722,7 @@ function Settings.fetch(url, callback)
 		local currentPath = ac.getFolder(ac.FolderID.ScriptOrigin)
 		local file = io.open(currentPath .. '/response/settingsResponse.json', 'r')
 		if not file then
-			ac.error('Failed to open response.json')
+			ac.error('Failed to open settingsResponse.json')
 			callback(Settings.new())
 			return
 		end
@@ -344,7 +756,6 @@ end
 ---@param callback function
 function Settings.allocate(callback)
 	local url = FIREBASE_URL .. 'Settings/' .. STEAMID .. '.json'
-	ac.log('Loading settings')
 	Settings.fetch(url, function(settings)
 		callback(settings)
 	end)
@@ -399,7 +810,8 @@ function Settings:export()
 end
 
 function Settings:save()
-	if localTesting then return end
+	if localTesting or patchCount > 20 then return end
+	patchCount = patchCount + 1
 	local str = '{"' .. STEAMID .. '": ' .. JSON.stringify(self:export()) .. '}'
 	web.request('PATCH', FIREBASE_URL .. "Settings.json", str, function(err, response)
 		if err then
@@ -409,26 +821,362 @@ function Settings:save()
 	end)
 end
 
+---@class Gate
+---@field pos vec3
+---@field dir vec3
+---@field point1 vec3
+---@field point2 vec3
+---@field width number
+---@field cross vec3
+---@field id integer
+local Gate = class('Gate')
+
+---@param data table
+---@return Gate|nil
+function Gate.tryParse(data)
+	local keys = { 'pos', 'dir', 'width', 'id' }
+	if not hasKeys(keys, data) then
+		ac.log('Missing required keys in gate data.')
+		return nil
+	end
+
+	local pos = tableToVec3(data.pos)
+	local dir = tableToVec3(data.dir)
+	local cross = vec3(dir.z, 0, -dir.x)
+	local point1 = pos + cross * data.width / 2
+	local point2 = pos - cross * data.width / 2
+	return {
+		pos = pos,
+		dir = dir,
+		cross = cross,
+		point1 = snapToTrack(point1) + vec3(0, GATE_HEIGHT_OFFSET, 0),
+		point2 = snapToTrack(point2) + vec3(0, GATE_HEIGHT_OFFSET, 0),
+		width = data.width,
+		id = data.id,
+	}
+end
+
+---@param data table
+---@return Gate|nil
+function Gate.allocate(data)
+	local gate = Gate.tryParse(data)
+	if not gate then
+		ac.error('Failed to allocate gate')
+		return nil
+	end
+	return gate
+end
+
+function Gate:print()
+	ac.error('Gate:\npos:', self.pos, 'dir:', self.dir)
+end
+
+---@return boolean
+function Gate:isTooFar()
+	return self.pos:distanceSquared(car.position) > self.width * 3
+end
+
+---@return boolean
+function Gate:isCrossed()
+	if self:isTooFar() then
+		return false
+	end
+	local carHalfWidth = car.aabbSize.z / 2
+
+	local isCrossing = vec2.intersect(vec2(self.point1.x, self.point1.z), vec2(self.point2.x, self.point2.z),
+		vec2(car.position.x - carHalfWidth, car.position.z - carHalfWidth),
+		vec2(car.position.x + carHalfWidth, car.position.z + carHalfWidth))
+	local goingThrough = self.dir:dot(car.look) > 0
+	if isCrossing and goingThrough then
+		return true
+	end
+	return false
+end
+
+---@class Sector
+---@field name string
+---@field startTime number
+---@field time string
+---@field timeLimit number
+---@field addTimeLimit number[]
+---@field timeColor rgbm
+---@field finalTime number
+---@field startDistance number
+---@field lenght number
+---@field gateCount integer
+---@field gateIndex integer
+---@field gates Gate[]
+local Sector = class('Sector')
+
+---@param data table
+---@return Sector|nil
+function Sector.tryParse(data)
+	local keys = { 'timeLimit', 'length', 'gates' }
+	if not hasKeys(keys, data) then
+		ac.error('Missing required keys in sector data.')
+		return nil
+	end
+	local gates = {}
+	for i, gateData in ipairs(data.gates) do
+		local gate = Gate(gateData)
+		if not gate then
+			ac.error('Failed to parse gate:', i)
+			return nil
+		end
+		table.insert(gates, gate)
+	end
+
+	local sector = {
+		name = data.name,
+		gateCount = #gates,
+		gateIndex = 1,
+		startTime = 0,
+		time = '00:00.000',
+		timeLimit = data.timeLimit,
+		addTimeLimit = data.addTimeLimit,
+		timeColor = white,
+		startDistance = 0,
+		lenght = data.length,
+		gates = gates,
+	}
+	setmetatable(sector, { __index = Sector })
+	return sector
+end
+
+---@param url string
+---@param callback function
+function Sector.fetch(url, callback)
+	if localTesting then
+		local currentPath = ac.getFolder(ac.FolderID.ScriptOrigin)
+		local filename = url:match('.+/(.+)$')
+		local file = io.open(currentPath .. '/response/sector' .. filename, 'r')
+		if not file then
+			ac.error('Failed to open response.json')
+			callback(nil)
+			return
+		end
+		local data = JSON.parse(file:read('*a'))
+		file:close()
+		local sector = Sector.tryParse(data)
+		callback(sector)
+	else
+		web.get(url, function(err, response)
+			if canProcessRequest(err, response) then
+				local data = JSON.parse(response.body)
+				if data then
+					local sector = Sector.tryParse(data)
+					callback(sector)
+				else
+					ac.error('Failed to parse sector data.')
+					callback(nil)
+				end
+			else
+				callback(nil)
+			end
+		end)
+	end
+end
+
+---@param name string
+---@param callback function
+function Sector.allocate(name, callback)
+	local url = FIREBASE_URL .. 'Sectors/' .. name .. '.json'
+	Sector.fetch(url, function(sector)
+		if not sector then
+			ac.error('Failed to allocate sector:', name)
+		else
+			sector.name = name
+		end
+		callback(sector)
+	end)
+end
+
+function Sector:reset()
+	self.gateIndex = 1
+	self.startTime = 0
+	self.time = '00:00.000'
+	self.timeColor = white
+	self.startDistance = 0
+	self.finalTime = 0
+end
+
+function Sector:starting()
+	if self.gateIndex == 2 then
+		self.time = '00:00.000'
+		self.startTime = os.preciseClock()
+		self.startDistance = car.distanceDrivenTotalKm
+	end
+end
+
+---@return boolean
+function Sector:isFinished()
+	return self.gateIndex > self.gateCount and car.distanceDrivenTotalKm - self.startDistance > self.lenght
+end
+
+---@return boolean
+function Sector:hasStarted()
+	return self.startTime > 0
+end
+
+function Sector:updateTime()
+	if self.startTime > 0 then
+		local time = os.preciseClock() - self.startTime
+		local minutes = math.floor(time / 60)
+		local seconds = math.floor(time % 60)
+		local milliseconds = math.floor((time % 1) * 1000)
+		self.time = ('%02d:%02d.%03d'):format(minutes, seconds, milliseconds)
+	end
+end
+
+---@return integer
+function Sector:isUnderTimeLimit()
+	if self.timeLimit > 0 then
+		local time = os.preciseClock() - self.startTime
+		if time < self.timeLimit + self.addTimeLimit[1] then
+			return 3
+		elseif time < self.timeLimit + self.addTimeLimit[2] then
+			return 2
+		elseif time < self.timeLimit + self.addTimeLimit[3] then
+			return 1
+		end
+		missionManager.level = 0
+		return 0
+	end
+	return 1
+end
+
+function Sector:updateTimeColor()
+	if self:hasStarted() then
+		local underTimeLimit = self:isUnderTimeLimit()
+		if underTimeLimit == 3 then
+			if self:isFinished() then
+				self.timeColor = rgbm.colors.green
+			else
+				self.timeColor = rgbm.colors.white
+			end
+		elseif underTimeLimit == 2 then
+			self.timeColor = rgbm.colors.yellow
+		elseif underTimeLimit == 1 then
+			self.timeColor = rgbm.colors.orange
+		else
+			self.timeColor = rgbm.colors.red
+		end
+	end
+end
+
+function Sector:update()
+	self:updateTime()
+	self:updateTimeColor()
+	if self.gateIndex > self.gateCount then
+		return
+	end
+	if self.gates[self.gateIndex]:isCrossed() then
+		self.gateIndex = self.gateIndex + 1
+		self:starting()
+		self:updateTimeColor()
+		if self:isFinished() then
+			self.finalTime = os.preciseClock() - self.startTime
+			self.time = ('%02d:%02d.%03d'):format(math.floor(self.finalTime / 60), math.floor(self.finalTime % 60),
+				math.floor((self.finalTime % 1) * 1000))
+		end
+	end
+end
+
+---@class SectorStats
+---@field name string
+---@field records table<string, number>
+local SectorStats = class('SectorStats')
+
+---@param name string
+---@param data table
+---@return SectorStats
+function SectorStats.tryParse(name, data)
+	local records = {}
+	for carName, time in pairs(data) do
+		local nameWithoutUtf8 = removeUtf8Char(carName)
+		records[nameWithoutUtf8] = time
+	end
+	local sectorStats = {
+		name = name,
+		records = records,
+	}
+	setmetatable(sectorStats, { __index = SectorStats })
+	return sectorStats
+end
+
+---@param name string
+---@param data table
+---@return SectorStats|nil
+function SectorStats.allocate(name, data)
+	if type(data) == 'table' then
+		local sectorStats = SectorStats.tryParse(name, data)
+		if not sectorStats then
+			ac.error('Failed to allocate sector stat')
+			return nil
+		end
+		return sectorStats
+	end
+	if type(data) == 'number' then
+		local records = {}
+		records[CAR_NAME_NO_UTF8] = data
+		local sectorStats = {
+			name = name,
+			records = records,
+		}
+		setmetatable(sectorStats, { __index = SectorStats })
+		return sectorStats
+	end
+	ac.error('Failed to allocate sector stat')
+	return nil
+end
+
+---@param time number
+---@return boolean
+function SectorStats:addRecord(time)
+	if not self.records[CAR_NAME_NO_UTF8] or self.records[CAR_NAME_NO_UTF8] > time then
+		self.records[CAR_NAME_NO_UTF8] = time
+		return true
+	end
+	return false
+end
+
+---@return table
+function SectorStats:export()
+	local records = {}
+	for carName, time in pairs(self.records) do
+		records[carName] = truncate(time, 3)
+	end
+	return {
+		[self.name] = records
+	}
+end
+
 ---@class Player
 ---@field name string
+---@field sectors SectorStats[]
+---@field sectorsFormated table<string, table<string, string>>
 ---@field arrests integer
 ---@field getaways integer
 ---@field thefts integer
 ---@field overtake integer
 ---@field wins integer
 ---@field losses integer
+---@field elo integer
 local Player = class('Player')
 
 ---@return Player
 function Player.new()
 	local player = {
 		name = DRIVER_NAME,
+		sectors = {},
+		sectorsFormated = {},
 		arrests = 0,
 		getaways = 0,
 		thefts = 0,
 		overtake = 0,
 		wins = 0,
 		losses = 0,
+		elo = 1200,
 	}
 	setmetatable(player, { __index = Player })
 	return player
@@ -440,14 +1188,26 @@ function Player.tryParse(data)
 	if not data then
 		return Player.new()
 	end
+	local sectors = {}
+	if data.sectors then
+		for sectorName, sectorData in pairs(data.sectors) do
+			local sector = SectorStats.allocate(sectorName, sectorData)
+			if sector then
+				table.insert(sectors, sector)
+			end
+		end
+	end
 	local player = {
 		name = DRIVER_NAME,
+		sectors = sectors,
+		sectorsFormated = {},
 		arrests = data.arrests or 0,
 		getaways = data.getaways or 0,
 		thefts = data.thefts or 0,
 		overtake = data.overtake or 0,
 		wins = data.wins or 0,
 		losses = data.losses or 0,
+		elo = data.elo or 1200,
 	}
 	setmetatable(player, { __index = Player })
 	return player
@@ -468,7 +1228,6 @@ function Player.fetch(url, callback)
 		file:close()
 		local player = Player.tryParse(data)
 		callback(player)
-		ac.log('Loaded From File')
 	else
 		web.get(url, function(err, response)
 			if canProcessRequest(err, response) then
@@ -500,13 +1259,30 @@ function Player.allocate(callback)
 	end)
 end
 
+function Player:formatSectors()
+	for _, sector in ipairs(self.sectors) do
+		local entries = {}
+		for carName, time in pairs(sector.records) do
+			table.insert(entries, { carName, time })
+		end
+		table.sort(entries, function(a, b)
+			return a[2] < b[2]
+		end)
+		for i, entry in ipairs(entries) do
+			if #entry[1] > #longestCarName then
+				longestCarName = entry[1]
+			end
+			entries[i][2] = formatTime(entry[2])
+		end
+		self.sectorsFormated[sector.name] = entries
+	end
+end
+
+---@param key string
 ---@return table
-function Player:export()
+function Player:export(key)
 	local data = { name = self.name }
 
-	if self.arrests > 0 then
-		data.arrests = self.arrests
-	end
 	if self.getaways > 0 then
 		data.getaways = self.getaways
 	end
@@ -522,12 +1298,28 @@ function Player:export()
 	if self.losses > 0 then
 		data.losses = self.losses
 	end
+	data.elo = self.elo
+
+	local sectors = {}
+	for _, sector in ipairs(self.sectors) do
+		if not sector then
+			break
+		end
+		local sectorData = sector:export()
+		for k, v in pairs(sectorData) do
+			sectors[k] = v
+		end
+	end
+	if next(sectors) then
+		data.sectors = sectors
+	end
 	return data
 end
 
 function Player:save()
-	if localTesting then return end
 	local str = '{"' .. STEAMID .. '": ' .. JSON.stringify(self:export()) .. '}'
+	if localTesting or patchCount > 40 then return end
+	patchCount = patchCount + 1
 	web.request('PATCH', FIREBASE_URL .. "Players.json", str, function(err, response)
 		if err then
 			ac.error(err)
@@ -536,81 +1328,182 @@ function Player:save()
 	end)
 end
 
+---@param sectorName string
+---@param time number
+---@return boolean
+function Player:addSectorRecord(sectorName, time)
+	---@type SectorStats | nil
+	local sector = nil
+	for _, s in ipairs(self.sectors) do
+		if s.name == sectorName then
+			sector = s
+			break
+		end
+	end
+	if not sector then
+		sector = SectorStats.allocate(sectorName, time)
+		if not sector then return false end
+		table.insert(self.sectors, sector)
+		return true
+	end
+	return sector:addRecord(time)
+end
+
 ---@type Player | nil
 local player = nil
 
 ---@type Settings | nil
 local settings = nil
 
+---@type Sector[]
+local sectors = {}
+
+local function getSectorByName(name)
+	for _, sector in ipairs(sectors) do
+		if sector.name == name then
+			return sector
+		end
+	end
+	return nil
+end
+
+---@class SectorManager
+---@field sector Sector
+---@field started boolean
+---@field finished boolean
+local SectorManager = class('SectorManager')
+
+---@return SectorManager
+function SectorManager.new()
+	local sm = {
+		sector = nil,
+		started = false,
+		finished = false,
+	}
+	setmetatable(sm, { __index = SectorManager })
+	return sm
+end
+
+---@return SectorManager
+function SectorManager.allocate()
+	return SectorManager.new()
+end
+
+function SectorManager:reset()
+	duo.teammateHasFinished = false
+	duo.sentFinish = false
+	duo.waiting = false
+	duo.request = false
+	duo.onlineSender = nil
+	self.started = false
+	self.finished = false
+	self.sector:reset()
+end
+
+---@param name string
+function SectorManager:setSector(name)
+	local sector = getSectorByName(name)
+	if sector then
+		self.sector = sector
+		self:reset()
+	end
+end
+
+---@type SectorManager
+local sectorManager = SectorManager()
+
+local acpEvent = ac.OnlineEvent({
+	message = ac.StructItem.string(110),
+	messageType = ac.StructItem.int16(),
+	yourIndex = ac.StructItem.int16(),
+}, function(sender, data)
+	if not sender then return end
+	if data.yourIndex == car.sessionID and data.messageType == 5 and data.message == "Request" then
+		duo.request = true
+		duo.onlineSender = sender
+	elseif data.yourIndex == car.sessionID and data.messageType == 5 and data.message == "Accept" then
+		duo.teammate = sender
+		duo.request = false
+	elseif duo.teammate and data.yourIndex == car.sessionID and sender.index == duo.teammate.index and data.messageType == 5 and data.message == "Finished" then
+		duo.teammateHasFinished = true
+	elseif duo.teammate and data.yourIndex == car.sessionID and sender.index == duo.teammate.index and data.messageType == 5 and data.message == "Cancel" then
+		duo.teammate = nil
+		duo.request = false
+		sectorManager:setSector('BOBs SCRAPYARD')
+	end
+end)
+
+function SectorManager:resetDuo()
+	duo.teammate = nil
+	duo.request = false
+	duo.onlineSender = nil
+	duo.teammateHasFinished = false
+	duo.waiting = false
+end
+
+function SectorManager:hasTeammateFinished()
+	if duo.teammate and duo.teammateHasFinished then
+		if not duo.sentFinish then
+			acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
+			duo.sentFinish = true
+		end
+		return true
+	end
+	return false
+end
+
 local canRun = false
 local function shouldRun()
 	if canRun then return true end
-	local isDataLoaded = dataLoaded['Settings'] and dataLoaded['PlayerData']
-	local hasNecessaryData = settings and player
+	local isDataLoaded = dataLoaded['Settings'] and dataLoaded['PlayerData'] and dataLoaded['Sectors']
+	local hasNecessaryData = settings and player and sectors and sectorManager.sector
 	local hasMinVersion = CSP_VERSION >= CSP_MIN_VERSION
-	if isDataLoaded and hasMinVersion and hasNecessaryData and isPoliceCar(CAR_ID) then
+	if isDataLoaded and hasMinVersion and hasNecessaryData and not isPoliceCar(CAR_ID) then
 		canRun = true
 	end
 	return canRun
 end
 
--- --return json of playerData with only the data needed for the leaderboard
--- -- data are keys of the playerData table
--- local function dataStringify(data)
--- 	local str = '{"' .. ac.getUserSteamID() .. '": '
--- 	local name = ac.getDriverName(0)
--- 	data['Name'] = name
--- 	str = str .. json.stringify(data) .. '}'
--- 	return str
--- end
-
-local settingsOpen = false
-local arrestLogsOpen = false
-local camerasOpen = false
-
-local imageSize = vec2(0,0)
-
-local pursuit = {
-	suspect = nil,
-	enable = false,
-	maxDistance = 250000,
-	minDistance = 40000,
-	nextMessage = 30,
-	level = 1,
-	id = -1,
-	timerArrest = 0,
-	hasArrested = false,
-	startedTime = 0,
-	timeLostSight = 0,
-	lostSight = false,
-	engage = false,
+local hud = {
+	size = vec2(0, 0),
+	pos = {
+		countdown1 = vec2(0, 0),
+		countdown2 = vec2(0, 0),
+		menu1 = vec2(0, 0),
+		menu2 = vec2(0, 0),
+		ranks1 = vec2(0, 0),
+		ranks2 = vec2(0, 0),
+		theft1 = vec2(0, 0),
+		theft2 = vec2(0, 0),
+		left1 = vec2(0, 0),
+		left2 = vec2(0, 0),
+		right1 = vec2(0, 0),
+		right2 = vec2(0, 0),
+	},
 }
 
-local arrestations = {}
+----------------------------------------------------------------------------------------------- Math -----------------------------------------------------------------------------------------------
 
-local textSize = {}
-
-local textPos = {}
-
-local iconPos = {}
-
-local function onSettingsChange()
-	settings:save()
-	ac.log('Settings updated')
+local function calculateElo(opponentElo, youWon)
+	local k = 32
+	local expectedScore = 1 / (1 + 10 ^ ((opponentElo - player.elo) / 400))
+	local score = youWon and 1 or 0
+	local newElo = player.elo + k * (score - expectedScore)
+	return math.floor(newElo)
 end
 
----------------------------------------------------------------------------------------------- Firebase ----------------------------------------------------------------------------------------------
+local function cross(vector1, vector2)
+	return vec2(vector1.x + vector2.x, vector1.y + vector2.y)
+end
 
-local acpPolice = ac.OnlineEvent({
-    message = ac.StructItem.string(110),
-	messageType = ac.StructItem.int16(),
-	yourIndex = ac.StructItem.int16(),
-}, function (sender, data)
-	if data.yourIndex == car.sessionID and data.messageType == 0 and pursuit.suspect ~= nil and sender == pursuit.suspect then
-		pursuit.hasArrested = true
-		ac.log("ACP Police: Police received")
+local function isPointInCircle(point, circle, radius)
+	if math.distanceSquared(point, circle) <= radius then
+		return true
 	end
-end)
+	return false
+end
+
+-------------------------------------------------------------------------------------------- Init --------------------------------------------------------------------------------------------
 
 local starsUI = {
 	starsPos = vec2(0, 0),
@@ -625,112 +1518,285 @@ local function updateStarsPos()
 	starsUI.starsSize = vec2(settings.starsPos.x - settings.starsSize * 2, settings.starsPos.y + settings.starsSize * 2)
 	starsUI.startSpace = settings.starsSize / 1.5
 end
-local buttonSize = vec2(0,0)
-local buttonOffsetX = 20
-local function updateHudPos()
-	imageSize = vec2(WINDOW_HEIGHT/80 * settings.policeSize, WINDOW_HEIGHT/80 * settings.policeSize)
-	iconPos.arrest1 = vec2(imageSize.x - imageSize.x/12, imageSize.y/3.2)
-	iconPos.arrest2 = vec2(imageSize.x/1.215, imageSize.y/5)
-	iconPos.lost1 = vec2(imageSize.x - imageSize.x/12, imageSize.y/2.35)
-	iconPos.lost2 = vec2(imageSize.x/1.215, imageSize.y/3.2)
-	iconPos.logs1 = vec2(imageSize.x/1.215, imageSize.y/1.88)
-	iconPos.logs2 = vec2(imageSize.x/1.39, imageSize.y/2.35)
-	iconPos.menu1 = vec2(imageSize.x - imageSize.x/12, imageSize.y/1.88)
-	iconPos.menu2 = vec2(imageSize.x/1.215, imageSize.y/2.35)
-	iconPos.cams1 = vec2(imageSize.x/1.215, imageSize.y/2.35)
-	iconPos.cams2 = vec2(imageSize.x/1.39, imageSize.y/3.2)
 
-	textSize.size = vec2(imageSize.x*3/5, settings.fontSize/2)
-	textSize.box = vec2(imageSize.x*3/5, settings.fontSize/1.3)
-	textSize.window1 = vec2(settings.hudOffset.x + imageSize.x / 9.5, settings.hudOffset.y + imageSize.y / 5.3)
-	textSize.window2 = vec2(imageSize.x*3/5, imageSize.y/2.8)
-	buttonSize = vec2(textSize.window2.x - textSize.window2.x / 10, ui.measureDWriteText("Button", settings.fontSize).y * 0.9)
-	buttonOffsetX = textSize.window2.x / 20
-	textPos.box1 = vec2(0, 0)
-	textPos.box2 = vec2(textSize.size.x, textSize.size.y*1.8)
-	textPos.addBox = vec2(0, textSize.size.y * 1.8)
-	settings.fontSize = settings.policeSize * FONT_MULT
+local function updateHudPos()
+	hud.size = vec2(HEIGHT_DIV._80 * settings.essentialSize, HEIGHT_DIV._80 * settings.essentialSize)
+	hud.pos.theftPos1 = vec2(hud.size.x - hud.size.x / 1.56, hud.size.y / 1.9)
+	hud.pos.theftPos2 = vec2(hud.size.x / 4.6, hud.size.y / 2.65)
+	hud.pos.ranksPos1 = vec2(hud.size.x / 1.97, hud.size.y / 1.9)
+	hud.pos.ranksPos2 = vec2(hud.size.x - hud.size.x / 1.56, hud.size.y / 2.65)
+	hud.pos.countdownPos1 = vec2(hud.size.x / 1.53, hud.size.y / 1.9)
+	hud.pos.countdownPos2 = vec2(hud.size.x - hud.size.x / 2.04, hud.size.y / 2.65)
+	hud.pos.menuPos1 = vec2(hud.size.x - hud.size.x / 4.9, hud.size.y / 1.9)
+	hud.pos.menuPos2 = vec2(hud.size.x / 1.53, hud.size.y / 2.65)
+	hud.pos.leftPos1 = vec2(hud.size.x / 8, hud.size.y / 2.8)
+	hud.pos.leftPos2 = vec2(0, hud.size.y / 4.3)
+	hud.pos.rightPos1 = vec2(hud.size.x, hud.size.y / 2.8)
+	hud.pos.rightPos2 = vec2(hud.size.x - hud.size.x / 8, hud.size.y / 4.3)
+	settings.fontSize = settings.essentialSize * FONT_MULT
 end
 
+local function textWithBackground(text, sizeMult)
+	local textLenght = ui.measureDWriteText(text, settings.fontSizeMSG * sizeMult)
+	local rectPos1 = vec2(settings.msgOffset.x - textLenght.x / 2, settings.msgOffset.y)
+	local rectPos2 = vec2(settings.msgOffset.x + textLenght.x / 2, settings.msgOffset.y + settings.fontSizeMSG * sizeMult)
+	local rectOffset = vec2(10, 10)
+	if ui.time() % 1 < 0.5 then
+		ui.drawRectFilled(rectPos1 - vec2(10, 0), rectPos2 + rectOffset, COLOR_MSG_BG, 10)
+	else
+		ui.drawRectFilled(rectPos1 - vec2(10, 0), rectPos2 + rectOffset, rgbm(0, 0, 0, 0.5), 10)
+	end
+	ui.dwriteDrawText(text, settings.fontSizeMSG * sizeMult, rectPos1, white)
+end
+
+local boxHeight = HEIGHT_DIV._70
+
+local function displayInGrid()
+	local box1 = vec2(WIDTH_DIV._32, boxHeight)
+	local colWidth = (WIDTH_DIV._2 - WIDTH_DIV._32) / currentLeaderboard.nbCols
+	ui.pushDWriteFont("Orbitron;Weight=Black")
+	ui.newLine()
+	ui.dwriteTextAligned("Pos", leaderboardWrapWidth, ui.Alignment.Center, ui.Alignment.Center, box1, false, settings.colorHud)
+	for i = 1, #currentLeaderboard.header do
+		local textLenght = ui.measureDWriteText(currentLeaderboard.header[i], leaderboardWrapWidth).x
+		ui.sameLine(box1.x + colWidth / 2 + colWidth * (i - 1) - textLenght / 2)
+		ui.dwriteTextWrapped(currentLeaderboard.header[i], leaderboardWrapWidth, settings.colorHud)
+	end
+	ui.drawLine(vec2(0, HEIGHT_DIV._14), vec2(WIDTH_DIV._2, HEIGHT_DIV._14), white, 2)
+	ui.newLine()
+	ui.popDWriteFont()
+	ui.pushDWriteFont("Orbitron;Weight=Regular")
+	for i = 1, #currentLeaderboard.rows do
+		local sufix = "th"
+		if i == 2 then
+			sufix = "st"
+		elseif i == 3 then
+			sufix = "nd"
+		elseif i == 4 then
+			sufix = "rd"
+		end
+		ui.dwriteTextAligned(i .. sufix, settings.fontSize, ui.Alignment.Center, ui.Alignment.Center, box1, false,
+			white)
+		for j = 1, #currentLeaderboard.rows[1] do
+			local textLenght = ui.measureDWriteText(currentLeaderboard.rows[i][j], leaderboardWrapWidth).x
+			ui.sameLine(box1.x + colWidth / 2 + colWidth * (j - 1) - textLenght / 2)
+			ui.dwriteTextWrapped(currentLeaderboard.rows[i][j], leaderboardWrapWidth, white)
+		end
+	end
+	ui.popDWriteFont()
+	local lineHeight = math.max(ui.itemRectMax().y + box1.y)
+	local lineOffset = box1.x + box1.x * 0.5
+	ui.drawLine(vec2(lineOffset, HEIGHT_DIV._20), vec2(lineOffset, lineHeight), white, 2)
+	for i = 1, currentLeaderboard.nbCols - 1 do
+		ui.drawLine(vec2(box1.x + colWidth * i, HEIGHT_DIV._20), vec2(box1.x + colWidth * i, lineHeight),
+			white, 2)
+	end
+end
+
+local scoreOffset = 0
+local timeOffset = 0
+
+local function playerScores()
+	ui.newLine()
+	ui.dwriteTextWrapped("Scores: ", settings.fontSizeMSG * 1.5, rgbm.colors.red)
+	ui.separator()
+	ui.newLine()
+	ui.sameLine(WIDTH_DIV._40)
+	ui.beginGroup()
+	ui.dwriteTextWrapped("Arrests: ", settings.fontSizeMSG, settings.colorHud)
+	ui.sameLine(scoreOffset)
+	ui.dwriteTextWrapped(player.arrests, settings.fontSizeMSG, white)
+	ui.dwriteTextWrapped("Getaways: ", settings.fontSizeMSG, settings.colorHud)
+	ui.sameLine(scoreOffset)
+	ui.dwriteTextWrapped(player.getaways, settings.fontSizeMSG, white)
+	ui.dwriteTextWrapped("Thefts: ", settings.fontSizeMSG, settings.colorHud)
+	ui.sameLine(scoreOffset)
+	ui.dwriteTextWrapped(player.thefts, settings.fontSizeMSG, white)
+	ui.dwriteTextWrapped("Overtake: ", settings.fontSizeMSG, settings.colorHud)
+	ui.sameLine(scoreOffset)
+	ui.dwriteTextWrapped(player.overtake, settings.fontSizeMSG, white)
+	ui.dwriteTextWrapped("Wins: ", settings.fontSizeMSG, settings.colorHud)
+	ui.sameLine(scoreOffset)
+	ui.dwriteTextWrapped(player.wins, settings.fontSizeMSG, white)
+	ui.dwriteTextWrapped("Losses: ", settings.fontSizeMSG, settings.colorHud)
+	ui.sameLine(scoreOffset)
+	ui.dwriteTextWrapped(player.losses, settings.fontSizeMSG, white)
+	ui.dwriteTextWrapped("Racing Elo: ", settings.fontSizeMSG, settings.colorHud)
+	ui.sameLine(scoreOffset)
+	ui.dwriteTextWrapped(player.elo, settings.fontSizeMSG, white)
+	ui.endGroup()
+end
+
+local function playerTimes()
+	ui.newLine()
+	ui.dwriteTextWrapped("Sectors: ", settings.fontSizeMSG * 1.5, rgbm.colors.red)
+	ui.separator()
+	ui.newLine()
+	ui.sameLine(WIDTH_DIV._40)
+	ui.beginGroup()
+
+	for sectorName, times in pairs(player.sectorsFormated) do
+		ui.dwriteTextWrapped(sectorName .. ": ", settings.fontSizeMSG, rgbm.colors.red)
+		ui.beginSubgroup(WIDTH_DIV._50)
+		for i = 1, #times do
+			ui.dwriteTextWrapped(times[i][1] .. ": ", settings.fontSizeMSG, settings.colorHud)
+			ui.sameLine(timeOffset)
+			ui.dwriteTextWrapped(times[i][2], settings.fontSizeMSG, white)
+		end
+		ui.endSubgroup()
+		ui.newLine()
+	end
+	ui.endGroup()
+end
+
+local function playerStats()
+	ui.pushDWriteFont("Orbitron;Weight=Regular")
+	playerScores()
+	playerTimes()
+	ui.popDWriteFont()
+end
+
+local function showLeaderboard()
+	ui.setNextItemWidth(WIDTH_DIV._12)
+	ui.combo("leaderboard", currentLeaderboard.name, function()
+		for i = 1, #LEADERBOARD_NAMES[2] do
+			if ui.selectable(LEADERBOARD_NAMES[2][i], currentLeaderboard.name == LEADERBOARD_NAMES[2][i]) then
+				if LEADERBOARD_NAMES[1][i] == "Your Stats" then
+					currentLeaderboard = player
+				else
+					Leaderboard.allocate(LEADERBOARD_NAMES[1][i])
+					currentLeaderboard.name = LEADERBOARD_NAMES[2][i]
+				end
+			end
+		end
+	end)
+	
+	ui.sameLine(WIDTH_DIV._2 - 110)
+	if ui.button('Close') then menuStates.leaderboard = false end
+	-- ui.newLine()
+	if not currentLeaderboard then return end
+	if currentLeaderboard.name == player.name then
+		playerStats()
+	else
+		displayInGrid()
+	end
+end
+
+----------------------------------------------------------------------------------------------- settings -----------------------------------------------------------------------------------------------
+local PREVIEWS = const({ 'Message', 'Distance Bar', 'Stars' })
+
+local preview = {
+	msg = false,
+	distanceBar = false,
+	stars = false,
+}
+---@param buttonClicked string
+local function updatePreviewState(buttonClicked)
+	if buttonClicked == 'Message' then
+		preview.msg = not preview.msg
+		preview.distanceBar = false
+		preview.stars = false
+	elseif buttonClicked == 'Distance Bar' then
+		preview.distanceBar = not preview.distanceBar
+		preview.msg = false
+		preview.stars = false
+	elseif buttonClicked == 'Stars' then
+		preview.stars = not preview.stars
+		preview.msg = false
+		preview.distanceBar = false
+	end
+end
+
+COLOR_MSG_BG = rgbm(0.5, 0.5, 0.5, 0.5)
+
+local online = {
+	message = "",
+	messageTimer = 0,
+	type = 1,
+	chased = false,
+	officer = nil,
+	level = 0,
+}
+
 local function showStarsPursuit()
-	local starsColor = rgbm(1, 1, 1, os.clock()%2 + 0.3)
+	local starsColor = rgbm(1, 1, 1, os.clock() % 2 + 0.3)
 	updateStarsPos()
 	for i = 1, 5 do
-		if i > pursuit.level/2 then
-			ui.drawIcon(ui.Icons.StarEmpty, starsUI.starsPos, starsUI.starsSize, rgbm(1, 1, 1, 0.2))
+		if i > online.level / 2 then
+			ui.drawImage(starsUI.empty, starsUI.starsPos, starsUI.starsSize, rgbm(1, 1, 1, 0.2))
 		else
-			ui.drawIcon(ui.Icons.StarFull, starsUI.starsPos, starsUI.starsSize, starsColor)
+			ui.drawImage(starsUI.full, starsUI.starsPos, starsUI.starsSize, starsColor)
 		end
 		starsUI.starsPos.x = starsUI.starsPos.x - settings.starsSize - starsUI.startSpace
 		starsUI.starsSize.x = starsUI.starsSize.x - settings.starsSize - starsUI.startSpace
 	end
 end
 
-local showPreviewMsg = false
-local showPreviewStars = false
-COLORSMSGBG = rgbm(0.5,0.5,0.5,0.5)
-
-local function initsettings()
-	imageSize = vec2(WINDOW_HEIGHT/80 * settings.policeSize, WINDOW_HEIGHT/80 * settings.policeSize)
-	updateHudPos()
-	updateStarsPos()
+local function distanceBarPreview()
+	ui.transparentWindow("progressBar", vec2(0, 0), vec2(WINDOW_WIDTH, WINDOW_HEIGHT), function()
+		local playerInFront = "You are in front"
+		local text = math.floor(50) .. "m"
+		local textLenght = ui.measureDWriteText(text, 30)
+		ui.newLine()
+		ui.dummy(vec2(WIDTH_DIV._3, HEIGHT_DIV._40))
+		ui.sameLine()
+		ui.beginRotation()
+		ui.progressBar(125 / 250, vec2(WIDTH_DIV._3, HEIGHT_DIV._60), playerInFront)
+		ui.endRotation(90, vec2(settings.msgOffset.x - WIDTH_DIV._2 - textLenght.x / 2, settings.msgOffset.y + textLenght.y / 3))
+		ui.dwriteDrawText(text, 30, vec2(settings.msgOffset.x - textLenght.x / 2, settings.msgOffset.y), white)
+	end)
 end
 
 local function previewMSG()
-	ui.beginTransparentWindow("previewMSG", vec2(0, 0), vec2(WINDOW_WIDTH, WINDOW_HEIGHT))
-	ui.pushDWriteFont("Orbitron;Weight=800")
-	local tSize = ui.measureDWriteText("Messages from Police when being chased", settings.fontSizeMSG)
-	local uiOffsetX = settings.msgOffset.x - tSize.x/2
-	local uiOffsetY = settings.msgOffset.y
-	ui.drawRectFilled(vec2(uiOffsetX - 5, uiOffsetY-5), vec2(uiOffsetX + tSize.x + 5, uiOffsetY + tSize.y + 5), COLORSMSGBG)
-	ui.dwriteDrawText("Messages from Police when being chased", settings.fontSizeMSG, vec2(uiOffsetX, uiOffsetY), rgbm.colors.cyan)
-	ui.popDWriteFont()
-	ui.endTransparentWindow()
+	ui.transparentWindow("previewMSG", vec2(0, 0), vec2(WINDOW_WIDTH, WINDOW_HEIGHT), function()
+		ui.pushDWriteFont("Orbitron;Weight=Black")
+		local textSize = ui.measureDWriteText("Messages from Police when being chased", settings.fontSizeMSG)
+		local uiOffsetX = settings.msgOffset.x - textSize.x / 2
+		local uiOffsetY = settings.msgOffset.y
+		ui.drawRectFilled(vec2(uiOffsetX - 5, uiOffsetY - 5), vec2(uiOffsetX + textSize.x + 5, uiOffsetY + textSize.y + 5), COLOR_MSG_BG)
+		ui.dwriteDrawText("Messages from Police when being chased", settings.fontSizeMSG, vec2(uiOffsetX, uiOffsetY), settings.colorHud)
+		ui.popDWriteFont()
+	end)
 end
 
 local function previewStars()
-	ui.beginTransparentWindow("previewStars", vec2(0, 0), vec2(WINDOW_WIDTH, WINDOW_HEIGHT))
-	showStarsPursuit()
-	ui.endTransparentWindow()
+	ui.transparentWindow("PreviewStars", vec2(0, 0), vec2(WINDOW_WIDTH, WINDOW_HEIGHT), function()
+		showStarsPursuit()
+	end)
 end
 
 local function uiTab()
 	ui.text('On Screen Message : ')
 	settings.timeMsg = ui.slider('##' .. 'Time Msg On Screen', settings.timeMsg, 1, 15, 'Time Msg On Screen' .. ': %.0fs')
 	settings.fontSizeMSG = ui.slider('##' .. 'Font Size MSG', settings.fontSizeMSG, 10, 50, 'Font Size' .. ': %.0f')
+	settings.msgOffset.y = ui.slider('##' .. 'Msg On Screen Offset Y', settings.msgOffset.y, 0, WINDOW_HEIGHT, 'Msg On Screen Offset Y' .. ': %.0f')
+	settings.msgOffset.x = ui.slider('##' .. 'Msg On Screen Offset X', settings.msgOffset.x, 0, WINDOW_WIDTH, 'Msg On Screen Offset X' .. ': %.0f')
+	if ui.button('MSG Offset X to center') then settings.msgOffset.x = WIDTH_DIV._2 end
+	ui.newLine()
 	ui.text('Stars : ')
 	settings.starsPos.x = ui.slider('##' .. 'Stars Offset X', settings.starsPos.x, 0, WINDOW_WIDTH, 'Stars Offset X' .. ': %.0f')
 	settings.starsPos.y = ui.slider('##' .. 'Stars Offset Y', settings.starsPos.y, 0, WINDOW_HEIGHT, 'Stars Offset Y' .. ': %.0f')
 	settings.starsSize = ui.slider('##' .. 'Stars Size', settings.starsSize, 10, 50, 'Stars Size' .. ': %.0f')
 	ui.newLine()
-	ui.text('Offset : ')
-	settings.msgOffset.y = ui.slider('##' .. 'Msg On Screen Offset Y', settings.msgOffset.y, 0, WINDOW_HEIGHT, 'Msg On Screen Offset Y' .. ': %.0f')
-	settings.msgOffset.x = ui.slider('##' .. 'Msg On Screen Offset X', settings.msgOffset.x, 0, WINDOW_WIDTH, 'Msg On Screen Offset X' .. ': %.0f')
-    ui.newLine()
 	ui.text('Preview : ')
-	ui.sameLine()
-    if ui.button('Message') then
-		showPreviewMsg = not showPreviewMsg
-		showPreviewStars = false
+	for i = 1, #PREVIEWS do
+		if ui.button(PREVIEWS[i]) then
+			updatePreviewState(PREVIEWS[i])
+		end
+		ui.sameLine()
 	end
-	ui.sameLine()
-	if ui.button('Stars') then
-		showPreviewStars = not showPreviewStars
-		showPreviewMsg = false
-	end
-    if showPreviewMsg then previewMSG()
-	elseif showPreviewStars then previewStars() end
-	if ui.button('Offset X to center') then settings.msgOffset.x = WINDOW_WIDTH/2 end
+	if preview.msg then previewMSG() end
+	if preview.distanceBar then distanceBarPreview() end
+	if preview.stars then previewStars() end
 	ui.newLine()
 end
 
 local function settingsWindow()
-	imageSize = vec2(WINDOW_HEIGHT/80 * settings.policeSize, WINDOW_HEIGHT/80 * settings.policeSize)
-	ui.dwriteTextAligned("settings", 40, ui.Alignment.Center, ui.Alignment.Center, vec2(WINDOW_WIDTH/6.5,60), false, rgbm.colors.white)
-	ui.drawLine(vec2(0,60), vec2(WINDOW_WIDTH/6.5,60), rgbm.colors.white, 1)
-	ui.newLine(20)
+	hud.size = vec2(HEIGHT_DIV._80 * settings.essentialSize, HEIGHT_DIV._80 * settings.essentialSize)
 	ui.sameLine(10)
 	ui.beginGroup()
+	ui.newLine(15)
+
 	ui.text('Unit : ')
 	ui.sameLine(160)
 	if ui.selectable('mph', settings.unit == 'mph',_, ui.measureText('km/h')) then
@@ -742,479 +1808,1275 @@ local function settingsWindow()
 		settings.unit = 'km/h'
 		settings.unitMult = 1
 	end
-	ui.sameLine(WINDOW_WIDTH/6.5 - 120)
-	if ui.button('Close', vec2(100, WINDOW_HEIGHT/50)) then
-		settingsOpen = false
-		onSettingsChange()
+	ui.sameLine(WIDTH_DIV._6 - WIDTH_DIV._20)
+	if ui.button('Close') then
+		menuStates.main = false
+		settings:save()
 	end
-	ui.text('HUD : ')
-	settings.hudOffset.x = ui.slider('##' .. 'HUD Offset X', settings.hudOffset.x, 0, WINDOW_WIDTH, 'HUD Offset X' .. ': %.0f')
-	settings.hudOffset.y = ui.slider('##' .. 'HUD Offset Y', settings.hudOffset.y, 0, WINDOW_HEIGHT, 'HUD Offset Y' .. ': %.0f')
-	settings.policeSize = ui.slider('##' .. 'HUD Size', settings.policeSize, 10, 50, 'HUD Size' .. ': %.0f')
-	settings.fontSize = settings.policeSize * FONT_MULT
-    ui.setNextItemWidth(300)
-    ui.newLine()
-    uiTab()
+	settings.hudOffset.x = ui.slider('##' .. 'HUD Offset X', settings.hudOffset.x, 0, WINDOW_WIDTH,'HUD Offset X' .. ': %.0f')
+	settings.hudOffset.y = ui.slider('##' .. 'HUD Offset Y', settings.hudOffset.y, 0, WINDOW_HEIGHT,'HUD Offset Y' .. ': %.0f')
+	settings.essentialSize = ui.slider('##' .. 'HUD Size', settings.essentialSize, 10, 50, 'HUD Size' .. ': %.0f')
+	settings.fontSize = settings.essentialSize * FONT_MULT
+	ui.setNextItemWidth(300)
+	local colorHud = settings.colorHud
+	ui.colorPicker('Theme Color', colorHud, ui.ColorPickerFlags.AlphaBar)
+	ui.newLine()
+	uiTab()
+	ui.endGroup()
 	updateHudPos()
-	ui.endGroup()
+	return 2
 end
 
----------------------------------------------------------------------------------------------- Utils ----------------------------------------------------------------------------------------------
-
-local function formatMessage(message)
-	local msgToSend = message
-	if pursuit.suspect == nil then
-		msgToSend = string.gsub(msgToSend,"`CAR`", "No Car")
-		msgToSend = string.gsub(msgToSend,"`NAME`", "No Name")
-		msgToSend = string.gsub(msgToSend,"`SPEED`", "No Speed")
-		return msgToSend
-	end
-	msgToSend = string.gsub(msgToSend,"`CAR`", string.gsub(string.gsub(ac.getCarName(pursuit.suspect.index), "%W", " "), "  ", ""))
-	msgToSend = string.gsub(msgToSend,"`NAME`", "@" .. ac.getDriverName(pursuit.suspect.index))
-	msgToSend = string.gsub(msgToSend,"`SPEED`", string.format("%d ", ac.getCarSpeedKmh(pursuit.suspect.index) * settings.unitMult) .. settings.unit)
-	return msgToSend
-end
-
----------------------------------------------------------------------------------------------- HUD ----------------------------------------------------------------------------------------------
-
-local policeLightsPos = {
-	vec2(0,0),
-	vec2(WINDOW_WIDTH/10,WINDOW_HEIGHT),
-	vec2(WINDOW_WIDTH-WINDOW_WIDTH/10,0),
-	vec2(WINDOW_WIDTH,WINDOW_HEIGHT)
-}
-
-local function showPoliceLights()
-	local timing = math.floor(os.clock()*2 % 2)
-	if timing == 0 then
-		ui.drawRectFilledMultiColor(policeLightsPos[1], policeLightsPos[2], rgbm(1,0,0,0.5), rgbm(0,0,0,0), rgbm(0,0,0,0), rgbm(1,0,0,0.5))
-		ui.drawRectFilledMultiColor(policeLightsPos[3], policeLightsPos[4], rgbm(0,0,0,0), rgbm(0,0,1,0.5), rgbm(0,0,1,0.5), rgbm(0,0,0,0))
-	else
-		ui.drawRectFilledMultiColor(policeLightsPos[1], policeLightsPos[2], rgbm(0,0,1,0.5), rgbm(0,0,0,0), rgbm(0,0,0,0), rgbm(0,0,1,0.5))
-		ui.drawRectFilledMultiColor(policeLightsPos[3], policeLightsPos[4], rgbm(0,0,0,0), rgbm(1,0,0,0.5), rgbm(1,0,0,0.5), rgbm(0,0,0,0))
-	end
-end
-
-local chaseLVL = {
-	message = "",
-	messageTimer = 0,
-	color = rgbm.colors.white,
-}
-
-local function resetChase()
-	pursuit.enable = false
-	pursuit.nextMessage = 30
-	pursuit.lostSight = false
-	pursuit.timeLostSight = 2
-end
-
-local function lostSuspect()
-	resetChase()
-	pursuit.lostSight = false
-	pursuit.timeLostSight = 0
-	pursuit.level = 1
-	ac.sendChatMessage(formatMessage(MSG_LOST[math.random(#MSG_LOST)]))
-	pursuit.suspect = nil
-	ac.setExtraSwitch(0, false)
-end
-
-local iconsColorOn = {
-	[1] = rgbm.colors.red,
-	[2] = rgbm.colors.white,
-	[3] = rgbm.colors.white,
-	[4] = rgbm.colors.white,
-	[5] = rgbm.colors.white,
-	[6] = rgbm.colors.white,
-}
-
-local playersInRange = {}
-
-local function drawImage()
-	iconsColorOn[2] = rgbm.colors.white
-	iconsColorOn[3] = rgbm.colors.white
-	iconsColorOn[4] = rgbm.colors.white
-	iconsColorOn[5] = rgbm.colors.white
-	iconsColorOn[6] = rgbm.colors.white
-
-	if ui.rectHovered(iconPos.arrest2, iconPos.arrest1) then
-		iconsColorOn[2] = rgbm.colors.red
-		if pursuit.suspect and pursuit.suspect.speedKmh < 50 and car.speedKmh < 20 and uiState.isMouseLeftKeyClicked then
-			pursuit.hasArrested = true
+local function discordLinks()
+	ui.newLine(50)
+	ui.dwriteTextWrapped("For more info about the challenge click on the Discord link :", 15, white)
+	if sectorManager.sector.name == 'H1' then
+		if ui.textHyperlink("H1 Races Discord") then
+			os.openURL("https://discord.com/channels/358562025032646659/1073622643145703434")
 		end
-	elseif ui.rectHovered(iconPos.cams2, iconPos.cams1) then
-		iconsColorOn[3] = rgbm.colors.red
-		if uiState.isMouseLeftKeyClicked then
-			if camerasOpen then camerasOpen = false
-			else
-				camerasOpen = true
-				arrestLogsOpen = false
-				if settingsOpen then
-					onSettingsChange()
-					settingsOpen = false
-				end
-			end
+		ui.sameLine(150)
+		if ui.textHyperlink("H1 Vertex Discord") then
+			os.openURL("https://discord.com/channels/358562025032646659/1088832930698231959")
 		end
-	elseif ui.rectHovered(iconPos.lost2, iconPos.lost1) then
-		iconsColorOn[4] = rgbm.colors.red
-		if pursuit.suspect and uiState.isMouseLeftKeyClicked then
-			lostSuspect()
+	elseif sectorManager.sector.name == 'BOBs SCRAPYARD' then
+		if ui.textHyperlink("BOB's Scrapyard Discord") then
+			os.openURL("https://discord.com/channels/358562025032646659/1096776154217709629")
 		end
-	elseif ui.rectHovered(iconPos.logs2, iconPos.logs1) then
-		iconsColorOn[5] = rgbm.colors.red
-		if uiState.isMouseLeftKeyClicked then
-			if arrestLogsOpen then arrestLogsOpen = false
-			else
-				arrestLogsOpen = true
-				camerasOpen = false
-				if settingsOpen then
-					onSettingsChange()
-					settingsOpen = false
-				end
-			end
-		end
-	elseif ui.rectHovered(iconPos.menu2, iconPos.menu1) then
-		iconsColorOn[6] = rgbm.colors.red
-		if uiState.isMouseLeftKeyClicked then
-			if settingsOpen then
-				onSettingsChange()
-				settingsOpen = false
-			else
-				settingsOpen = true
-				arrestLogsOpen = false
-				camerasOpen = false
-			end
+	elseif sectorManager.sector.name == 'DOUBLE TROUBLE' then
+		if ui.textHyperlink("Double Trouble Discord") then
+			os.openURL("https://discord.com/channels/358562025032646659/1097229381308530728")
 		end
 	end
-	ui.image(HUD_IMG.base, imageSize, rgbm.colors.white)
-	ui.drawImage(HUD_IMG.radar, vec2(0,0), imageSize, iconsColorOn[1])
-	ui.drawImage(HUD_IMG.arrest, vec2(0,0), imageSize, iconsColorOn[2])
-	ui.drawImage(HUD_IMG.cams, vec2(0,0), imageSize, iconsColorOn[3])
-	ui.drawImage(HUD_IMG.lost, vec2(0,0), imageSize, iconsColorOn[4])
-	ui.drawImage(HUD_IMG.logs, vec2(0,0), imageSize, iconsColorOn[5])
-	ui.drawImage(HUD_IMG.menu, vec2(0,0), imageSize, iconsColorOn[6])
+	ui.newLine(10)
 end
 
-local function playerSelected(suspect)
-	if suspect.speedKmh > 50 then
-		pursuit.suspect = suspect
-		pursuit.nextMessage = 30
-		pursuit.level = 1
-		local msgToSend = "Officer " .. DRIVER_NAME .. " is chasing you. Run! "
-		pursuit.startedTime = settings.timeMsg
-		pursuit.engage = true
-		acpPolice{message = msgToSend, messageType = 0, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
-		ac.setExtraSwitch(0, true)
-	end
-end
-
-local function hudInChase()
-	ui.pushDWriteFont("Orbitron;Weight=Black")
-	ui.sameLine(20)
-	ui.beginGroup()
-	ui.newLine(1)
-	local textPursuit = "LVL : " .. math.floor(pursuit.level/2)
-	ui.dwriteTextWrapped(ac.getDriverName(pursuit.suspect.index) .. '\n'
-						.. string.gsub(string.gsub(ac.getCarName(pursuit.suspect.index), "%W", " "), "  ", "")
-						.. '\n' .. string.format("Speed: %d ", pursuit.suspect.speedKmh * settings.unitMult) .. settings.unit
-						.. '\n' .. textPursuit, settings.fontSize/2, rgbm.colors.white)
-	ui.dummy(vec2(imageSize.x/5,imageSize.y/20))
-	ui.newLine(30)
-	ui.sameLine()
-	if ui.button('Cancel Chase', vec2(imageSize.x/5, imageSize.y/20)) then
-		lostSuspect()
-	end
-	ui.endGroup()
-	ui.popDWriteFont()
-end
-
-local function drawText()
-	ui.pushDWriteFont("Orbitron;Weight=Bold")
-	ui.dwriteDrawText("RADAR ACTIVE", settings.fontSize/2, vec2((textPos.box2.x - ui.measureDWriteText("RADAR ACTIVE", settings.fontSize/2).x)/2, 0), rgbm.colors.red)
-	ui.popDWriteFont()
-	ui.pushDWriteFont("Orbitron;Weight=Regular")
-	ui.dwriteDrawText("NEARBY VEHICULE SPEED SCANNING", settings.fontSize/3, vec2((textPos.box2.x - ui.measureDWriteText("NEARBY VEHICULE SPEED SCANNING", settings.fontSize/3).x)/2, settings.fontSize/1.5), rgbm.colors.red)
-	ui.dummy(settings.fontSize)
-	ui.beginSubgroup(buttonOffsetX)
-	for i = 1, #playersInRange do
-		if ui.modernButton(playersInRange[i].text, buttonSize) then
-			playerSelected(playersInRange[i].player)
-		end
-	end
-	ui.endSubgroup()
-	ui.popDWriteFont()
-end
-
-local function radarUI()
-	ui.toolWindow('radarText', textSize.window1, textSize.window2, true, true, function ()
-		if pursuit.suspect then hudInChase()
-		else drawText() end
-	end)
-	ui.transparentWindow('radar', vec2(settings.hudOffset.x, settings.hudOffset.y), imageSize, true, function ()
-		drawImage()
-	end)
-end
-
-local function hidePlayers()
-	local hideRange = 500
+local function doubleTrouble()
+	local players = {}
 	for i = ac.getSim().carsCount - 1, 0, -1 do
-		local playerCar = ac.getCar(i)
-		if playerCar and playerCar.isConnected and ac.getCarBrand(i) ~= "traffic" then
-			if not isPoliceCar(ac.getCarID(i)) then
-				if playerCar.position.x > car.position.x - hideRange and playerCar.position.z > car.position.z - hideRange and playerCar.position.x < car.position.x + hideRange and playerCar.position.z < car.position.z + hideRange then
-					ac.hideCarLabels(i, false)
-				else
-					ac.hideCarLabels(i, true)
-				end
+		local carPlayer = ac.getCar(i)
+		if carPlayer and carPlayer.isConnected and (not carPlayer.isHidingLabels) then
+			if carPlayer.index ~= car.index and not isPoliceCar(carPlayer:id()) then
+				table.insert(players, carPlayer)
 			end
 		end
 	end
-end
-
-local RADAR_RANGE = 250
-
-local function radarUpdate()
-	local previousSize = #playersInRange
-	local j = 1
-	for i, c in ac.iterateCars.serverSlots() do
-	  if not c.isHidingLabels and not isPoliceCar(c:id()) then
-			if c.position.x > car.position.x - RADAR_RANGE and c.position.z > car.position.z - RADAR_RANGE and c.position.x < car.position.x + RADAR_RANGE and c.position.z < car.position.z + RADAR_RANGE then
-				playersInRange[j] = {}
-				playersInRange[j].player = c
-				playersInRange[j].text = ac.getDriverName(c.index) .. string.format(" - %d ", c.speedKmh * settings.unitMult) .. settings.unit
-				j = j + 1
-				if j == 9 then break end
-			end
-		end
-	end
-	for i = j, previousSize do playersInRange[i] = nil end
-end
-
----------------------------------------------------------------------------------------------- Chase ----------------------------------------------------------------------------------------------
-
-local function inRange()
-	local distance_x = pursuit.suspect.position.x - car.position.x
-	local distance_z = pursuit.suspect.position.z - car.position.z
-	local distanceSquared = distance_x * distance_x + distance_z * distance_z
-	if(distanceSquared < pursuit.minDistance) then
-		pursuit.enable = true
-		pursuit.lostSight = false
-		pursuit.timeLostSight = 2
-	elseif (distanceSquared < pursuit.maxDistance) then resetChase()
+	if #players == 0 then
+		ui.newLine()
+		ui.dwriteTextWrapped("There is no other players connected", 15, white)
+		ui.dwriteTextWrapped("You can't steal a car", 15, white)
 	else
-		if not pursuit.lostSight then
-			pursuit.lostSight = true
-			pursuit.timeLostSight = 2
-		else
-			pursuit.timeLostSight = pursuit.timeLostSight - ui.deltaTime()
-			if pursuit.timeLostSight < 0 then lostSuspect() end
-		end
-	end
-end
-
-local function sendChatToSuspect()
-	if pursuit.enable then
-		if 0 < pursuit.nextMessage then
-			pursuit.nextMessage = pursuit.nextMessage - ui.deltaTime()
-		elseif pursuit.nextMessage < 0 then
-			local nb = tostring(pursuit.level)
-			acpPolice{message = nb, messageType = 1, yourIndex = ac.getCar(pursuit.suspect.index).sessionID}
-			if pursuit.level < 10 then
-				pursuit.level = pursuit.level + 1
-				chaseLVL.messageTimer = settings.timeMsg
-				chaseLVL.message = "CHASE LEVEL " .. math.floor(pursuit.level/2)
-				if pursuit.level > 8 then
-					chaseLVL.color = rgbm.colors.red
-				elseif pursuit.level > 6 then
-					chaseLVL.color = rgbm.colors.orange
-				elseif pursuit.level > 4 then
-					chaseLVL.color = rgbm.colors.yellow
-				else
-					chaseLVL.color = rgbm.colors.white
+		if duo.teammate == nil then
+			ui.setNextItemWidth(150)
+			ui.combo("Teammate", duo.playerName, function()
+				for i = 1, #players do
+					if ui.selectable(ac.getDriverName(players[i].index), duo.teammate == players[i].index) then
+						acpEvent { message = "Request", messageType = 5, yourIndex = ac.getCar(players[i].index).sessionID }
+						duo.playerName = ac.getDriverName(players[i].index)
+						duo.waiting = true
+					end
 				end
+			end)
+			if duo.waiting then
+				ui.dwriteTextWrapped("duo.waiting for " .. duo.playerName .. " response ...", 15, rgbm.colors.yellow)
 			end
-			pursuit.nextMessage = 30
-		end
-	end
-end
-
-local function showPursuitMsg()
-	local text = ""
-	if chaseLVL.messageTimer > 0 then
-		chaseLVL.messageTimer = chaseLVL.messageTimer - ui.deltaTime()
-		text = chaseLVL.message
-	end
-	if pursuit.startedTime > 0 then
-		if pursuit.suspect then
-			text = "You are chasing " .. ac.getDriverName(pursuit.suspect.index) .. " driving a " .. string.gsub(string.gsub(ac.getCarName(pursuit.suspect.index), "%W", " "), "  ", "") .. " ! Get him! "
-		end
-		if pursuit.startedTime > 6 then showPoliceLights() end
-		if pursuit.engage and pursuit.startedTime < 8 then
-			ac.sendChatMessage(formatMessage(MSG_ENGAGE[math.random(#MSG_ENGAGE)]))
-			pursuit.engage = false
-		end
-	end
-	if text ~= "" then
-		local textLenght = ui.measureDWriteText(text, settings.fontSizeMSG)
-		local rectPos1 = vec2(settings.msgOffset.x - textLenght.x/2, settings.msgOffset.y)
-		local rectPos2 = vec2(settings.msgOffset.x + textLenght.x/2, settings.msgOffset.y + settings.fontSizeMSG)
-		local rectOffset = vec2(10, 10)
-		if ui.time() % 1 < 0.5 then
-			ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, COLORSMSGBG, 10)
 		else
-			ui.drawRectFilled(rectPos1 - vec2(10,0), rectPos2 + rectOffset, rgbm(0,0,0,0.5), 10)
-		end
-		ui.dwriteDrawText(text, settings.fontSizeMSG, rectPos1, chaseLVL.color)
-	end
-end
-
-local function arrestSuspect()
-	if pursuit.hasArrested and pursuit.suspect then
-		local msgToSend = formatMessage(MSG_ARREST[math.random(#MSG_ARREST)])
-		table.insert(arrestations, msgToSend .. os.date("\nDate of the Arrestation: %c"))
-		ac.sendChatMessage(msgToSend .. "\nPlease Get Back Pit, GG!")
-		pursuit.id = pursuit.suspect.sessionID
-		player.arrests = player.arrests + 1
-		pursuit.startedTime = 0
-		pursuit.suspect = nil
-		pursuit.timerArrest = 1
-	elseif pursuit.hasArrested then
-		if pursuit.timerArrest > 0 then
-			pursuit.timerArrest = pursuit.timerArrest - ui.deltaTime()
-		else
-			acpPolice{message = "BUSTED!", messageType = 2, yourIndex = pursuit.id}
-			pursuit.timerArrest = 0
-			pursuit.suspect = nil
-			pursuit.id = -1
-			pursuit.hasArrested = false
-			pursuit.startedTime = 0
-			pursuit.enable = false
-			pursuit.level = 1
-			pursuit.nextMessage = 20
-			pursuit.lostSight = false
-			pursuit.timeLostSight = 0
-			local data = {
-				["Arrests"] = player.arrests,
-			}
-			-- Update Player Data Arrests
+			ui.newLine()
+			ui.dwriteTextWrapped("teammate : ", 15, white)
+			ui.sameLine()
+			ui.dwriteTextWrapped(ac.getDriverName(duo.teammate.index), 15, rgbm.colors.purple)
+			ui.sameLine()
+			if ui.button("Cancel") then
+				acpEvent { message = "Cancel", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID }
+				duo.teammate = nil
+			end
+			duo.waiting = false
 		end
 	end
 end
 
-local function chaseUpdate()
-	if pursuit.startedTime > 0 then pursuit.startedTime = pursuit.startedTime - ui.deltaTime()
-	else pursuit.startedTime = 0 end
-	if pursuit.suspect then
-		sendChatToSuspect()
-		inRange()
+local function sectorSelect()
+	ui.setNextItemWidth(150)
+	ui.combo("Sector", sectorManager.sector.name, function()
+		for i = 1, #sectors do
+			if ui.selectable(sectors[i].name, sectorManager.sector == sectors[i]) then
+				sectorManager.sector = sectors[i]
+				sectorManager.sector:reset()
+			end
+		end
+	end)
+	ui.sameLine(WIDTH_DIV._5 - 120)
+	if ui.button('Close') then
+		menuStates.main = false
 	end
-	arrestSuspect()
 end
 
----------------------------------------------------------------------------------------------- Menu ----------------------------------------------------------------------------------------------
-
-local function arrestLogsUI()
-	ui.dwriteTextAligned("Arrestation Logs", 40, ui.Alignment.Center, ui.Alignment.Center, vec2(WINDOW_WIDTH/4,60), false, rgbm.colors.white)
-	ui.drawLine(vec2(0,60), vec2(WINDOW_WIDTH/4,60), rgbm.colors.white, 1)
-	ui.newLine(15)
+local function sectorUI()
 	ui.sameLine(10)
 	ui.beginGroup()
-	local allMsg = ""
-	ui.dwriteText("Click on the button next to the message you want to copy.", 15, rgbm.colors.white)
-	ui.sameLine(WINDOW_WIDTH/4 - 120)
-	if ui.button('Close', vec2(100, WINDOW_HEIGHT/50)) then arrestLogsOpen = false end
-	for i = 1, #arrestations do
-		if ui.smallButton("#" .. i .. ": ") then
-			ui.setClipboardText(arrestations[i])
+	ui.newLine(15)
+	sectorSelect()
+	if sectorManager.sector.name == 'DOUBLE TROUBLE' then doubleTrouble() end
+	if duo.request then
+		ui.newLine()
+		ui.dwriteTextWrapped((ac.getDriverName(duo.onlineSender.index) .. " want to steal a car with you!"), 15, rgbm.colors.purple)
+		if ui.button("Accept") then
+			duo.teammate = duo.onlineSender
+			acpEvent{message = "Accept", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
+			duo.request = false
+			sectorManager:setSector('DOUBLE TROUBLE')
 		end
 		ui.sameLine()
-		ui.dwriteTextWrapped(arrestations[i], 15, rgbm.colors.white)
-	end
-	if #arrestations == 0 then
-		ui.dwriteText("No arrestation logs yet.", 15, rgbm.colors.white)
-	end
-	ui.newLine()
-	if ui.button("Set all messages to ClipBoard") then
-		for i = 1, #arrestations do
-			allMsg = allMsg .. arrestations[i] .. "\n\n"
+		if ui.button("Decline") then
+			duo.request = false
 		end
-		ui.setClipboardText(allMsg)
 	end
+	discordLinks()
+	ui.newLine()
 	ui.endGroup()
+
+	return 1
 end
 
-local buttonPos = WINDOW_WIDTH/65
+--------------------------------------------------------------------------------------- Race Opponent -----------------------------------------------------------------------------------------------
 
-local function camerasUI()
-	ui.dwriteTextAligned("Surveillance Cameras", 40, ui.Alignment.Center, ui.Alignment.Center, vec2(WINDOW_WIDTH/6.5,60), false, rgbm.colors.white)
-	ui.drawLine(vec2(0,60), vec2(WINDOW_WIDTH/6.5,60), rgbm.colors.white, 1)
-	ui.newLine(20)
-	ui.beginGroup()
-	ui.sameLine(buttonPos)
-	if ui.button('Close', vec2(WINDOW_WIDTH/6.5 - buttonPos*2,30)) then camerasOpen = false end
-	ui.newLine()
-	for i = 1, #CAMERAS do
-		local h = math.rad(CAMERAS[i].dir + ac.getCompassAngle(vec3(0, 0, 1)))
-		ui.newLine()
-		ui.sameLine(buttonPos)
-		if ui.button(CAMERAS[i].name, vec2(WINDOW_WIDTH/6.5 - buttonPos*2,30)) then
-			ac.setCurrentCamera(ac.CameraMode.Free)
-			ac.setCameraPosition(CAMERAS[i].pos)
-			ac.setCameraDirection(vec3(math.sin(h), 0, math.cos(h))) 
-			ac.setCameraFOV(CAMERAS[i].fov)
+local horn = {
+	lastState = false,
+	stateChangedCount = 0,
+	time = 0,
+	active = false,
+	resquestTime = 0,
+	opponentName = "",
+}
+
+local raceState = {
+	inRace = false,
+	opponent = nil,
+	inFront = nil,
+	distance = 0,
+	message = false,
+	time = 0,
+	opponentElo = 1200,
+}
+
+local raceFinish = {
+	winner = nil,
+	finished = false,
+	time = 0,
+	opponentName = 'None',
+	messageSent = false,
+}
+
+local function resetHorn()
+	horn.active = false
+	horn.stateChangedCount = 0
+	horn.time = 0
+end
+
+local function resetRequest()
+	horn.resquestTime = 0
+	raceState.opponent = nil
+	raceState.opponentElo = 1200
+	horn.opponentName = ""
+	resetHorn()
+end
+
+local timeStartRace = 0
+
+local function showRaceLights()
+	local timing = os.clock() % 1
+	if timing > 0.5 then
+		ui.drawRectFilledMultiColor(vec2(0, 0), vec2(WIDTH_DIV._10, WINDOW_HEIGHT), settings.colorHud, rgbm.colors.transparent,
+			rgbm.colors.transparent, settings.colorHud)
+		ui.drawRectFilledMultiColor(vec2(WINDOW_WIDTH - WIDTH_DIV._10, 0), vec2(WINDOW_WIDTH, WINDOW_HEIGHT),
+			rgbm.colors.transparent, settings.colorHud, settings.colorHud, rgbm.colors.transparent)
+	else
+		ui.drawRectFilledMultiColor(vec2(0, 0), vec2(WIDTH_DIV._10, WINDOW_HEIGHT), rgbm.colors.transparent, rgbm.colors.transparent,
+			rgbm.colors.transparent, rgbm.colors.transparent)
+		ui.drawRectFilledMultiColor(vec2(WINDOW_WIDTH - WIDTH_DIV._10, 0), vec2(WINDOW_WIDTH, WINDOW_HEIGHT),
+			rgbm.colors.transparent, rgbm.colors.transparent, rgbm.colors.transparent, rgbm.colors.transparent)
+	end
+end
+
+local function hasWonRace(winner)
+	raceFinish.winner = winner
+	raceFinish.finished = true
+	raceFinish.time = 10
+	raceState.inRace = false
+	if winner == car then
+		player.wins = player.wins + 1
+		raceFinish.opponentName = ac.getDriverName(raceState.opponent.index)
+		raceFinish.messageSent = false
+	else
+		player.losses = player.losses + 1
+	end
+	player.elo = calculateElo(raceState.opponentElo, winner == car)
+	player:save()
+	raceState.opponent = nil
+end
+
+local acpRace = ac.OnlineEvent({
+	targetSessionID = ac.StructItem.int16(),
+	messageType = ac.StructItem.int16(),
+	elo = ac.StructItem.int16(),
+}, function(sender, data)
+	if data.targetSessionID == car.sessionID and data.messageType == 1 then
+		raceState.opponent = sender
+		raceState.opponentElo = data.elo
+		horn.resquestTime = 7
+	elseif data.targetSessionID == car.sessionID and data.messageType == 2 then
+		raceState.opponent = sender
+		raceState.opponentElo = data.elo
+		raceState.inRace = true
+		resetHorn()
+		horn.resquestTime = 0
+		raceState.message = true
+		raceState.time = 2
+		timeStartRace = 7
+	elseif data.targetSessionID == car.sessionID and data.messageType == 3 then
+		hasWonRace(car)
+	end
+end)
+
+local function whosInFront()
+	if raceState.opponent == nil then return end
+	local direction = cross(vec2(car.velocity.x, car.velocity.z),
+		vec2(raceState.opponent.velocity.x, raceState.opponent.velocity.z))
+	local midBetweenPlayers = vec2((car.position.x + raceState.opponent.position.x) / 2,
+		(car.position.z + raceState.opponent.position.z) / 2)
+	local midPlusDirection = vec2(midBetweenPlayers.x + direction.x, midBetweenPlayers.y + direction.y)
+	local youDistanceSquared = vec2(car.position.x, car.position.z):distanceSquared(midPlusDirection)
+	local opponentDistanceSquared = vec2(raceState.opponent.position.x, raceState.opponent.position.z):distanceSquared(midPlusDirection)
+	if youDistanceSquared < opponentDistanceSquared then
+		raceState.inFront = car
+	else
+		raceState.inFront = raceState.opponent
+	end
+end
+
+local function hasPit()
+	if not raceState.opponent or raceState.opponent and not raceState.opponent.isConnected then
+		hasWonRace(car)
+		return false
+	end
+	if car.isInPit then
+		acpRace { targetSessionID = raceState.opponent.sessionID, messageType = 3 }
+		hasWonRace(raceState.opponent)
+		return false
+	end
+	return true
+end
+
+local function inRace()
+	if raceState.opponent == nil then return end
+	raceState.distance = vec2(car.position.x, car.position.z):distance(vec2(raceState.opponent.position.x, raceState.opponent.position.z))
+	if raceState.distance < 50 then
+		whosInFront()
+	elseif raceState.distance > 250 then
+		hasWonRace(raceState.inFront)
+	end
+end
+
+local function hornUsage()
+	if horn.time < 2 then
+		horn.time = horn.time + ui.deltaTime()
+		if horn.lastState ~= car.hornActive then
+			horn.stateChangedCount = horn.stateChangedCount + 1
+			horn.lastState = car.hornActive
+		end
+		if horn.stateChangedCount > 3 then
+			horn.active = true
+			horn.stateChangedCount = 0
+			horn.time = 0
+		end
+	else
+		resetHorn()
+	end
+end
+
+local function dot(vector1, vector2)
+	return vector1.x * vector2.x + vector1.y * vector2.y
+end
+
+local function resquestRace()
+	local opponent = ac.getCar(ac.getCarIndexInFront(0))
+	if not opponent then return end
+	horn.opponentName = ac.getDriverName(opponent.index)
+	if opponent and (not opponent.isHidingLabels) then
+		if dot(vec2(car.look.x, car.look.z), vec2(opponent.look.x, opponent.look.z)) > 0 then
+			if isPoliceCar(ac.getCarID(opponent.index)) then return end
+			acpRace { targetSessionID = opponent.sessionID, messageType = 1, elo = player.elo }
+			horn.resquestTime = 10
 		end
 	end
-	if ac.getSim().cameraMode == ac.CameraMode.Free then
-		ui.newLine()
-		ui.newLine()
-		ui.sameLine(buttonPos)
-        if ui.button('Police car camera', vec2(WINDOW_WIDTH/6.5 - buttonPos*2,30)) then ac.setCurrentCamera(ac.CameraMode.Cockpit) end
-    end
+end
+
+local function acceptingRace()
+	if dot(vec2(car.look.x, car.look.z), vec2(raceState.opponent.look.x, raceState.opponent.look.z)) > 0 then
+		acpRace { targetSessionID = raceState.opponent.sessionID, messageType = 2, elo = player.elo }
+		raceState.inRace = true
+		horn.resquestTime = 0
+		timeStartRace = 7
+		resetHorn()
+	end
+end
+
+local function raceUpdate(dt)
+	if raceState.inRace and hasPit() then
+		inRace()
+		if raceState.time > 0 then
+			raceState.time = raceState.time - dt
+		elseif raceState.time < 0 then
+			raceState.time = 0
+		end
+		if raceState.message and raceState.time == 0 then
+			if raceState.opponent then
+				ac.sendChatMessage(DRIVER_NAME ..
+					" has started an illegal race against " .. ac.getDriverName(raceState.opponent.index) .. "!")
+				raceState.message = false
+			end
+		end
+	else
+		if raceFinish.finished then
+			raceFinish.time = raceFinish.time - dt
+			if raceFinish.time < 0 then
+				raceFinish.finished = false
+				raceFinish.winner = nil
+			end
+		else
+			hornUsage()
+			if horn.resquestTime > 0 then
+				horn.resquestTime = horn.resquestTime - dt
+				if horn.resquestTime < 0 then resetRequest() end
+				if horn.active and raceState.opponent then acceptingRace() end
+			else
+				if horn.active then resquestRace() end
+			end
+		end
+	end
+end
+
+-------------------------------------------------------------------------------- overtake --------------------------------------------------------------------------------
+
+local REQUIRED_SPEED = const(80)
+
+function script.prepare(dt)
+	return car.speedKmh > 60
+end
+
+local overtake = {
+	damage = {},
+	timePassed = 0,
+	totalScore = 0,
+	comboMeter = 1,
+	dangerouslySlowTimer = 0,
+}
+
+local carsState = {}
+
+local function resetOvertake()
+	for i = 0, 4 do overtake.damage[i] = car.damage[i] end
+	if overtake.totalScore > player.overtake then
+		player.overtake = math.floor(overtake.totalScore)
+		if player.overtake > 10000 then
+			ac.sendChatMessage("New highest Overtake score: " .. player.overtake .. " pts !")
+			player:save()
+		end
+	end
+	overtake.totalScore = 0
+	overtake.comboMeter = 1
+end
+
+local function initOverTake()
+	for i = 0, 4 do overtake.damage[i] = car.damage[i] end
+end
+
+local function overtakeUpdate(dt)
+	if car.engineLifeLeft < 1 then
+		resetOvertake()
+		return
+	end
+	for i = 0, 4 do
+		if car.damage[i] > overtake.damage[i] then
+			resetOvertake()
+			break
+		end
+	end
+	overtake.timePassed = overtake.timePassed + dt
+
+	local comboFadingRate = 0.5 * math.lerp(1, 0.1, math.lerpInvSat(car.speedKmh, 80, 200)) + car.wheelsOutside
+	overtake.comboMeter = math.max(1, overtake.comboMeter - dt * comboFadingRate)
+
+	while sim.carsCount > #carsState do
+		carsState[#carsState + 1] = {}
+	end
+
+	if car.speedKmh < REQUIRED_SPEED then
+		if overtake.dangerouslySlowTimer > 3 then
+			resetOvertake()
+			return
+		end
+		overtake.dangerouslySlowTimer = overtake.dangerouslySlowTimer + dt
+		overtake.comboMeter = 1
+		return
+	else
+		overtake.dangerouslySlowTimer = 0
+	end
+
+	for i = 1, ac.getSim().carsCount - 1 do
+		local state = carsState[i]
+		local otherCar = ac.getCar(i)
+		if otherCar.isConnected and otherCar.position:closerToThan(car.position, 10) then
+			local drivingAlong = math.dot(otherCar.look, car.look) > 0.2
+			if not drivingAlong then
+				state.drivingAlong = false
+
+				if not state.nearMiss and otherCar.position:closerToThan(car.position, 3) then
+					state.nearMiss = true
+
+					if otherCar.position:closerToThan(car.position, 2.5) then
+						overtake.comboMeter = overtake.comboMeter + 3
+					else
+						overtake.comboMeter = overtake.comboMeter + 1
+					end
+				end
+			end
+
+			if otherCar.collidedWith == 0 then
+				state.collided = true
+				resetOvertake()
+				return
+			end
+
+			if not state.overtaken and not state.collided and state.drivingAlong then
+				local posDir = (otherCar.position - car.position):normalize()
+				local posDot = math.dot(posDir, otherCar.look)
+				state.maxPosDot = math.max(state.maxPosDot, posDot)
+				if posDot < -0.5 and state.maxPosDot > 0.5 then
+					overtake.totalScore = overtake.totalScore + math.ceil(10 * overtake.comboMeter)
+					overtake.comboMeter = overtake.comboMeter + 1
+					state.overtaken = true
+				end
+			end
+		else
+			state.maxPosDot = -1
+			state.overtaken = false
+			state.collided = false
+			state.drivingAlong = true
+			state.nearMiss = false
+		end
+	end
+end
+
+local function overtakeUI(textOffset)
+	local text
+	local colorCombo
+
+	if overtake.totalScore > 0 then
+		text = overtake.totalScore .. " pts - " .. string.format("%d", overtake.comboMeter) .. "x"
+		colorCombo = rgbm(0, 1, 0, 0.9)
+	else
+		text = "PB: " .. player.overtake .. "pts"
+		colorCombo = rgbm(1, 1, 1, 0.9)
+	end
+	local textSize = ui.measureDWriteText(text, settings.fontSize)
+	ui.dwriteDrawText(text, settings.fontSize, textOffset - vec2(textSize.x / 2, -hud.size.y / 13), colorCombo)
+end
+
+local function flashingAlert(intensity)
+	local timing = os.clock() % 1
+	if timing > 0.5 then
+		ui.drawRectFilledMultiColor(vec2(0, 0), vec2(WINDOW_WIDTH / intensity, WINDOW_HEIGHT), rgbm(1, 0, 0, 0.5),
+			rgbm.colors.transparent, rgbm.colors.transparent, rgbm(1, 0, 0, 0.5))
+		ui.drawRectFilledMultiColor(vec2(WINDOW_WIDTH - WINDOW_WIDTH / intensity, 0), vec2(WINDOW_WIDTH, WINDOW_HEIGHT),
+			rgbm.colors.transparent, rgbm(1, 0, 0, 0.5), rgbm(1, 0, 0, 0.5), rgbm.colors.transparent)
+	else
+		ui.drawRectFilledMultiColor(vec2(0, 0), vec2(WINDOW_WIDTH / intensity, WINDOW_HEIGHT), rgbm.colors.transparent,
+			rgbm.colors.transparent, rgbm.colors.transparent, rgbm.colors.transparent)
+		ui.drawRectFilledMultiColor(vec2(WINDOW_WIDTH - WINDOW_WIDTH / intensity, 0), vec2(WINDOW_WIDTH, WINDOW_HEIGHT),
+			rgbm.colors.transparent, rgbm.colors.transparent, rgbm.colors.transparent, rgbm.colors.transparent)
+	end
+end
+
+local function distanceBar()
+	local playerInFront
+	if raceState.inFront == car then
+		playerInFront = "You are in front"
+	else
+		playerInFront = ac.getDriverName(raceState.inFront.index) .. " is in front"
+	end
+	local text = math.floor(raceState.distance) .. "m"
+	local textLenght = ui.measureDWriteText(text, 30)
+	ui.newLine()
+	ui.dummy(vec2(WIDTH_DIV._3, HEIGHT_DIV._40))
+	ui.sameLine()
+	ui.beginRotation()
+	ui.progressBar(raceState.distance / 250, vec2(WIDTH_DIV._3, HEIGHT_DIV._60), playerInFront)
+	ui.endRotation(90, vec2(settings.msgOffset.x - WIDTH_DIV._2 - textLenght.x / 2, settings.msgOffset.y))
+	ui.dwriteDrawText(text, 30, vec2(settings.msgOffset.x - textLenght.x / 2, settings.msgOffset.y), white)
+end
+
+local function raceUI()
+	ui.pushDWriteFont("Orbitron;Weight=Black")
+	local displayText = false
+	local text
+
+	if timeStartRace > 0 then
+		timeStartRace = timeStartRace - ui.deltaTime()
+		if raceState.opponent and timeStartRace - 5 > 0 then
+			text = "Align yourself with " .. ac.getDriverName(raceState.opponent.index) .. " to start the race!"
+			textWithBackground(text, 1)
+		else
+			local number = math.floor(timeStartRace - 1)
+			if number <= 0 then
+				text = "GO!"
+			else
+				text = number .. " ..."
+			end
+			textWithBackground(text, 3)
+		end
+		if timeStartRace - 6 > 0 then showRaceLights() end
+		if timeStartRace < 0 then timeStartRace = 0 end
+	elseif raceState.inRace and raceState.inFront then
+		distanceBar()
+		if raceState.inFront == raceState.opponent then
+			if raceState.distance > 190 then
+				flashingAlert(math.floor((190 - raceState.distance) / 10) + 10)
+			end
+		end
+	elseif raceFinish.finished then
+		text = ac.getDriverName(raceFinish.winner.index) .. " has won the race"
+		displayText = true
+		if not raceFinish.messageSent and raceFinish.winner == car then
+			ac.sendChatMessage(DRIVER_NAME ..
+				" has just beaten " ..
+				raceFinish.opponentName ..
+				string.format(" in an illegal race. [Win rate: %d",
+					player.wins * 100 / (player.wins + player.losses)) .. "%]")
+			raceFinish.messageSent = true
+			local data = {
+				["Wins"] = player.wins,
+				["Losses"] = player.losses,
+			}
+		end
+	elseif horn.resquestTime > 0 and raceState.opponent then
+		text = ac.getDriverName(raceState.opponent.index) ..
+			" wants to challenge you to a race. To accept activate your horn twice quickly"
+		displayText = true
+	elseif horn.resquestTime > 0 and raceState.opponent == nil then
+		text = "Waiting for " .. horn.opponentName .. " to accept the challenge"
+		displayText = true
+	end
+	if displayText then textWithBackground(text, 1) end
+	ui.popDWriteFont()
+end
+
+--------------------------------------------------------------------------------------- Police Chase --------------------------------------------------------------------------------------------------
+
+local policeLightsPos = {
+	vec2(0, 0),
+	vec2(WIDTH_DIV._15, WINDOW_HEIGHT),
+	vec2(WINDOW_WIDTH - WIDTH_DIV._15, 0),
+	vec2(WINDOW_WIDTH, WINDOW_HEIGHT)
+}
+
+local acpPolice = ac.OnlineEvent({
+	message = ac.StructItem.string(110),
+	messageType = ac.StructItem.int16(),
+	yourIndex = ac.StructItem.int16(),
+}, function(sender, data)
+	online.type = data.messageType
+	if data.yourIndex == car.sessionID and data.messageType == 0 then
+		online.message = data.message
+		online.chased = true
+		online.officer = sender
+		online.messageTimer = settings.timeMsg
+		policeLightsPos[2] = vec2(WIDTH_DIV._10, WINDOW_HEIGHT)
+		policeLightsPos[3] = vec2(WINDOW_WIDTH - WIDTH_DIV._10, 0)
+	elseif data.yourIndex == car.sessionID and data.messageType == 1 then
+		online.level = tonumber(data.message)
+		online.messageTimer = settings.timeMsg
+		online.message = "CHASE LEVEL " .. data.message
+		if online.level > 8 then
+			online.color = rgbm.colors.red
+		elseif online.level > 6 then
+			online.color = rgbm.colors.orange
+		elseif online.level > 4 then
+			online.color = rgbm.colors.yellow
+		else
+			online.color = white
+		end
+	elseif data.yourIndex == car.sessionID and data.messageType == 2 then
+		online.message = data.message
+		online.messageTimer = settings.timeMsg
+		online.chased = false
+		online.officer = nil
+		online.level = 0
+		policeLightsPos[2] = vec2(WIDTH_DIV._6, WINDOW_HEIGHT)
+		policeLightsPos[3] = vec2(WINDOW_WIDTH - WIDTH_DIV._6, 0)
+	end
+end)
+
+local function showPoliceLights()
+	local timing = math.floor(os.clock() * 2 % 2)
+	if timing == 0 then
+		ui.drawRectFilledMultiColor(policeLightsPos[1], policeLightsPos[2], rgbm(1, 0, 0, 0.5), rgbm.colors.transparent,
+			rgbm.colors.transparent, rgbm(1, 0, 0, 0.5))
+		ui.drawRectFilledMultiColor(policeLightsPos[3], policeLightsPos[4], rgbm.colors.transparent, rgbm(0, 0, 1, 0.5),
+			rgbm(0, 0, 1, 0.5), rgbm.colors.transparent)
+	else
+		ui.drawRectFilledMultiColor(policeLightsPos[1], policeLightsPos[2], rgbm(0, 0, 1, 0.5), rgbm.colors.transparent,
+			rgbm.colors.transparent, rgbm(0, 0, 1, 0.5))
+		ui.drawRectFilledMultiColor(policeLightsPos[3], policeLightsPos[4], rgbm.colors.transparent, rgbm(1, 0, 0, 0.5),
+			rgbm(1, 0, 0, 0.5), rgbm.colors.transparent)
+	end
+end
+
+local function showArrestMSG()
+	ui.pushDWriteFont("Orbitron;Weight=Black")
+	local textArrest1 = "BUSTED!"
+	local textArrest2 = "GGs! Please Go Back To Pits."
+	local textArrestLenght1 = ui.measureDWriteText(textArrest1, settings.fontSizeMSG * 3)
+	local textArrestLenght2 = ui.measureDWriteText(textArrest2, settings.fontSizeMSG * 3)
+	ui.drawRectFilled(vec2(0, 0), vec2(WINDOW_WIDTH, WINDOW_HEIGHT), rgbm(0, 0, 0, 0.5))
+	ui.dwriteDrawText(textArrest1, settings.fontSizeMSG * 3,
+		vec2(WIDTH_DIV._2 - textArrestLenght1.x / 2, HEIGHT_DIV._4 - textArrestLenght1.y / 2), rgbm(1, 0, 0, 1))
+	ui.dwriteDrawText(textArrest2, settings.fontSizeMSG * 3,
+		vec2(WIDTH_DIV._2 - textArrestLenght2.x / 2, HEIGHT_DIV._4 + textArrestLenght2.y / 2), white)
+	ui.popDWriteFont()
 end
 
 
-local menuSize = {vec2(WINDOW_WIDTH/4, WINDOW_HEIGHT/3), vec2(WINDOW_WIDTH/6.4, WINDOW_HEIGHT/2.2)}
-local buttonPressed = false
+local function onlineEventMessageUI()
+	if online.messageTimer > 0 then
+		online.messageTimer = online.messageTimer - ui.deltaTime()
+		local text = online.message
+		if online.message ~= "BUSTED!" then textWithBackground(text, 1) end
+		if online.type == 2 then
+			if online.message == "BUSTED!" then showArrestMSG() end
+			showPoliceLights()
+		end
+		if online.type == 1 and online.messageTimer < 3 then
+			showPoliceLights()
+		end
+	elseif online.messageTimer < 0 then
+		online.message = ""
+		online.messageTimer = 0
+	end
+end
 
+-------------------------------------------------------------------------------------------- HUD -------------------------------------------------------------------------------------------------------
+
+local statOn = {
+	[1] = "Distance Driven",
+	[2] = "Races",
+	[3] = "Overtake",
+	[4] = "Sector",
+}
+
+local iconsColorOn = {
+	[1] = white,
+	[2] = white,
+	[3] = white,
+	[4] = white,
+}
+
+local countdownTime = 0
+local cooldownTime = 0
+local countDownState = {
+	countdownOn = false,
+	ready = true,
+	set = true,
+	go = true
+}
+
+local function countdown()
+	if countDownState.countdownOn then
+		if countdownTime > 0 then countdownTime = countdownTime - ui.deltaTime() end
+		cooldownTime = cooldownTime - ui.deltaTime()
+		if cooldownTime < 0 then
+			cooldownTime = 0
+			countDownState.countdownOn = false
+		end
+		if countdownTime < 5 and countDownState.ready == true then
+			ac.sendChatMessage('***GET READY***')
+			countDownState.ready = false
+		elseif countdownTime < 3 and countDownState.set == true then
+			ac.sendChatMessage('**SET**')
+			countDownState.set = false
+		elseif countdownTime < 0 and countDownState.go == true then
+			ac.sendChatMessage('*GO*GO*GO*')
+			countDownState.go = false
+		end
+	end
+end
+
+local function drawHudText()
+	ui.pushDWriteFont("Orbitron;Weight=BOLD")
+	local textOffset = vec2(hud.size.x / 2, hud.size.y / 4.5)
+	local textSize = ui.measureDWriteText(statOn[settings.current], settings.fontSize)
+	if settings.current ~= 4 then
+		ui.dwriteDrawText(statOn[settings.current], settings.fontSize,
+			textOffset - vec2(textSize.x / 2, 0), settings.colorHud)
+	end
+	if settings.current == 1 then
+		local drivenKm = car.distanceDrivenSessionKm
+		if drivenKm < 0.01 then drivenKm = 0 end
+		textSize = ui.measureDWriteText(string.format("%.2f", drivenKm) .. " km", settings.fontSize)
+		ui.dwriteDrawText(string.format("%.2f", drivenKm) .. " km", settings.fontSize,
+			textOffset - vec2(textSize.x / 2, -hud.size.y / 13), rgbm(1, 1, 1, 0.9))
+	elseif settings.current == 2 then
+		textSize = ui.measureDWriteText(player.wins .. "Win  -  Lost" .. player.losses, settings.fontSize / 1.1)
+		ui.dwriteDrawText("Win " .. player.wins .. " - Lost " .. player.losses, settings.fontSize / 1.1,
+			textOffset - vec2(textSize.x / 2, -hud.size.y / 12.5), rgbm(1, 1, 1, 0.9))
+	elseif settings.current == 3 then
+		overtakeUI(textOffset)
+	elseif settings.current == 4 then
+		textSize = ui.measureDWriteText(sectorManager.sector.name, settings.fontSize)
+		ui.dwriteDrawText(sectorManager.sector.name, settings.fontSize, textOffset - vec2(textSize.x / 2, 0), settings.colorHud)
+		textSize = ui.measureDWriteText("Time: 00:00:000", settings.fontSize)
+		ui.dwriteDrawText("Time: " .. sectorManager.sector.time, settings.fontSize, textOffset - vec2(textSize.x / 2, -hud.size.y / 13), sectorManager.sector.timeColor)
+	end
+	ui.popDWriteFont()
+end
+
+local function getClosestMission()
+	local closestMission = nil
+	local closestDistance = 500
+	for i = 1, #sectors do
+		for j = 1, #MISSION_NAMES do
+			if sectors[i].name == MISSION_NAMES[j] then
+				if car.position:distance(sectors[i].gates[1].pos) < closestDistance then
+					closestMission = sectors[i]
+					closestDistance = car.position:distance(sectors[i].gates[1].pos)
+				end
+				break
+			end
+		end
+	end
+	return closestMission
+end
+
+local function drawHudImages()
+	iconsColorOn[1] = white
+	iconsColorOn[2] = white
+	iconsColorOn[3] = white
+	iconsColorOn[4] = white
+	local toolTipOn = false
+	ui.drawImage(HUD_IMG.center, vec2(0, 0), hud.size)
+	if ui.rectHovered(vec2(0, 0), vec2(hud.size.x, hud.size.y / 2)) then toolTipOn = true end
+	if ui.rectHovered(hud.pos.leftPos2, hud.pos.leftPos1) then
+		ui.image(HUD_IMG.left, hud.size, settings.colorHud)
+		if uiState.isMouseLeftKeyClicked then
+			if settings.current == 1 then settings.current = #statOn else settings.current = settings.current - 1 end
+		end
+	elseif ui.rectHovered(hud.pos.rightPos2, hud.pos.rightPos1) then
+		ui.image(HUD_IMG.right, hud.size, settings.colorHud)
+		if uiState.isMouseLeftKeyClicked then
+			if settings.current == #statOn then settings.current = 1 else settings.current = settings.current + 1 end
+		end
+	elseif ui.rectHovered(hud.pos.theftPos2, hud.pos.theftPos1) then
+		iconsColorOn[1] = settings.colorHud
+		if uiState.isMouseLeftKeyClicked then
+			if missionManager.msgTime == 0 then
+				local closestMission = getClosestMission()
+				if not closestMission then return end
+				ac.sendChatMessage(MISSION_TEXT[closestMission.name].chat)
+				missionManager.msgTime = 10
+				missionManager.showIntro = true
+				if sectorManager.sector.name ~= "DOUBLE TROUBLE" then
+					sectorManager:setSector(closestMission.name)
+				elseif closestMission.name == "BOBs SCRAPYARD" then
+					sectorManager:setSector("DOUBLE TROUBLE")
+				end
+				settings.current = 4
+			end
+		end
+	elseif ui.rectHovered(hud.pos.ranksPos2, hud.pos.ranksPos1) then
+		iconsColorOn[2] = settings.colorHud
+		if uiState.isMouseLeftKeyClicked then
+			if menuStates.leaderboard then
+				menuStates.leaderboard = false
+			else
+				if menuStates.main then
+					menuStates.main = false
+				end
+				menuStates.leaderboard = true
+			end
+		end
+	elseif ui.rectHovered(hud.pos.countdownPos2, hud.pos.countdownPos1) then
+		iconsColorOn[3] = settings.colorHud
+		if not countDownState.countdownOn and uiState.isMouseLeftKeyClicked then
+			if cooldownTime == 0 then
+				countdownTime = 5
+				cooldownTime = 30
+				countDownState.countdownOn = true
+				countDownState.ready = true
+				countDownState.set = true
+				countDownState.go = true
+			end
+			settings.current = 2
+		end
+	elseif ui.rectHovered(hud.pos.menuPos2, hud.pos.menuPos1) then
+		iconsColorOn[4] = settings.colorHud
+		if uiState.isMouseLeftKeyClicked then
+			if menuStates.main then
+				menuStates.main = false
+			else
+				if menuStates.leaderboard then menuStates.leaderboard = false end
+				menuStates.main = true
+			end
+		end
+	end
+	ui.image(HUD_IMG.base, hud.size, settings.colorHud)
+	ui.drawImage(HUD_IMG.theft, vec2(0, 0), hud.size, iconsColorOn[1])
+	ui.drawImage(HUD_IMG.ranks, vec2(0, 0), hud.size, iconsColorOn[2])
+	ui.drawImage(HUD_IMG.countdown, vec2(0, 0), hud.size, iconsColorOn[3])
+	ui.drawImage(HUD_IMG.menu, vec2(0, 0), hud.size, iconsColorOn[4])
+	if countDownState.countdownOn then countdown() end
+	if toolTipOn then
+		ui.tooltip(function()
+			ui.text("Click ALT to Bring up\nThe Welcome Menu")
+		end)
+	end
+end
+
+---@param text string
+local function showMsgMission(text)
+	textWithBackground(text, 1)
+end
+
+local function missionMsgOnScreen()
+	if sectorManager.sector == nil or sectorManager.sector.name == "H1" then return end
+	if sectorManager.started and missionManager.level == 0 then
+		showMsgMission(MISSION_TEXT[sectorManager.sector.name].failed[missionManager.msgFailedIndex])
+	elseif missionManager.showIntro and missionManager.msgTime > 0 then
+		showMsgMission(MISSION_TEXT[sectorManager.sector.name].intro[1] .. formatTime(sectorManager.sector.timeLimit) .. MISSION_TEXT[sectorManager.sector.name].intro[2])
+		missionManager.msgTime = missionManager.msgTime - ui.deltaTime()
+		if missionManager.msgTime < 0 then
+			missionManager.msgTime = 0
+			missionManager.showIntro = false
+		end
+	end
+end
+
+local function hudUI()
+	missionMsgOnScreen()
+	ui.transparentWindow("HUD", vec2(settings.hudOffset.x, settings.hudOffset.y), hud.size, true, function()
+		drawHudImages()
+		drawHudText()
+	end)
+end
+
+-------------------------------------------------------------------------------------------- Menu --------------------------------------------------------------------------------------------
+
+local menuSize = { vec2(WIDTH_DIV._5, HEIGHT_DIV._4), vec2(WIDTH_DIV._6, WINDOW_HEIGHT * 2 / 3), vec2(WIDTH_DIV._3, HEIGHT_DIV._3) }
+local currentTab = 1
+
+local function menu()
+	ui.tabBar('MainTabBar', ui.TabBarFlags.Reorderable, function()
+		ui.tabItem('Sectors', function() currentTab = sectorUI() end)
+		ui.tabItem('settings', function() currentTab = settingsWindow() end)
+	end)
+end
+
+local windowAction = 0
+local leftClickDown = false
 local function moveMenu()
-	if ui.windowHovered() and ui.mouseDown() then buttonPressed = true end
-	if ui.mouseReleased() then buttonPressed = false end
-	if buttonPressed then settings.menuPos = settings.menuPos + ui.mouseDelta() end
+	if ui.windowHovered() then
+		local mousePos = ui.mouseLocalPos()
+		if not leftClickDown and ui.mouseDown() then
+			leftClickDown = true
+			windowAction = 3
+			if not menuStates.leaderboard and mousePos.y > menuSize[currentTab].y - 50 then
+				if mousePos.x < 50 then
+					windowAction = 1
+				elseif mousePos.x > menuSize[currentTab].x - 50 then
+					windowAction = 2
+				end
+			end
+		end
+		if not menuStates.leaderboard and mousePos.y > menuSize[currentTab].y - 50 then
+			if mousePos.x < 50 then
+				ui.setMouseCursor(ui.MouseCursor.ResizeNESW)
+			elseif mousePos.x > menuSize[currentTab].x - 50 then
+				ui.setMouseCursor(ui.MouseCursor.ResizeNWSE)
+			end
+		end
+	end
+	if ui.mouseReleased() then
+		leftClickDown = false
+		windowAction = 0
+	end
+
+	if leftClickDown then
+		if windowAction == 1 then
+			menuSize[currentTab].x = menuSize[currentTab].x - ui.mouseDelta().x
+			menuSize[currentTab].y = menuSize[currentTab].y + ui.mouseDelta().y
+			settings.menuPos.x = settings.menuPos.x + ui.mouseDelta().x
+		elseif windowAction == 2 then
+			menuSize[currentTab] = menuSize[currentTab] + ui.mouseDelta()
+		elseif windowAction == 3 then
+			settings.menuPos = settings.menuPos + ui.mouseDelta()
+		end
+	end
 end
 
----------------------------------------------------------------------------------------------- updates ----------------------------------------------------------------------------------------------
 
-local initUiSize = false
+local function leaderboardWindow()
+	ui.toolWindow('LeaderboardWindow', settings.menuPos, vec2(WIDTH_DIV._2, HEIGHT_DIV._2), false, true, function()
+		showLeaderboard()
+		moveMenu()
+	end)
+end
+
+--------------------------------------------------------------------------------- Welcome Menu ---------------------------------------------------------------------------------
+
+local welcomeCardsToDisplayed = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }
+
+local welcomeNavImgToDraw = { WELCOME_NAV_IMG.leftArrowOff, WELCOME_NAV_IMG.rightArrowOff, WELCOME_NAV_IMG.leftBoxOff, WELCOME_NAV_IMG
+	.centerBoxOff, WELCOME_NAV_IMG.rightBoxOff, WELCOME_NAV_IMG.base, WELCOME_NAV_IMG.logo }
+
+local cardOutline = {
+	white,
+	white,
+	white,
+	white,
+	white,
+	white,
+	white,
+}
+
+local welcomeWindow = {
+	size = vec2(16 * WINDOW_HEIGHT / 9, WINDOW_HEIGHT),
+	topLeft = vec2(0, 0),
+	topRight = vec2(WINDOW_WIDTH, 0),
+	offset = vec2(0, 0),
+	scale = 0.9,
+	fontBold = ui.DWriteFont("Orbitron;Weight=BLACK"),
+	font = ui.DWriteFont("Orbitron;Weight=REGULAR"),
+	closeIMG = "https://acstuff.ru/images/icons_24/cancel.png",
+	fontSize = WINDOW_HEIGHT / 35,
+	missionInfoFontSize = (WINDOW_HEIGHT / 35) * 0.6,
+}
+
+
+local function scaleWelcomeMenu()
+	local xScale = WINDOW_WIDTH / 2560
+	local yScale = WINDOW_HEIGHT / 1440
+	local minScale = math.min(xScale, yScale)
+
+	welcomeWindow.size = welcomeWindow.size * welcomeWindow.scale
+	welcomeWindow.offset = vec2((WINDOW_WIDTH - welcomeWindow.size.x) / 2, (WINDOW_HEIGHT - welcomeWindow.size.y) / 2)
+	minScale = minScale * welcomeWindow.scale
+	for i = 1, #WELCOME_CARD_IMG_POS do
+		WELCOME_CARD_IMG_POS[i][1] = WELCOME_CARD_IMG_POS[i][1] * minScale
+		WELCOME_CARD_IMG_POS[i][2] = WELCOME_CARD_IMG_POS[i][2] * minScale
+	end
+	welcomeWindow.topLeft = WELCOME_CARD_IMG_POS[6][1] + welcomeWindow.offset + welcomeWindow.size / 100
+	welcomeWindow.topRight = vec2(WELCOME_CARD_IMG_POS[6][2].x - welcomeWindow.size.x / 100,
+		WELCOME_CARD_IMG_POS[6][1].y + welcomeWindow.size.y / 100) + welcomeWindow.offset
+end
+
+local timeLevelsOffset = vec2(0,0)
+
+local function showMissionInfo(i, id)
+	local leftCorner = vec2(WELCOME_CARD_IMG_POS[i + 2][1].x, WELCOME_CARD_IMG_POS[i + 2][1].y) +
+		vec2(welcomeWindow.size.x / 100, welcomeWindow.size.y / 10)
+	local textPos = leftCorner + welcomeWindow.size / 100
+	ui.drawRectFilled(leftCorner,
+		vec2(WELCOME_CARD_IMG_POS[i + 2][2].x - welcomeWindow.size.x / 100,
+		leftCorner.y + ui.measureDWriteText("\n\n\n\n\n\n\n\n\n", settings.fontSize).y), rgbm(0, 0, 0, 0.8))
+	ui.popDWriteFont()
+	ui.pushDWriteFont("Orbitron;Weight=BLACK")
+	local textOffsetY = ui.measureDWriteText("TEXT", welcomeWindow.missionInfoFontSize).y * 2
+	local textOffsetX = ui.measureDWriteText("LEVEL 3:---", welcomeWindow.missionInfoFontSize).x
+	ui.dwriteDrawText(MISSIONS[id].start[1], welcomeWindow.missionInfoFontSize, textPos, settings.colorHud)
+	textPos.x = textPos.x + textOffsetX
+	ui.dwriteDrawText(MISSIONS[id].start[2], welcomeWindow.missionInfoFontSize, textPos, white)
+	textPos.y = textPos.y + textOffsetY
+	textPos.x = textPos.x - textOffsetX
+	ui.dwriteDrawText(MISSIONS[id].finish[1], welcomeWindow.missionInfoFontSize, textPos, settings.colorHud)
+	textPos.x = textPos.x + textOffsetX
+	ui.dwriteDrawText(MISSIONS[id].finish[2], welcomeWindow.missionInfoFontSize, textPos, white)
+	textPos.y = textPos.y + textOffsetY
+	textPos.x = textPos.x - textOffsetX
+	ui.dwriteDrawText("Time Limits :", welcomeWindow.fontSize * 0.8, textPos, settings.colorHud)
+	textPos.y = textPos.y + textOffsetY
+	for j = 1, #MISSIONS[id].levels do
+		ui.dwriteDrawText("LEVEL " .. j .. " :" , welcomeWindow.missionInfoFontSize, textPos, settings.colorHud)
+		timeLevelsOffset.y = textPos.y
+		timeLevelsOffset.x = textOffsetX + textPos.x
+		ui.dwriteDrawText(MISSIONS[id].levels[j], welcomeWindow.missionInfoFontSize, timeLevelsOffset, white)
+		textPos.y = textPos.y + textOffsetY
+	end
+	ui.popDWriteFont()
+end
+
+local function drawWelcomeText()
+	ui.popDWriteFont()
+	ui.pushDWriteFont(welcomeWindow.font)
+	ui.dwriteDrawText("WELCOME BACK,", welcomeWindow.missionInfoFontSize, welcomeWindow.topLeft, white)
+	ui.popDWriteFont()
+	ui.pushDWriteFont(welcomeWindow.fontBold)
+	ui.dwriteDrawText(DRIVER_NAME, welcomeWindow.fontSize,
+		vec2(welcomeWindow.topLeft.x,
+			welcomeWindow.topLeft.y + ui.measureDWriteText("WELCOME BACK,", welcomeWindow.missionInfoFontSize).y),
+		settings.colorHud)
+	ui.popDWriteFont()
+	ui.pushDWriteFont(welcomeWindow.font)
+	ui.dwriteDrawText("CURRENT CAR", welcomeWindow.missionInfoFontSize,
+		vec2(welcomeWindow.topRight.x - ui.measureDWriteText("CURRENT CAR", welcomeWindow.missionInfoFontSize).x,
+			welcomeWindow.topRight.y), white)
+	ui.popDWriteFont()
+	ui.pushDWriteFont(welcomeWindow.fontBold)
+	ui.dwriteDrawText(string.gsub(string.gsub(CAR_NAME_NO_UTF8, "%W", " "), "  ", ""), welcomeWindow.fontSize,
+		vec2(
+			welcomeWindow.topRight.x -
+			ui.measureDWriteText(string.gsub(string.gsub(CAR_NAME_NO_UTF8, "%W", " "), "  ", ""), welcomeWindow.fontSize).x,
+			welcomeWindow.topRight.y + ui.measureDWriteText("CURRENT CAR", welcomeWindow.missionInfoFontSize).y),
+		settings.colorHud)
+	ui.popDWriteFont()
+end
+
+---@param tpPos vec3
+local function willCollide(tpPos)
+	for i, c in ac.iterateCars.ordered() do
+		if c.position:distanceSquared(tpPos) < 4 then
+			return true
+		end
+	end
+	return false
+end
+
+local function tpToMission(i)
+	if i < 4 and car.speedKmh < 30 then
+		for j = 1, #MISSIONS[i].tp do
+			if not willCollide(MISSIONS[i].tp[j].pos) then
+				physics.setCarPosition(0, MISSIONS[i].tp[j].pos, MISSIONS[i].tp[j].dir)
+				sectorManager:setSector(MISSIONS[i].name)
+				break
+			end
+		end
+	end
+end
+
+local function drawWelcomeImg()
+	local iconCloseColor = white
+	local toolTipOn = false
+	for i = 1, #cardOutline - 1 do
+		if i == #cardOutline - 1 then
+			cardOutline[i] = settings.colorHud
+		else
+			cardOutline[i] = white
+		end
+	end
+	welcomeNavImgToDraw[1] = WELCOME_NAV_IMG.leftArrowOff
+	welcomeNavImgToDraw[2] = WELCOME_NAV_IMG.rightArrowOff
+	welcomeNavImgToDraw[3] = WELCOME_NAV_IMG.leftBoxOff
+	welcomeNavImgToDraw[4] = WELCOME_NAV_IMG.centerBoxOff
+	welcomeNavImgToDraw[5] = WELCOME_NAV_IMG.rightBoxOff
+	ui.transparentWindow('WELCOME_NAV_IMG', welcomeWindow.offset, welcomeWindow.size, true, function()
+		ui.childWindow('welcomeNavIMGChild', welcomeWindow.size, true, function()
+			ui.drawRectFilled(WELCOME_CARD_IMG_POS[6][1], WELCOME_CARD_IMG_POS[6][2], rgbm(0, 0, 0, 0.6))
+			ui.drawRectFilled(WELCOME_CARD_IMG_POS[7][1], WELCOME_CARD_IMG_POS[7][2], rgbm(0, 0, 0, 0.6))
+			if ui.rectHovered(WELCOME_CARD_IMG_POS[1][1], WELCOME_CARD_IMG_POS[1][2]) then
+				cardOutline[1] = settings.colorHud
+				welcomeNavImgToDraw[1] = WELCOME_NAV_IMG.leftArrowOn
+				if uiState.isMouseLeftKeyClicked then
+					for i = 1, #welcomeCardsToDisplayed do
+						if welcomeCardsToDisplayed[i] == 1 then
+							welcomeCardsToDisplayed[i] = #WELCOME_CARD_IMG
+						else
+							welcomeCardsToDisplayed[i] = welcomeCardsToDisplayed[i] - 1
+						end
+					end
+				end
+			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[2][1], WELCOME_CARD_IMG_POS[2][2]) then
+				cardOutline[2] = settings.colorHud
+				welcomeNavImgToDraw[2] = WELCOME_NAV_IMG.rightArrowOn
+				if uiState.isMouseLeftKeyClicked then
+					for i = 1, #welcomeCardsToDisplayed do
+						if welcomeCardsToDisplayed[i] == #WELCOME_CARD_IMG then
+							welcomeCardsToDisplayed[i] = 1
+						else
+							welcomeCardsToDisplayed[i] = welcomeCardsToDisplayed[i] + 1
+						end
+					end
+				end
+			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[3][1], WELCOME_CARD_IMG_POS[3][2]) then
+				toolTipOn = true
+				cardOutline[3] = settings.colorHud
+				welcomeNavImgToDraw[3] = WELCOME_NAV_IMG.leftBoxOn
+				if uiState.isMouseLeftKeyClicked then tpToMission(welcomeCardsToDisplayed[1]) end
+			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[4][1], WELCOME_CARD_IMG_POS[4][2]) then
+				toolTipOn = true
+				cardOutline[4] = settings.colorHud
+				welcomeNavImgToDraw[4] = WELCOME_NAV_IMG.centerBoxOn
+				if uiState.isMouseLeftKeyClicked then tpToMission(welcomeCardsToDisplayed[2]) end
+			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[5][1], WELCOME_CARD_IMG_POS[5][2]) then
+				toolTipOn = true
+				cardOutline[5] = settings.colorHud
+				welcomeNavImgToDraw[5] = WELCOME_NAV_IMG.rightBoxOn
+				if uiState.isMouseLeftKeyClicked then tpToMission(welcomeCardsToDisplayed[3]) end
+			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[7][1], WELCOME_CARD_IMG_POS[7][2]) then
+				iconCloseColor = settings.colorHud
+				if uiState.isMouseLeftKeyClicked then menuStates.welcome = false end
+			end
+			ui.drawImage(welcomeWindow.closeIMG, WELCOME_CARD_IMG_POS[8][1], WELCOME_CARD_IMG_POS[8][2], iconCloseColor)
+			for i = 1, #welcomeNavImgToDraw do ui.drawImage(welcomeNavImgToDraw[i], vec2(0, 0), welcomeWindow.size, cardOutline[i]) end
+			for i = 1, 3 do
+				if welcomeCardsToDisplayed[i] < 4 then
+					ui.drawImage(WELCOME_CARD_IMG[welcomeCardsToDisplayed[i]], WELCOME_CARD_IMG_POS[i + 2][1], WELCOME_CARD_IMG_POS[i + 2][2], white)
+					showMissionInfo(i, welcomeCardsToDisplayed[i])
+				else
+					ui.drawImage(WELCOME_CARD_IMG[welcomeCardsToDisplayed[i]], WELCOME_CARD_IMG_POS[i + 2][1], WELCOME_CARD_IMG_POS[i + 2][2], white)
+				end
+			end
+		end)
+	end)
+	if toolTipOn then
+		for i = 1, 3 do
+			if welcomeCardsToDisplayed[i] < 4 then
+				ui.tooltip(function()
+					ui.text("Left Click to teleport to the mission")
+				end)
+			end
+		end
+	end
+end
+
+local function drawWelcomeMenu()
+	drawWelcomeImg()
+	drawWelcomeText()
+end
+
+-------------------------------------------------------------------------------- UPDATE --------------------------------------------------------------------------------
+
+local function missionFinishedWindow()
+	ui.transparentWindow('MissionFinished', vec2(0, 0), vec2(WINDOW_WIDTH, HEIGHT_DIV._12), false, true, function()
+		ui.pushDWriteFont("Orbitron;Weight=Black")
+		local timeMsg = "FAILED"
+		if missionManager.level ~= 0 then timeMsg = "LEVEL " .. missionManager.level end
+		local text = sectorManager.sector.name .. " - " .. timeMsg .. os.date(" - %x")
+		local textLenght = ui.measureDWriteText(text, settings.fontSizeMSG * 2)
+		ui.drawRectFilled(vec2(0, 0), vec2(WINDOW_WIDTH, HEIGHT_DIV._12), rgbm(0, 0, 0, 0.5))
+		ui.dwriteDrawText(text, settings.fontSizeMSG * 2, vec2(WIDTH_DIV._2 - textLenght.x / 2, HEIGHT_DIV._60), settings.colorHud)
+		ui.popDWriteFont()
+	end)
+end
 
 function script.drawUI()
 	if not shouldRun() then return end
-	if not initUiSize then
-		initsettings()
-		initUiSize = true
+	if scoreOffset == 0 then
+		scoreOffset = ui.measureDWriteText("Racing Elo: --1200", settings.fontSizeMSG).x
+		timeOffset = ui.measureDWriteText(longestCarName .. ": --", settings.fontSizeMSG).x + WIDTH_DIV._40
 	end
-	radarUI()
-	if pursuit.suspect then showStarsPursuit() end
-	showPursuitMsg()
-	if settingsOpen then
-		ui.toolWindow('settings', settings.menuPos, menuSize[2], true, function ()
-			ui.childWindow('childsettings', menuSize[2], true, function () settingsWindow() moveMenu() end)
-		end)
-	elseif arrestLogsOpen then
-		ui.toolWindow('ArrestLogs', settings.menuPos, menuSize[1], true, function ()
-			ui.childWindow('childArrestLogs', menuSize[1], true, function () arrestLogsUI() moveMenu() end)
-		end)
-	elseif camerasOpen then
-		ui.toolWindow('Cameras', settings.menuPos, menuSize[2], true, function ()
-			ui.childWindow('childCameras', menuSize[2], true, function () camerasUI() moveMenu() end)
-		end)
+	if sectorManager.sector and sectorManager.finished and sectorManager.sector.name ~= "H1" then
+		missionFinishedWindow()
 	end
+	if ui.keyboardButtonPressed(ui.KeyIndex.Menu) then menuStates.welcome = not menuStates.welcome end
+	if menuStates.welcome then
+		drawWelcomeMenu()
+	else
+		if online.chased then showStarsPursuit() end
+		hudUI()
+		onlineEventMessageUI()
+		raceUI()
+		if menuStates.main then
+			ui.toolWindow('Menu', settings.menuPos, menuSize[currentTab], true, true, function()
+				menu()
+				moveMenu()
+			end)
+		end
+		if menuStates.leaderboard then leaderboardWindow() end
+	end
+end
+
+local policeCarIndex = { 0, 0, 0, 0, 0, 0 }
+
+local function initPoliceCarIndex()
+	local j = 1
+	for i = ac.getSim().carsCount - 1, 0, -1 do
+		local playerCarID = ac.getCarID(i)
+		if playerCarID and isPoliceCar(playerCarID) then
+			policeCarIndex[j] = i
+			j = j + 1
+		end
+	end
+end
+
+local function hidePolice()
+	local hideRange = 100
+	for i = 1, 6 do
+		local p = ac.getCar(policeCarIndex[i])
+		if p and p.isConnected then
+			if p.position.x > car.position.x - hideRange and p.position.z > car.position.z - hideRange and p.position.x < car.position.x + hideRange and p.position.z < car.position.z + hideRange then
+				ac.hideCarLabels(i, false)
+			else
+				ac.hideCarLabels(i, true)
+			end
+		end
+	end
+end
+
+local function updateThefts()
+	if sectorManager.sector.name == "BOBs SCRAPYARD" or sectorManager.sector.name == "DOUBLE TROUBLE" then
+		if sectorManager.sector:isUnderTimeLimit() ~= 0 then
+			player.thefts = player.thefts + 1
+		end
+	end
+end
+
+local function sectorUpdate()
+	if not sectorManager.started and not sectorManager.sector:hasStarted() then
+		sectorManager.started = true
+		sectorManager.finished = false
+	end
+	if not sectorManager.finished and sectorManager.sector:isFinished() then
+		if sectorManager.sector.name ~= 'DOUBLE TROUBLE' or sectorManager:hasTeammateFinished() then
+			updateThefts()
+			missionManager.level = sectorManager.sector:isUnderTimeLimit()
+			sectorManager.finished = true
+			sectorManager.started = false
+			local shouldSave = player:addSectorRecord(sectorManager.sector.name, sectorManager.sector.finalTime)
+			if shouldSave then player:save() end
+		else
+			if duo.teammate and not duo.sentFinish then
+				acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
+				duo.sentFinish = true
+			end
+		end
+	end
+	if sectorManager.started and not sectorManager.finished then
+		sectorManager.sector:update()
+	end
+end
+
+local function initUi()
+	updateHudPos()
+	scaleWelcomeMenu()
+	updateStarsPos()
+	dataLoaded['Settings'] = true
 end
 
 local function loadSettings()
 	Settings.allocate(function(allocatedSetting)
-		ac.log("Settings Allocated")
 		settings = allocatedSetting
-		dataLoaded['Settings'] = true
+		leaderboardWrapWidth = settings.fontSize / 1.5
+		initUi()
 	end)
+end
+
+local function loadAllSectors()
+	for i = 1, #SECTORS_DATA do
+		local sector = Sector.tryParse(SECTORS_DATA[i])
+		if sector then
+			sector.name = sector.name
+			sectors[i] = sector
+		end
+	end
+	sectorManager:setSector('H1')
+	dataLoaded['Sectors'] = true
 end
 
 local function loadPlayerData()
@@ -1222,25 +3084,83 @@ local function loadPlayerData()
 		if allocatedPlayer then
 			player = allocatedPlayer
 			dataLoaded['PlayerData'] = true
+			player:formatSectors()
+			currentLeaderboard = player
 		end
 	end)
 end
 
-function script.update()
+function script.update(dt)
 	if initialisation then
 		initialisation = false
 		loadSettings()
+		loadAllSectors()
 		loadPlayerData()
+		initPoliceCarIndex()
+		initOverTake()
 	end
 	if not shouldRun() then return end
-	radarUpdate()
-	chaseUpdate()
+	ac.debug('PATCH COUNT', patchCount)
+	sectorUpdate()
+	raceUpdate(dt)
+	overtakeUpdate(dt)
+	hidePolice()
 end
 
-ac.onCarJumped(0, function (carIndex)
-	if isPoliceCar(CAR_ID) then
-		if pursuit.suspect then lostSuspect() end
+--------------------------------------------------------------- 3D Update ---------------------------------------------------------------
+
+local function drawGate()
+	if sectorManager.sector and not sectorManager.sector:isFinished() then
+		local gateIndex = sectorManager.sector.gateIndex
+		if gateIndex > sectorManager.sector.gateCount then gateIndex = sectorManager.sector.gateCount end
+		render.debugLine(sectorManager.sector.gates[gateIndex].point1,
+			sectorManager.sector.gates[gateIndex].point2, gateColor)
+	end
+end
+
+function script.draw3D()
+	if not shouldRun() then return end
+	render.setBlendMode(render.BlendMode.AlphaBlend)
+	render.setCullMode(render.CullMode.None)
+	render.setDepthMode(render.DepthMode.Normal)
+	drawGate()
+end
+
+-- ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
+
+--------------------------------------------------------------- AC Callbacks --------------------------------------------------------------
+ac.onCarJumped(0, function(carIndex)
+	resetMissionManager()
+	sectorManager:reset()
+	if not isPoliceCar(CAR_ID) then
+		if online.chased and online.officer then
+			acpPolice { message = "TP", messageType = 0, yourIndex = online.officer.sessionID }
+		end
 	end
 end)
 
-ui.registerOnlineExtra(ui.Icons.Settings, "Settings", nil, settingsWindow, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
+ac.onClientConnected(function(carIndex)
+	local newCar = ac.getCarID(carIndex)
+	if newCar and isPoliceCar(newCar) then
+		ac.hideCarLabels(carIndex)
+	end
+	initPoliceCarIndex()
+end)
+
+ac.onClientDisconnected(function(carIndex)
+	ac.hideCarLabels(carIndex, false)
+end)
+
+ac.onChatMessage(function(message, senderCarIndex, senderSessionID)
+	if not shouldRun() then return false end
+	if online.chased and online.officer then
+		if (senderSessionID == online.officer.sessionID and string.find(message, 'lost')) then
+			if not player.getaways then player.getaways = 0 end
+			player.getaways = player.getaways + 1
+			online.chased = false
+			online.officer = nil
+			player:save()
+		end
+	end
+	return false
+end)
