@@ -381,11 +381,16 @@ local missionManager = {
 	showIntro = false,
 	msgFailedIndex = os.time() % 16 + 1,
 	level = 3,
+	tp = false
 }
 
 local function resetMissionManager()
-	missionManager.msgTime = 0
-	missionManager.showIntro = false
+	if not missionManager.tp then
+		missionManager.msgTime = 0
+		missionManager.showIntro = false
+	else
+		missionManager.tp = false
+	end
 	missionManager.msgFailedIndex = os.time() % 16 + 1
 	missionManager.level = 3
 end
@@ -1002,7 +1007,7 @@ function Sector:reset()
 	self.startTime = 0
 	self.time = 'Time - 00:00.000'
 	if self.timeLimit > 0 then
-		self.time = 'LVL' .. 1 .. ' - ' .. formatTime(self.timeLimit + self.addTimeLimit[3])
+		self.time = 'LVL 3 - ' .. formatTime(self.timeLimit + self.addTimeLimit[3])
 	end
 	self.timeColor = white
 	self.startDistance = 0
@@ -1013,7 +1018,7 @@ function Sector:starting()
 	if self.gateIndex == 2 then
 		self.time = 'Time - 00:00.000'
 		if self.timeLimit > 0 then
-			self.time = 'LVL' .. 1 .. ' - ' .. formatTime(self.timeLimit + self.addTimeLimit[3])
+			self.time = 'LVL 3 - ' .. formatTime(self.timeLimit + self.addTimeLimit[3])
 		end
 		self.startTime = os.preciseClock()
 		self.startDistance = car.distanceDrivenTotalKm
@@ -2874,16 +2879,17 @@ local function tpToMission(i)
 		for j = 1, #MISSIONS[i].tp do
 			if not willCollide(MISSIONS[i].tp[j].pos) then
 				physics.setCarPosition(0, MISSIONS[i].tp[j].pos, MISSIONS[i].tp[j].dir)
+				settings.current = 4
+				menuStates.welcome = false
+				missionManager.tp = true
+				missionManager.msgTime = 10
+				missionManager.showIntro = true
 				if sectorManager.sector.name ~= "DOUBLE TROUBLE" then
 					ac.log("Setting sector to " .. MISSIONS[i].name)
 					sectorManager:setSector(MISSIONS[i].name)
 				elseif MISSIONS[i].name == "BOBs SCRAPYARD" then
 					sectorManager:setSector("DOUBLE TROUBLE")
 				end
-				missionManager.msgTime = 10
-				missionManager.showIntro = true
-				settings.current = 4
-				menuStates.welcome = false
 				break
 			end
 		end
