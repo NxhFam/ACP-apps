@@ -2550,7 +2550,7 @@ local function drawHudText()
 	elseif settings.current == 4 then
 		textSize = ui.measureDWriteText(sectorManager.sector.name, settings.fontSize)
 		ui.dwriteDrawText(sectorManager.sector.name, settings.fontSize, textOffset - vec2(textSize.x / 2, 0), settings.colorHud)
-		textSize = ui.measureDWriteText(sectorManager.sector.time, timeFontSize)
+		textSize = ui.measureDWriteText('Time - 00:00.000', timeFontSize)
 		ui.dwriteDrawText(sectorManager.sector.time, timeFontSize, textOffset - vec2(textSize.x / 2, -hud.size.y / 12.5), sectorManager.sector.timeColor)
 	end
 	ui.popDWriteFont()
