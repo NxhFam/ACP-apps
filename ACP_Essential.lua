@@ -95,7 +95,7 @@ local LEADERBOARD_NAMES = const({
 	{ "Your Stats", "H1", "Bobs Scrapyard", "Double Trouble", "Drug Delivery", "Bank Heist", "Arrestations", "Getaways", "Car thefts", "Overtake", "Racing" }
 })
 local patchCount = 0
-
+local timeFontSize = 30
 -- URL --
 local GOOGLE_APP_SCRIPT_URL = const(
 	'https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec')
@@ -251,7 +251,7 @@ local MISSION_TEXT = const({
 	["DRUG DELIVERY"] = {
 		chat = "* Picking up drugs *",
 		-- intro = { "You have ", " minutes to deliver up the drugs. Deliver the drugs to the Pink House!" },
-		intro = {"The deal's done! The drugs are in the car. You have ", " minutes to drop the package at the Villa! No mistakes!"},
+		intro = {"The deal's done! The drugs are in the car. You have ", " to drop the package at the Villa! No mistakes!"},
 		failed = {
 			"You're late! Even the drugs expired waiting for you.",
 			"The drugs ran out of patience, unlike your slow driving.",
@@ -274,7 +274,7 @@ local MISSION_TEXT = const({
 	["BOBs SCRAPYARD"] = {
 		chat = "* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. " *",
 		-- intro = { "You have ", " minutes to steal the car. Deliver the car to Bobs Scrapyard!" },
-		intro = { "You cracked the car! Now you've got ", " minutes to get it to Bob's Scrapyard! Don't stop, don't get caught!" },
+		intro = { "You cracked the car! Now you've got ", " to get it to Bob's Scrapyard! Don't stop, don't get caught!" },
 		failed = {
 			"Missed the car heist? Might as well try carpool karaoke next time.",
 			"Car theft? More like car borrowing… indefinitely.",
@@ -297,7 +297,7 @@ local MISSION_TEXT = const({
 	["DOUBLE TROUBLE"] = {
 		chat = "* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. " *",
 		-- intro = { "You have ", " minutes to steal the car. Deliver the car to Bobs Scrapyard!" },
-		intro = { "You cracked the car! Now you've got ", " minutes to get it to Bob's Scrapyard! Don't stop, don't get caught!" },
+		intro = { "You cracked the car! Now you've got ", " to get it to Bob's Scrapyard! Don't stop, don't get caught!" },
 		failed = {
 			"Missed the car heist? Might as well try carpool karaoke next time.",
 			"Car theft? More like car borrowing… indefinitely.",
@@ -320,7 +320,7 @@ local MISSION_TEXT = const({
 	["BANK HEIST"] = {
 		chat = "* Robbing the bank *",
 		-- intro = { "You have ", " minutes to rob the bank. Deliver the loot to the Yellow BHL!" },
-		intro = { "The bank's hit, the crew's in ! You've got ", " minutes to get them and the loot to the BHL. Go, go, go!" },
+		intro = { "The bank's hit, the crew's in ! You've got ", " to get them and the loot to the BHL. Go, go, go!" },
 		failed = {
 			"At this rate, you'll be robbing piggy banks, not actual banks.",
 			"The bank called—they said thanks for not bothering.",
@@ -937,7 +937,7 @@ function Sector.tryParse(data)
 		gateCount = #gates,
 		gateIndex = 1,
 		startTime = 0,
-		time = '00:00.000',
+		time = 'Time 00:00.000',
 		timeLimit = data.timeLimit,
 		addTimeLimit = data.addTimeLimit,
 		timeColor = white,
@@ -1000,7 +1000,10 @@ end
 function Sector:reset()
 	self.gateIndex = 1
 	self.startTime = 0
-	self.time = '00:00.000'
+	self.time = 'Time - 00:00.000'
+	if self.timeLimit > 0 then
+		self.time = 'LVL' .. 1 .. ' - ' .. formatTime(self.timeLimit + self.addTimeLimit[3])
+	end
 	self.timeColor = white
 	self.startDistance = 0
 	self.finalTime = 0
@@ -1008,7 +1011,10 @@ end
 
 function Sector:starting()
 	if self.gateIndex == 2 then
-		self.time = '00:00.000'
+		self.time = 'Time - 00:00.000'
+		if self.timeLimit > 0 then
+			self.time = 'LVL' .. 1 .. ' - ' .. formatTime(self.timeLimit + self.addTimeLimit[3])
+		end
 		self.startTime = os.preciseClock()
 		self.startDistance = car.distanceDrivenTotalKm
 	end
@@ -1027,13 +1033,15 @@ end
 function Sector:updateTime()
 	if self.startTime > 0 then
 		local time = os.preciseClock() - self.startTime
+		local lvl = 'Time'
 		if self.timeLimit ~= 0 then
-			time = self.timeLimit - time
+			time = self.timeLimit + self.addTimeLimit[3] - time
+			lvl = 'lvl' .. missionManager.level
 		end
 		local minutes = math.floor(time / 60)
 		local seconds = math.floor(time % 60)
 		local milliseconds = math.floor((time % 1) * 1000)
-		self.time = ('%02d:%02d.%03d'):format(minutes, seconds, milliseconds)
+		self.time = lvl .. (' - %02d:%02d.%03d'):format(minutes, seconds, milliseconds)
 	end
 end
 
@@ -2542,8 +2550,8 @@ local function drawHudText()
 	elseif settings.current == 4 then
 		textSize = ui.measureDWriteText(sectorManager.sector.name, settings.fontSize)
 		ui.dwriteDrawText(sectorManager.sector.name, settings.fontSize, textOffset - vec2(textSize.x / 2, 0), settings.colorHud)
-		textSize = ui.measureDWriteText("Time: 00:00:000", settings.fontSize)
-		ui.dwriteDrawText("Time: " .. sectorManager.sector.time, settings.fontSize, textOffset - vec2(textSize.x / 2, -hud.size.y / 13), sectorManager.sector.timeColor)
+		textSize = ui.measureDWriteText(sectorManager.sector.time, timeFontSize)
+		ui.dwriteDrawText(sectorManager.sector.time, timeFontSize, textOffset - vec2(textSize.x / 2, -hud.size.y / 12.5), sectorManager.sector.timeColor)
 	end
 	ui.popDWriteFont()
 end
@@ -2659,7 +2667,7 @@ local function missionMsgOnScreen()
 	if sectorManager.started and missionManager.level == 0 then
 		showMsgMission(MISSION_TEXT[sectorManager.sector.name].failed[missionManager.msgFailedIndex])
 	elseif missionManager.showIntro and missionManager.msgTime > 0 then
-		showMsgMission(MISSION_TEXT[sectorManager.sector.name].intro[1] .. formatTime(sectorManager.sector.timeLimit) .. MISSION_TEXT[sectorManager.sector.name].intro[2])
+		showMsgMission(MISSION_TEXT[sectorManager.sector.name].intro[1] .. formatTime(sectorManager.sector.timeLimit + sectorManager.sector.addTimeLimit[3]) .. MISSION_TEXT[sectorManager.sector.name].intro[2])
 		missionManager.msgTime = missionManager.msgTime - ui.deltaTime()
 		if missionManager.msgTime < 0 then
 			missionManager.msgTime = 0
@@ -3118,6 +3126,7 @@ local function initUI()
 	scaleWelcomeMenu()
 	updateStarsPos()
 	initBoost()
+	timeFontSize = settings.fontSize * 0.9
 	dataLoaded['Settings'] = true
 end
 
