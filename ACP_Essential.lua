@@ -1037,6 +1037,10 @@ function Sector:updateTime()
 		if self.timeLimit ~= 0 then
 			time = self.timeLimit + self.addTimeLimit[3] - time
 			lvl = 'LVL' .. missionManager.level
+			if time < 0 then
+				time = 0
+				lvl = 'FAIL'
+			end
 		end
 		local minutes = math.floor(time / 60)
 		local seconds = math.floor(time % 60)
