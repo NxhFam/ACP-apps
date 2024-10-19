@@ -52,7 +52,7 @@ SECTORS_DATA = const({
 	},
 	[3] = {
 		name = "BOBs SCRAPYARD",
-		timeLimit = 50,
+		timeLimit = 200,
 		addTimeLimit = { 0, 10, 25 },
 		length = 5,
 		gates = {
@@ -2874,7 +2874,16 @@ local function tpToMission(i)
 		for j = 1, #MISSIONS[i].tp do
 			if not willCollide(MISSIONS[i].tp[j].pos) then
 				physics.setCarPosition(0, MISSIONS[i].tp[j].pos, MISSIONS[i].tp[j].dir)
-				sectorManager:setSector(MISSIONS[i].name)
+				if sectorManager.sector.name ~= "DOUBLE TROUBLE" then
+					ac.log("Setting sector to " .. MISSIONS[i].name)
+					sectorManager:setSector(MISSIONS[i].name)
+				elseif MISSIONS[i].name == "BOBs SCRAPYARD" then
+					sectorManager:setSector("DOUBLE TROUBLE")
+				end
+				missionManager.msgTime = 10
+				missionManager.showIntro = true
+				settings.current = 4
+				menuStates.welcome = false
 				break
 			end
 		end
