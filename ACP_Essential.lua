@@ -52,7 +52,7 @@ SECTORS_DATA = const({
 	},
 	[3] = {
 		name = "BOBs SCRAPYARD",
-		timeLimit = 200,
+		timeLimit = 50,
 		addTimeLimit = { 0, 10, 25 },
 		length = 5,
 		gates = {
@@ -1036,7 +1036,7 @@ function Sector:updateTime()
 		local lvl = 'Time'
 		if self.timeLimit ~= 0 then
 			time = self.timeLimit + self.addTimeLimit[3] - time
-			lvl = 'LVL' .. missionManager.level
+			lvl = 'LVL' .. self:isUnderTimeLimit()
 			if time < 0 then
 				time = 0
 				lvl = 'FAIL'
