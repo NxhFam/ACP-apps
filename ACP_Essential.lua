@@ -1,3 +1,4 @@
+ac.log('Script: Essential')
 local sim = ac.getSim()
 local car = ac.getCar(0) or error()
 if not car then return end
@@ -7,8 +8,6 @@ local uiState = ac.getUI()
 ui.setAsynchronousImagesLoading(true)
 
 local localTesting = ac.dirname() == 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\assettocorsa\\extension\\lua\\online'
-ac.log('Local Testing:', localTesting)
-
 local initialisation = true
 
 -- Constants --
@@ -83,7 +82,10 @@ SECTORS_DATA = const({
 	},
 })
 
-local POLICE_CAR = const({ "crown_police" })
+local POLICE_CAR = { "crown_police" }
+if localTesting then
+	POLICE_CAR = { "ks_porsche_911_gt3_r_2016" }
+end
 local LEADERBOARDS = const({
 	time = {"H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST" },
 	score = { "arrests", "getaways", "thefts", "overtake" },
@@ -248,7 +250,8 @@ local MISSION_NAMES = const({"DRUG DELIVERY", "BANK HEIST", "BOBs SCRAPYARD"})
 local MISSION_TEXT = const({
 	["DRUG DELIVERY"] = {
 		chat = "* Picking up drugs *",
-		intro = { "You have ", " minutes to pick up the drugs. Deliver the drugs to the Pink House!" },
+		-- intro = { "You have ", " minutes to deliver up the drugs. Deliver the drugs to the Pink House!" },
+		intro = {"The deal's done! The drugs are in the car. You have ", " minutes to drop the package at the Villa! No mistakes!"},
 		failed = {
 			"You're late! Even the drugs expired waiting for you.",
 			"The drugs ran out of patience, unlike your slow driving.",
@@ -270,7 +273,8 @@ local MISSION_TEXT = const({
 	},
 	["BOBs SCRAPYARD"] = {
 		chat = "* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. " *",
-		intro = { "You have ", " minutes to steal the car. Deliver the car to Bobs Scrapyard!" },
+		-- intro = { "You have ", " minutes to steal the car. Deliver the car to Bobs Scrapyard!" },
+		intro = { "You cracked the car! Now you've got ", " minutes to get it to Bob's Scrapyard! Don't stop, don't get caught!" },
 		failed = {
 			"Missed the car heist? Might as well try carpool karaoke next time.",
 			"Car theft? More like car borrowing… indefinitely.",
@@ -292,7 +296,8 @@ local MISSION_TEXT = const({
 	},
 	["DOUBLE TROUBLE"] = {
 		chat = "* Stealing a " .. string.gsub(CAR_NAME, "%W", " ") .. " *",
-		intro = { "You have ", " minutes to steal the car. Deliver the car to Bobs Scrapyard!" },
+		-- intro = { "You have ", " minutes to steal the car. Deliver the car to Bobs Scrapyard!" },
+		intro = { "You cracked the car! Now you've got ", " minutes to get it to Bob's Scrapyard! Don't stop, don't get caught!" },
 		failed = {
 			"Missed the car heist? Might as well try carpool karaoke next time.",
 			"Car theft? More like car borrowing… indefinitely.",
@@ -314,7 +319,8 @@ local MISSION_TEXT = const({
 	},
 	["BANK HEIST"] = {
 		chat = "* Robbing the bank *",
-		intro = { "You have ", " minutes to rob the bank. Deliver the loot to the Yellow BHL!" },
+		-- intro = { "You have ", " minutes to rob the bank. Deliver the loot to the Yellow BHL!" },
+		intro = { "The bank's hit, the crew's in ! You've got ", " minutes to get them and the loot to the BHL. Go, go, go!" },
 		failed = {
 			"At this rate, you'll be robbing piggy banks, not actual banks.",
 			"The bank called—they said thanks for not bothering.",
@@ -1021,6 +1027,9 @@ end
 function Sector:updateTime()
 	if self.startTime > 0 then
 		local time = os.preciseClock() - self.startTime
+		if self.timeLimit ~= 0 then
+			time = self.timeLimit - time
+		end
 		local minutes = math.floor(time / 60)
 		local seconds = math.floor(time % 60)
 		local milliseconds = math.floor((time % 1) * 1000)
@@ -1048,7 +1057,7 @@ end
 function Sector:updateTimeColor()
 	if self:hasStarted() then
 		local underTimeLimit = self:isUnderTimeLimit()
-		if underTimeLimit == 3 then
+		if underTimeLimit == 3 or self.timeLimit == 0 then
 			if self:isFinished() then
 				self.timeColor = rgbm.colors.green
 			else
@@ -1575,7 +1584,7 @@ local function displayInGrid()
 		elseif i == 4 then
 			sufix = "rd"
 		end
-		ui.dwriteTextAligned(i .. sufix, settings.fontSize / 2, ui.Alignment.Center, ui.Alignment.Center, box1, false,
+		ui.dwriteTextAligned(i .. sufix, settings.fontSize, ui.Alignment.Center, ui.Alignment.Center, box1, false,
 			white)
 		for j = 1, #currentLeaderboard.rows[1] do
 			local textLenght = ui.measureDWriteText(currentLeaderboard.rows[i][j], leaderboardWrapWidth).x
@@ -2661,7 +2670,7 @@ end
 
 local function hudUI()
 	missionMsgOnScreen()
-	ui.transparentWindow("HUD", vec2(settings.hudOffset.x, settings.hudOffset.y), hud.size, true, function()
+	ui.transparentWindow("HUD", settings.hudOffset, hud.size, true, function()
 		drawHudImages()
 		drawHudText()
 	end)
@@ -2965,8 +2974,52 @@ local function missionFinishedWindow()
 	end)
 end
 
+-- https://i.postimg.cc/DyKfkgBG/Boost-Meter.png V1
+-- https://i.postimg.cc/pTrNt9n3/Boost-Meter.png V2
+local BOOST_FRAME = const("https://i.postimg.cc/zvm1SzVM/Boost-Meter.png")
+local horizontalBarParams = {
+	text = '',
+	pos = vec2(WIDTH_DIV._50, WINDOW_HEIGHT - HEIGHT_DIV._20),
+	size = vec2(20 * 25, 20 * 5),
+	delta = 0,
+	activeColor = rgbm(0, 1, 0, 0.5),
+	inactiveColor = rgbm(0, 0, 0, 0.3),
+	total = 100,
+	active = car.kersCharge * 100
+}
+
+local boostFrameParams = {
+	image = BOOST_FRAME,
+	pos = vec2(WIDTH_DIV._50, WINDOW_HEIGHT - HEIGHT_DIV._20),
+	size = vec2(20 * 25, 20 * 5),
+	color = white,
+	uvStart = vec2(0, 0),
+	uvEnd = vec2(1, 1)
+}
+
+local boostTextParams = {
+	text = 'Boost',
+	pos = vec2(WIDTH_DIV._50, WINDOW_HEIGHT - HEIGHT_DIV._20),
+	letter = vec2(50, 50),
+	font = 'c7_big',
+	color = white,
+	alignment = 0.5,
+	width = 20 * 5,
+	spacing = 1
+}
+
+local function boostBar()
+	horizontalBarParams.active = car.kersCharge * 100
+	horizontalBarParams.activeColor = rgbm(1 - car.kersCharge, car.kersCharge^2, 0, 0.7)
+	-- display.rect()
+	display.horizontalBar(horizontalBarParams)
+	display.image(boostFrameParams)
+	display.text(boostTextParams)
+end
+
 function script.drawUI()
 	if not shouldRun() then return end
+	-- boostBar()
 	if scoreOffset == 0 then
 		scoreOffset = ui.measureDWriteText("Racing Elo: --1200", settings.fontSizeMSG).x
 		timeOffset = ui.measureDWriteText(longestCarName .. ": --", settings.fontSizeMSG).x + WIDTH_DIV._40
@@ -3052,10 +3105,19 @@ local function sectorUpdate()
 	end
 end
 
-local function initUi()
+local function initBoost()
+	horizontalBarParams.size = vec2(settings.essentialSize * 10, settings.essentialSize)
+	boostFrameParams.size = vec2(settings.essentialSize * 10, settings.essentialSize)
+	boostTextParams.pos = vec2(WIDTH_DIV._50 + settings.essentialSize, WINDOW_HEIGHT - HEIGHT_DIV._20 + settings.essentialSize / 10)
+	boostTextParams.letter = vec2(settings.essentialSize / 1.2, settings.essentialSize / 1.2)
+	boostTextParams.width = boostFrameParams.size
+end
+
+local function initUI()
 	updateHudPos()
 	scaleWelcomeMenu()
 	updateStarsPos()
+	initBoost()
 	dataLoaded['Settings'] = true
 end
 
@@ -3063,7 +3125,7 @@ local function loadSettings()
 	Settings.allocate(function(allocatedSetting)
 		settings = allocatedSetting
 		leaderboardWrapWidth = settings.fontSize / 1.5
-		initUi()
+		initUI()
 	end)
 end
 
@@ -3101,6 +3163,8 @@ function script.update(dt)
 	end
 	if not shouldRun() then return end
 	ac.debug('PATCH COUNT', patchCount)
+	ac.debug('Kers', car.kersCharge)
+
 	sectorUpdate()
 	raceUpdate(dt)
 	overtakeUpdate(dt)
