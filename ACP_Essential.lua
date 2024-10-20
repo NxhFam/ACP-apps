@@ -117,6 +117,8 @@ local WIDTH_DIV = const({
 	_32 = WINDOW_WIDTH / 32,
 	_40 = WINDOW_WIDTH / 40,
 	_50 = WINDOW_WIDTH / 50,
+	_80 = WINDOW_WIDTH / 80,
+	_320 = WINDOW_WIDTH / 320,
 })
 
 local WINDOW_HEIGHT = const(sim.windowHeight / uiState.uiScale)
@@ -133,6 +135,7 @@ local HEIGHT_DIV = const({
 	_60 = WINDOW_HEIGHT / 60,
 	_70 = WINDOW_HEIGHT / 70,
 	_80 = WINDOW_HEIGHT / 80,
+	_320 = WINDOW_HEIGHT / 320,
 })
 
 local FONT_MULT = const(WINDOW_HEIGHT / 1440)
@@ -1567,16 +1570,18 @@ local function updateHudPos()
 end
 
 local function textWithBackground(text, sizeMult, height)
-	local textLenght = ui.measureDWriteText(text, settings.fontSizeMSG * sizeMult)
-	local rectPos1 = vec2(settings.msgOffset.x - textLenght.x / 2, settings.msgOffset.y)
-	local rectPos2 = vec2(settings.msgOffset.x + textLenght.x / 2, settings.msgOffset.y * height + settings.fontSizeMSG * sizeMult * height)
-	local rectOffset = vec2(10, 10)
+	ui.pushDWriteFont("Orbitron")
+	local textSize = ui.measureDWriteText(text, settings.fontSizeMSG * sizeMult)
+	local rectPos1 = settings.msgOffset - vec2(textSize.x / 2, 0)
+	local rectPos2 = textSize + rectPos1
+	local rectOffset = vec2(WIDTH_DIV._320, HEIGHT_DIV._320)
 	if ui.time() % 1 < 0.5 then
-		ui.drawRectFilled(rectPos1 - vec2(10, 0), rectPos2 + rectOffset, COLOR_MSG_BG, 10)
+		ui.drawRectFilled(rectPos1 - rectOffset, rectPos2 + rectOffset, COLOR_MSG_BG, 10)
 	else
-		ui.drawRectFilled(rectPos1 - vec2(10, 0), rectPos2 + rectOffset, rgbm(0, 0, 0, 0.5), 10)
+		ui.drawRectFilled(rectPos1 - rectOffset, rectPos2 + rectOffset, rgbm(0, 0, 0, 0.5), 10)
 	end
 	ui.dwriteDrawText(text, settings.fontSizeMSG * sizeMult, rectPos1, white)
+	ui.popDWriteFont()
 end
 
 local boxHeight = HEIGHT_DIV._70
