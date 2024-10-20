@@ -1076,7 +1076,7 @@ function Sector:updateTimeColor()
 		local underTimeLimit = self:isUnderTimeLimit()
 		if underTimeLimit ~= missionManager.level then
 			missionManager.level = underTimeLimit
-			missionManager.msgTime = 10
+			missionManager.msgTime = 20
 		end
 		if underTimeLimit == 3 or self.timeLimit == 0 then
 			if self:isFinished() then
@@ -2681,6 +2681,7 @@ local function missionMsgOnScreen()
 	if sectorManager.sector == nil or sectorManager.sector.name == "H1" then return end
 	if sectorManager.started and missionManager.level == 0 then
 		showMsgMission(MISSION_TEXT[sectorManager.sector.name].failed[missionManager.msgFailedIndex])
+		missionManager.msgTime = 0
 	elseif missionManager.msgTime > 0 then
 		if missionManager.showIntro then
 			showMsgMission(MISSION_TEXT[sectorManager.sector.name].intro[1] .. formatTime(sectorManager.sector.timeLimit + sectorManager.sector.addTimeLimit[3]) .. MISSION_TEXT[sectorManager.sector.name].intro[2])
