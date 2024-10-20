@@ -52,7 +52,7 @@ SECTORS_DATA = const({
 	},
 	[3] = {
 		name = "BOBs SCRAPYARD",
-		timeLimit = 40,
+		timeLimit = 200,
 		addTimeLimit = { 0, 10, 25 },
 		length = 5,
 		gates = {
