@@ -52,7 +52,7 @@ SECTORS_DATA = const({
 	},
 	[3] = {
 		name = "BOBs SCRAPYARD",
-		timeLimit = 200,
+		timeLimit = 40,
 		addTimeLimit = { 0, 10, 25 },
 		length = 5,
 		gates = {
@@ -1566,10 +1566,10 @@ local function updateHudPos()
 	settings.fontSize = settings.essentialSize * FONT_MULT
 end
 
-local function textWithBackground(text, sizeMult)
+local function textWithBackground(text, sizeMult, height)
 	local textLenght = ui.measureDWriteText(text, settings.fontSizeMSG * sizeMult)
 	local rectPos1 = vec2(settings.msgOffset.x - textLenght.x / 2, settings.msgOffset.y)
-	local rectPos2 = vec2(settings.msgOffset.x + textLenght.x / 2, settings.msgOffset.y + settings.fontSizeMSG * sizeMult)
+	local rectPos2 = vec2(settings.msgOffset.x + textLenght.x / 2, settings.msgOffset.y * height + settings.fontSizeMSG * sizeMult * height)
 	local rectOffset = vec2(10, 10)
 	if ui.time() % 1 < 0.5 then
 		ui.drawRectFilled(rectPos1 - vec2(10, 0), rectPos2 + rectOffset, COLOR_MSG_BG, 10)
@@ -2354,7 +2354,7 @@ local function raceUI()
 		timeStartRace = timeStartRace - ui.deltaTime()
 		if raceState.opponent and timeStartRace - 5 > 0 then
 			text = "Align yourself with " .. ac.getDriverName(raceState.opponent.index) .. " to start the race!"
-			textWithBackground(text, 1)
+			textWithBackground(text, 1, 1)
 		else
 			local number = math.floor(timeStartRace - 1)
 			if number <= 0 then
@@ -2362,7 +2362,7 @@ local function raceUI()
 			else
 				text = number .. " ..."
 			end
-			textWithBackground(text, 3)
+			textWithBackground(text, 3, 1)
 		end
 		if timeStartRace - 6 > 0 then showRaceLights() end
 		if timeStartRace < 0 then timeStartRace = 0 end
@@ -2396,7 +2396,7 @@ local function raceUI()
 		text = "Waiting for " .. horn.opponentName .. " to accept the challenge"
 		displayText = true
 	end
-	if displayText then textWithBackground(text, 1) end
+	if displayText then textWithBackground(text, 1, 1) end
 	ui.popDWriteFont()
 end
 
@@ -2480,7 +2480,7 @@ local function onlineEventMessageUI()
 	if online.messageTimer > 0 then
 		online.messageTimer = online.messageTimer - ui.deltaTime()
 		local text = online.message
-		if online.message ~= "BUSTED!" then textWithBackground(text, 1) end
+		if online.message ~= "BUSTED!" then textWithBackground(text, 1, 1) end
 		if online.type == 2 then
 			if online.message == "BUSTED!" then showArrestMSG() end
 			showPoliceLights()
@@ -2670,23 +2670,18 @@ local function drawHudImages()
 	end
 end
 
----@param text string
-local function showMsgMission(text)
-	textWithBackground(text, 1)
-end
-
-local lvlMSG = const("You're late! Don't even think about getting the full payout. Look at the new time limit and finish it, or don't bother showing up again! Stop reading you are stupid")
+local lvlMSG = const("You're late! Don't even think about getting the full payout.\nLook at the new time limit and finish it, or don't bother showing up again!")
 
 local function missionMsgOnScreen()
 	if sectorManager.sector == nil or sectorManager.sector.name == "H1" then return end
 	if sectorManager.started and missionManager.level == 0 then
-		showMsgMission(MISSION_TEXT[sectorManager.sector.name].failed[missionManager.msgFailedIndex])
+		textWithBackground(MISSION_TEXT[sectorManager.sector.name].failed[missionManager.msgFailedIndex], 1, 1)
 		missionManager.msgTime = 0
 	elseif missionManager.msgTime > 0 then
 		if missionManager.showIntro then
-			showMsgMission(MISSION_TEXT[sectorManager.sector.name].intro[1] .. formatTime(sectorManager.sector.timeLimit + sectorManager.sector.addTimeLimit[3]) .. MISSION_TEXT[sectorManager.sector.name].intro[2])
+			textWithBackground(MISSION_TEXT[sectorManager.sector.name].intro[1] .. formatTime(sectorManager.sector.timeLimit + sectorManager.sector.addTimeLimit[3]) .. MISSION_TEXT[sectorManager.sector.name].intro[2], 1, 1)
 		else
-			showMsgMission(lvlMSG)
+			textWithBackground(lvlMSG,1,2)
 		end
 		missionManager.msgTime = missionManager.msgTime - ui.deltaTime()
 		if missionManager.msgTime < 0 then
