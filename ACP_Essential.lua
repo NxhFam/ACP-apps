@@ -361,7 +361,7 @@ local vUp = const(vec3(0, 1, 0))
 local vDown = const(vec3(0, -1, 0))
 
 local menuStates = {
-	welcome = false,
+	welcome = true,
 	main = false,
 	leaderboard = false,
 }
@@ -2793,9 +2793,10 @@ local welcomeWindow = {
 
 
 local function scaleWelcomeMenu()
+	local aspectRatio = WINDOW_WIDTH / WINDOW_HEIGHT < 16 / 9
 	local xScale = WINDOW_WIDTH / 2560
 	local yScale = WINDOW_HEIGHT / 1440
-	local minScale = math.min(xScale, yScale)
+	local minScale = aspectRatio and math.max(xScale, yScale) or math.min(xScale, yScale)
 
 	welcomeWindow.size = welcomeWindow.size * welcomeWindow.scale
 	welcomeWindow.offset = vec2((WINDOW_WIDTH - welcomeWindow.size.x) / 2, (WINDOW_HEIGHT - welcomeWindow.size.y) / 2)
