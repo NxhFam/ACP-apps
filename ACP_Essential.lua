@@ -361,7 +361,7 @@ local vUp = const(vec3(0, 1, 0))
 local vDown = const(vec3(0, -1, 0))
 
 local menuStates = {
-	welcome = true,
+	welcome = false,
 	main = false,
 	leaderboard = false,
 }
@@ -1041,7 +1041,7 @@ function Sector:updateTime()
 		local lvl = 'Time'
 		if self.timeLimit ~= 0 then
 			time = self.timeLimit + self.addTimeLimit[3] - time
-			lvl = 'LVL' .. self:isUnderTimeLimit()
+			lvl = 'LVL' .. missionManager.level
 			if time < 0 then
 				time = 0
 				lvl = 'FAIL'
@@ -1074,6 +1074,10 @@ end
 function Sector:updateTimeColor()
 	if self:hasStarted() then
 		local underTimeLimit = self:isUnderTimeLimit()
+		if underTimeLimit ~= missionManager.level then
+			missionManager.level = underTimeLimit
+			missionManager.msgTime = 10
+		end
 		if underTimeLimit == 3 or self.timeLimit == 0 then
 			if self:isFinished() then
 				self.timeColor = rgbm.colors.green
@@ -2671,12 +2675,18 @@ local function showMsgMission(text)
 	textWithBackground(text, 1)
 end
 
+local lvlMSG = const("You're late! Don't even think about getting the full payout. Look at the new time limit and finish it, or don't bother showing up again! Stop reading you are stupid")
+
 local function missionMsgOnScreen()
 	if sectorManager.sector == nil or sectorManager.sector.name == "H1" then return end
 	if sectorManager.started and missionManager.level == 0 then
 		showMsgMission(MISSION_TEXT[sectorManager.sector.name].failed[missionManager.msgFailedIndex])
-	elseif missionManager.showIntro and missionManager.msgTime > 0 then
-		showMsgMission(MISSION_TEXT[sectorManager.sector.name].intro[1] .. formatTime(sectorManager.sector.timeLimit + sectorManager.sector.addTimeLimit[3]) .. MISSION_TEXT[sectorManager.sector.name].intro[2])
+	elseif missionManager.msgTime > 0 then
+		if missionManager.showIntro then
+			showMsgMission(MISSION_TEXT[sectorManager.sector.name].intro[1] .. formatTime(sectorManager.sector.timeLimit + sectorManager.sector.addTimeLimit[3]) .. MISSION_TEXT[sectorManager.sector.name].intro[2])
+		else
+			showMsgMission(lvlMSG)
+		end
 		missionManager.msgTime = missionManager.msgTime - ui.deltaTime()
 		if missionManager.msgTime < 0 then
 			missionManager.msgTime = 0
