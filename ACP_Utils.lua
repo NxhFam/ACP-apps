@@ -216,9 +216,7 @@ local function playerStats()
 end
 
 ui.onExclusiveHUD(function(mode)
-	if mode == 'game' then
-		ui.text('Hello, world!')
-	elseif mode == 'menu' then
+	if mode == 'menu' then
 		ui.toolWindow('PlayerStats', playerStatsWindow.pos, playerStatsWindow.size, false, true, function()
 			playerStats()
 		end)
