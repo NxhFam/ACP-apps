@@ -1243,7 +1243,6 @@ local function updateSharedPlayerData()
 	for i, sector in ipairs(player.sectors) do
 		sharedPlayerData.sectorsFormated[i].name = sector.name .. '\0'
 		for j, entry in ipairs(player.sectorsFormated[sector.name]) do
-			ac.log('Updating shared data:', entry[1], entry[2])
 			sharedPlayerData.sectorsFormated[i].records[j] = entry[1] .. ' - ' .. entry[2] .. '\0'
 		end
 	end
@@ -2944,7 +2943,6 @@ local function tpToMission(i)
 				missionManager.msgTime = 10
 				missionManager.showIntro = true
 				if sectorManager.sector.name ~= "DOUBLE TROUBLE" then
-					ac.log("Setting sector to " .. MISSIONS[i].name)
 					sectorManager:setSector(MISSIONS[i].name)
 				elseif MISSIONS[i].name == "BOBs SCRAPYARD" then
 					sectorManager:setSector("DOUBLE TROUBLE")
@@ -3257,7 +3255,6 @@ function script.update(dt)
 	if delay > 0 then delay = delay - dt end
 	if delay < 0 then
 		delay = 0
-		ac.log('Player data updated')
 		updateSharedPlayerData()
 		ac.broadcastSharedEvent(SHARED_EVENT_KEY, 'update')
 	end
