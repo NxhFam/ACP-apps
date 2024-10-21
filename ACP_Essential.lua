@@ -1205,6 +1205,7 @@ local player = nil
 
 local sharedPlayerLayout = {
 	ac.StructItem.key(SHARED_PLAYER_DATA),
+	hudColor = ac.StructItem.rgbm(),
 	name = ac.StructItem.string(24),
 	sectorsFormated = ac.StructItem.array(ac.StructItem.struct({
 		name = ac.StructItem.string(16),
@@ -1219,10 +1220,18 @@ local sharedPlayerLayout = {
 	elo = ac.StructItem.int16(),
 }
 
+---@type Settings | nil
+local settings = nil
+
 local sharedPlayerData = ac.connect(sharedPlayerLayout, true, ac.SharedNamespace.ServerScript)
 
 local function updateSharedPlayerData()
 	if not player then return end
+	local hudC = rgbm.colors.red
+	if settings then
+		hudC = settings.colorHud
+	end
+	sharedPlayerData.hudColor = hudC
 	sharedPlayerData.name = player.name
 	sharedPlayerData.arrests = player.arrests
 	sharedPlayerData.getaways = player.getaways
@@ -1234,6 +1243,7 @@ local function updateSharedPlayerData()
 	for i, sector in ipairs(player.sectors) do
 		sharedPlayerData.sectorsFormated[i].name = sector.name .. '\0'
 		for j, entry in ipairs(player.sectorsFormated[sector.name]) do
+			ac.log('Updating shared data:', entry[1], entry[2])
 			sharedPlayerData.sectorsFormated[i].records[j] = entry[1] .. ' - ' .. entry[2] .. '\0'
 		end
 	end
@@ -1388,7 +1398,7 @@ function Player:export(key)
 	if next(sectors) then
 		data.sectors = sectors
 	end
-	-- updateSharedPlayerData()
+	updateSharedPlayerData()
 	return data
 end
 
@@ -1424,10 +1434,6 @@ function Player:addSectorRecord(sectorName, time)
 	end
 	return sector:addRecord(time)
 end
-
-
----@type Settings | nil
-local settings = nil
 
 ---@type Sector[]
 local sectors = {}
@@ -3252,6 +3258,7 @@ function script.update(dt)
 	if delay < 0 then
 		delay = 0
 		ac.log('Player data updated')
+		updateSharedPlayerData()
 		ac.broadcastSharedEvent(SHARED_EVENT_KEY, 'update')
 	end
 	sectorUpdate()
