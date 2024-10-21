@@ -10,8 +10,7 @@ local virtualizing = require('shared/ui/virtualizing')
 
 ui.setAsynchronousImagesLoading(true)
 
-local localTesting = ac.dirname() ==
-'C:\\Program Files (x86)\\Steam\\steamapps\\common\\assettocorsa\\extension\\lua\\online'
+local localTesting = ac.dirname() == 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\assettocorsa\\extension\\lua\\online'
 local initialisation = true
 
 -- Constants --
@@ -109,6 +108,7 @@ local function truncate(number, decimal)
 end
 
 local playerData = {
+	hudColor = rgbm.colors.red,
 	name = '',
 	sectors = {},
 	arrests = '0',
@@ -122,6 +122,7 @@ local playerData = {
 
 local sharedPlayerLayout = {
 	ac.StructItem.key(SHARED_PLAYER_DATA),
+	hudColor = ac.StructItem.rgbm(),
 	name = ac.StructItem.string(24),
 	sectorsFormated = ac.StructItem.array(ac.StructItem.struct({
 		name = ac.StructItem.string(16),
@@ -145,25 +146,25 @@ local function playerScores()
 	ui.newLine()
 	ui.sameLine(WIDTH_DIV._100)
 	ui.beginGroup()
-	ui.dwriteTextWrapped("Arrests: ", 20, rgbm.colors.red)
+	ui.dwriteTextWrapped("Arrests: ", 20, playerData.hudColor)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.arrests, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Getaways: ", 20, rgbm.colors.red)
+	ui.dwriteTextWrapped("Getaways: ", 20, playerData.hudColor)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.getaways, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Thefts: ", 20, rgbm.colors.red)
+	ui.dwriteTextWrapped("Thefts: ", 20, playerData.hudColor)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.thefts, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Overtake: ", 20, rgbm.colors.red)
+	ui.dwriteTextWrapped("Overtake: ", 20, playerData.hudColor)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.overtake, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Wins: ", 20, rgbm.colors.red)
+	ui.dwriteTextWrapped("Wins: ", 20, playerData.hudColor)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.wins, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Losses: ", 20, rgbm.colors.red)
+	ui.dwriteTextWrapped("Losses: ", 20, playerData.hudColor)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.losses, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Racing Elo: ", 20, rgbm.colors.red)
+	ui.dwriteTextWrapped("Racing Elo: ", 20, playerData.hudColor)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.elo, 20, rgbm.colors.white)
 	ui.endGroup()
@@ -181,7 +182,7 @@ local function playerTimes()
 		ui.dwriteTextWrapped(sectorName .. ": ", 20, rgbm.colors.yellow)
 		ui.beginSubgroup(WIDTH_DIV._50)
 		for k, v in pairs(record) do
-			ui.dwriteTextWrapped(k .. ": ", 20, rgbm.colors.red)
+			ui.dwriteTextWrapped(k .. ": ", 20, playerData.hudColor)
 			ui.sameLine(WIDTH_DIV._10)
 			ui.dwriteTextWrapped(v, 20, rgbm.colors.white)
 		end
@@ -226,6 +227,7 @@ end)
 
 local function resetPlayerData()
 	playerData = {
+		hudColor = rgbm.colors.red,
 		name = '',
 		sectors = {},
 		arrests = '0',
@@ -241,6 +243,7 @@ end
 local function updatedSharedData()
 	resetPlayerData()
 	if sharedPlayerData.name ~= '' then
+		playerData.hudColor = sharedPlayerData.hudColor
 		playerData.name = sharedPlayerData.name
 		playerData.arrests = tostring(sharedPlayerData.arrests)
 		playerData.getaways = tostring(sharedPlayerData.getaways)
@@ -251,15 +254,19 @@ local function updatedSharedData()
 		playerData.elo = tostring(sharedPlayerData.elo)
 		for i = 1, 5 do
 			local sectorName = ffi.string(sharedPlayerData.sectorsFormated[i].name)
+			ac.log(sectorName)
 			if sectorName ~= '' then
-				for j = 2, 11 do
+				for j = 1, 11 do
 					local record = ffi.string(sharedPlayerData.sectorsFormated[i].records[j])
+					ac.log(record)
 					if record ~= '' then
 						local recordInfo = string.split(record, ' - ')
-						if not playerData.sectors[sectorName] then
-							playerData.sectors[sectorName] = {}
+						if #recordInfo == 2 then
+							if not playerData.sectors[sectorName] then
+								playerData.sectors[sectorName] = {}
+							end
+							playerData.sectors[sectorName][recordInfo[1]] = recordInfo[2]
 						end
-						playerData.sectors[sectorName][recordInfo[1]] = recordInfo[2]
 					end
 				end
 			end
