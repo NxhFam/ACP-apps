@@ -19,6 +19,9 @@ local CAR_NAME = const(ac.getCarName(0))
 local DRIVER_NAME = const(ac.getDriverName(0))
 if CSP_VERSION < CSP_MIN_VERSION then return end
 
+local SHARED_PLAYER_DATA = const('__ACP_SHARED_PLAYER_DATA')
+local SHARED_EVENT_KEY = const('__ACP_PLAYER_SHARED_UPDATE')
+
 local longestCarName = ''
 
 local DRIVER_NATION_CODE = const(ac.getDriverNationCode(0))
@@ -1197,9 +1200,48 @@ end
 ---@field elo integer
 local Player = class('Player')
 
+---@type Player | nil
+local player = nil
+
+local sharedPlayerLayout = {
+	ac.StructItem.key(SHARED_PLAYER_DATA),
+	name = ac.StructItem.string(24),
+	sectorsFormated = ac.StructItem.array(ac.StructItem.struct({
+		name = ac.StructItem.string(16),
+		records = ac.StructItem.array(ac.StructItem.string(32), 10)
+	}), 5),
+	arrests = ac.StructItem.int16(),
+	getaways = ac.StructItem.int16(),
+	thefts = ac.StructItem.int16(),
+	overtake = ac.StructItem.int16(),
+	wins = ac.StructItem.int16(),
+	losses = ac.StructItem.int16(),
+	elo = ac.StructItem.int16(),
+}
+
+local sharedPlayerData = ac.connect(sharedPlayerLayout, true, ac.SharedNamespace.ServerScript)
+
+local function updateSharedPlayerData()
+	if not player then return end
+	sharedPlayerData.name = player.name
+	sharedPlayerData.arrests = player.arrests
+	sharedPlayerData.getaways = player.getaways
+	sharedPlayerData.thefts = player.thefts
+	sharedPlayerData.overtake = player.overtake
+	sharedPlayerData.wins = player.wins
+	sharedPlayerData.losses = player.losses
+	sharedPlayerData.elo = player.elo
+	for i, sector in ipairs(player.sectors) do
+		sharedPlayerData.sectorsFormated[i].name = sector.name .. '\0'
+		for j, entry in ipairs(player.sectorsFormated[sector.name]) do
+			sharedPlayerData.sectorsFormated[i].records[j] = entry[1] .. ' - ' .. entry[2] .. '\0'
+		end
+	end
+end
+
 ---@return Player
 function Player.new()
-	local player = {
+	local _player = {
 		name = DRIVER_NAME,
 		sectors = {},
 		sectorsFormated = {},
@@ -1211,8 +1253,8 @@ function Player.new()
 		losses = 0,
 		elo = 1200,
 	}
-	setmetatable(player, { __index = Player })
-	return player
+	setmetatable(_player, { __index = Player })
+	return _player
 end
 
 ---@param data table
@@ -1230,7 +1272,7 @@ function Player.tryParse(data)
 			end
 		end
 	end
-	local player = {
+	local _player = {
 		name = DRIVER_NAME,
 		sectors = sectors,
 		sectorsFormated = {},
@@ -1242,8 +1284,8 @@ function Player.tryParse(data)
 		losses = data.losses or 0,
 		elo = data.elo or 1200,
 	}
-	setmetatable(player, { __index = Player })
-	return player
+	setmetatable(_player, { __index = Player })
+	return _player
 end
 
 ---@param url string
@@ -1259,16 +1301,16 @@ function Player.fetch(url, callback)
 		end
 		local data = JSON.parse(file:read('*a'))
 		file:close()
-		local player = Player.tryParse(data)
-		callback(player)
+		local _player = Player.tryParse(data)
+		callback(_player)
 	else
 		web.get(url, function(err, response)
 			if canProcessRequest(err, response) then
 				if hasExistingData(response) then
 					local data = JSON.parse(response.body)
 					if data then
-						local player = Player.tryParse(data)
-						callback(player)
+						local _player = Player.tryParse(data)
+						callback(_player)
 					else
 						ac.error('Failed to parse player data.')
 						callback(Player.new())
@@ -1287,8 +1329,8 @@ end
 ---@param callback function
 function Player.allocate(callback)
 	local url = FIREBASE_URL .. 'Players/' .. STEAMID .. '.json'
-	Player.fetch(url, function(player)
-		callback(player)
+	Player.fetch(url, function(_player)
+		callback(_player)
 	end)
 end
 
@@ -1346,6 +1388,7 @@ function Player:export(key)
 	if next(sectors) then
 		data.sectors = sectors
 	end
+	-- updateSharedPlayerData()
 	return data
 end
 
@@ -1382,8 +1425,6 @@ function Player:addSectorRecord(sectorName, time)
 	return sector:addRecord(time)
 end
 
----@type Player | nil
-local player = nil
 
 ---@type Settings | nil
 local settings = nil
@@ -3188,9 +3229,12 @@ local function loadPlayerData()
 			dataLoaded['PlayerData'] = true
 			player:formatSectors()
 			currentLeaderboard = player
+			updateSharedPlayerData()
 		end
 	end)
 end
+
+local delay = 1
 
 function script.update(dt)
 	if initialisation then
@@ -3204,7 +3248,12 @@ function script.update(dt)
 	if not shouldRun() then return end
 	ac.debug('PATCH COUNT', patchCount)
 	ac.debug('Kers', car.kersCharge)
-
+	if delay > 0 then delay = delay - dt end
+	if delay < 0 then
+		delay = 0
+		ac.log('Player data updated')
+		ac.broadcastSharedEvent(SHARED_EVENT_KEY, 'update')
+	end
 	sectorUpdate()
 	raceUpdate(dt)
 	overtakeUpdate(dt)
