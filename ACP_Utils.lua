@@ -254,11 +254,9 @@ local function updatedSharedData()
 		playerData.elo = tostring(sharedPlayerData.elo)
 		for i = 1, 5 do
 			local sectorName = ffi.string(sharedPlayerData.sectorsFormated[i].name)
-			ac.log(sectorName)
 			if sectorName ~= '' then
 				for j = 1, 11 do
 					local record = ffi.string(sharedPlayerData.sectorsFormated[i].records[j])
-					ac.log(record)
 					if record ~= '' then
 						local recordInfo = string.split(record, ' - ')
 						if #recordInfo == 2 then
@@ -276,26 +274,6 @@ end
 
 ac.onSharedEvent(SHARED_EVENT_KEY, function(data)
 	if data == 'update' then
-		ac.log('Shared Data Updated')
 		updatedSharedData()
 	end
 end, true)
-
--- ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
-
---------------------------------------------------------------- AC Callbacks --------------------------------------------------------------
--- ac.onCarJumped(0, function(carIndex)
-
--- end)
-
--- ac.onClientConnected(function(carIndex)
-
--- end)
-
--- ac.onClientDisconnected(function(carIndex)
-
--- end)
-
--- ac.onChatMessage(function(message, senderCarIndex, senderSessionID)
-
--- end)
