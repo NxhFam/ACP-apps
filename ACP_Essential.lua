@@ -1360,6 +1360,13 @@ function Player:formatSectors()
 		end
 		self.sectorsFormated[sector.name] = entries
 	end
+	-- Sort all times for each sector
+	for _, sector in ipairs(self.sectors) do
+		local entries = self.sectorsFormated[sector.name]
+		table.sort(entries, function(a, b)
+			return a[2] < b[2]
+		end)
+	end
 end
 
 ---@param key string
@@ -2732,7 +2739,9 @@ local function missionMsgOnScreen()
 		if missionManager.showIntro then
 			textWithBackground(MISSION_TEXT[sectorManager.sector.name].intro[1] .. formatTime(sectorManager.sector.timeLimit + sectorManager.sector.addTimeLimit[3]) .. MISSION_TEXT[sectorManager.sector.name].intro[2], 1, 1)
 		else
-			textWithBackground(lvlMSG,1,2)
+			if not sectorManager.finished then
+				textWithBackground(lvlMSG,1,2)
+			end
 		end
 		missionManager.msgTime = missionManager.msgTime - ui.deltaTime()
 		if missionManager.msgTime < 0 then
