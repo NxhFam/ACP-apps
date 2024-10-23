@@ -1683,6 +1683,7 @@ local function playerScores()
 	ui.newLine()
 	ui.sameLine(WIDTH_DIV._100)
 	ui.beginGroup()
+	ui.newLine()
 	ui.dwriteTextWrapped("Arrests: ", 20, colorHudInverted)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(player.arrests, 20, white)
@@ -1758,7 +1759,7 @@ local function showLeaderboard()
 		end
 	end)
 	ui.sameLine(WIDTH_DIV._2 - 64)
-	if ui.modernButton('', vec2(48, 32), ui.ButtonFlags.Error, 'EXIT', 24, nil) then menuStates.leaderboard = false end
+	if ui.modernButton('', vec2(48, 32), ui.ButtonFlags.PressedOnRelease, 'EXIT', 24, nil) then menuStates.leaderboard = false end
 	if not currentLeaderboard then return end
 	if currentLeaderboard.name == player.name then
 		playerStats()
@@ -1894,10 +1895,11 @@ local function settingsWindow()
 		settings.unitMult = 1
 	end
 	ui.sameLine(menuSize[currentTab].x - 64)
-	if ui.modernButton('', vec2(48, 32), ui.ButtonFlags.Error, 'EXIT', 24, nil) then
+	if ui.modernButton(nil, vec2(48, 32), ui.ButtonFlags.PressedOnRelease, 'EXIT', 24, nil) then
 		menuStates.main = false
 		settings:save()
 	end
+	ui.newLine()
 	settings.hudOffset.x = ui.slider('##' .. 'HUD Offset X', settings.hudOffset.x, 0, WINDOW_WIDTH,'HUD Offset X' .. ': %.0f')
 	settings.hudOffset.y = ui.slider('##' .. 'HUD Offset Y', settings.hudOffset.y, 0, WINDOW_HEIGHT,'HUD Offset Y' .. ': %.0f')
 	settings.essentialSize = ui.slider('##' .. 'HUD Size', settings.essentialSize, 10, 50, 'HUD Size' .. ': %.0f')
@@ -1991,7 +1993,7 @@ local function sectorSelect()
 		end
 	end)
 	ui.sameLine(menuSize[currentTab].x - 64)
-	if ui.modernButton('', vec2(48, 32), ui.ButtonFlags.Error, 'EXIT', 24, nil) then
+	if ui.modernButton('', vec2(48, 32), ui.ButtonFlags.PressedOnRelease, 'EXIT', 24, nil) then
 		menuStates.main = false
 	end
 end
@@ -2769,7 +2771,7 @@ end
 local windowAction = 0
 local leftClickDown = false
 local function moveMenu()
-	if ui.windowHovered() then
+	if ui.windowHovered(ui.HoveredFlags.ChildWindows) then
 		local mousePos = ui.mouseLocalPos()
 		if not leftClickDown and ui.mouseDown() then
 			leftClickDown = true
@@ -3121,8 +3123,9 @@ function script.drawUI()
 		raceUI()
 		if menuStates.main then
 			ui.toolWindow('Menu', settings.menuPos, menuSize[currentTab], true, true, function()
-				moveMenu()
 				menu()
+				moveMenu()
+
 			end)
 		end
 		if menuStates.leaderboard then leaderboardWindow() end
