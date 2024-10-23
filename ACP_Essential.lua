@@ -32,6 +32,8 @@ if DRIVER_NATION_CODE == "USA" or DRIVER_NATION_CODE == "GBR" then
 	UNIT_MULT = 0.621371
 end
 
+local DIMMER = const(0.7)
+
 SECTORS_DATA = const({
 	[1] = {
 		name = "H1",
@@ -367,9 +369,9 @@ local vUp = const(vec3(0, 1, 0))
 local vDown = const(vec3(0, -1, 0))
 
 local menuStates = {
-	welcome = true,
+	welcome = false,
 	main = false,
-	leaderboard = false,
+	leaderboard = true,
 }
 
 local duo = {
@@ -400,6 +402,9 @@ local function resetMissionManager()
 	missionManager.msgFailedIndex = os.time() % 16 + 1
 	missionManager.level = 3
 end
+
+local menuSize = { vec2(WIDTH_DIV._5, HEIGHT_DIV._4), vec2(WIDTH_DIV._6, WINDOW_HEIGHT * 2 / 3), vec2(WIDTH_DIV._3, HEIGHT_DIV._3) }
+local currentTab = 1
 
 local dataLoaded = {}
 dataLoaded['Settings'] = false
@@ -677,6 +682,8 @@ local DEFAULT_SETTINGS = const({
 	starsSize = 20,
 	starsPos = vec2(WIDTH_DIV._2, 0),
 })
+
+local colorHudInverted = rgbm(1, 0, 0, 0.8)
 
 local leaderboardWrapWidth = DEFAULT_SETTINGS.fontSize / 1.5
 
@@ -1343,7 +1350,7 @@ function Player.allocate(callback)
 	end)
 end
 
-function Player:formatSectors()
+function Player:sortSectors()
 	for _, sector in ipairs(self.sectors) do
 		local entries = {}
 		for carName, time in pairs(sector.records) do
@@ -1353,25 +1360,14 @@ function Player:formatSectors()
 			return a[2] < b[2]
 		end)
 		for i, entry in ipairs(entries) do
-			if #entry[1] > #longestCarName then
-				longestCarName = entry[1]
-			end
 			entries[i][2] = formatTime(entry[2])
 		end
 		self.sectorsFormated[sector.name] = entries
 	end
-	-- Sort all times for each sector
-	for _, sector in ipairs(self.sectors) do
-		local entries = self.sectorsFormated[sector.name]
-		table.sort(entries, function(a, b)
-			return a[2] < b[2]
-		end)
-	end
 end
 
----@param key string
 ---@return table
-function Player:export(key)
+function Player:export()
 	local data = { name = self.name }
 
 	if self.getaways > 0 then
@@ -1681,55 +1677,50 @@ local function displayInGrid()
 	end
 end
 
-local scoreOffset = 0
-local timeOffset = 0
-
 local function playerScores()
 	ui.newLine()
-	ui.dwriteTextWrapped("Scores: ", settings.fontSizeMSG * 1.5, rgbm.colors.red)
-	ui.separator()
+	ui.dwriteTextWrapped("Scores: ", 30, settings.colorHud)
 	ui.newLine()
-	ui.sameLine(WIDTH_DIV._40)
+	ui.sameLine(WIDTH_DIV._100)
 	ui.beginGroup()
-	ui.dwriteTextWrapped("Arrests: ", settings.fontSizeMSG, settings.colorHud)
-	ui.sameLine(scoreOffset)
-	ui.dwriteTextWrapped(player.arrests, settings.fontSizeMSG, white)
-	ui.dwriteTextWrapped("Getaways: ", settings.fontSizeMSG, settings.colorHud)
-	ui.sameLine(scoreOffset)
-	ui.dwriteTextWrapped(player.getaways, settings.fontSizeMSG, white)
-	ui.dwriteTextWrapped("Thefts: ", settings.fontSizeMSG, settings.colorHud)
-	ui.sameLine(scoreOffset)
-	ui.dwriteTextWrapped(player.thefts, settings.fontSizeMSG, white)
-	ui.dwriteTextWrapped("Overtake: ", settings.fontSizeMSG, settings.colorHud)
-	ui.sameLine(scoreOffset)
-	ui.dwriteTextWrapped(player.overtake, settings.fontSizeMSG, white)
-	ui.dwriteTextWrapped("Wins: ", settings.fontSizeMSG, settings.colorHud)
-	ui.sameLine(scoreOffset)
-	ui.dwriteTextWrapped(player.wins, settings.fontSizeMSG, white)
-	ui.dwriteTextWrapped("Losses: ", settings.fontSizeMSG, settings.colorHud)
-	ui.sameLine(scoreOffset)
-	ui.dwriteTextWrapped(player.losses, settings.fontSizeMSG, white)
-	ui.dwriteTextWrapped("Racing Elo: ", settings.fontSizeMSG, settings.colorHud)
-	ui.sameLine(scoreOffset)
-	ui.dwriteTextWrapped(player.elo, settings.fontSizeMSG, white)
+	ui.dwriteTextWrapped("Arrests: ", 20, colorHudInverted)
+	ui.sameLine(WIDTH_DIV._10)
+	ui.dwriteTextWrapped(player.arrests, 20, white)
+	ui.dwriteTextWrapped("Getaways: ", 20, colorHudInverted)
+	ui.sameLine(WIDTH_DIV._10)
+	ui.dwriteTextWrapped(player.getaways, 20, white)
+	ui.dwriteTextWrapped("Thefts: ", 20, colorHudInverted)
+	ui.sameLine(WIDTH_DIV._10)
+	ui.dwriteTextWrapped(player.thefts, 20, white)
+	ui.dwriteTextWrapped("Overtake: ", 20, colorHudInverted)
+	ui.sameLine(WIDTH_DIV._10)
+	ui.dwriteTextWrapped(player.overtake, 20, white)
+	ui.dwriteTextWrapped("Wins: ", 20, colorHudInverted)
+	ui.sameLine(WIDTH_DIV._10)
+	ui.dwriteTextWrapped(player.wins, 20, white)
+	ui.dwriteTextWrapped("Losses: ", 20, colorHudInverted)
+	ui.sameLine(WIDTH_DIV._10)
+	ui.dwriteTextWrapped(player.losses, 20, white)
+	ui.dwriteTextWrapped("Racing Elo: ", 20, colorHudInverted)
+	ui.sameLine(WIDTH_DIV._10)
+	ui.dwriteTextWrapped(player.elo, 20, white)
 	ui.endGroup()
 end
 
 local function playerTimes()
 	ui.newLine()
-	ui.dwriteTextWrapped("Sectors: ", settings.fontSizeMSG * 1.5, rgbm.colors.red)
-	ui.separator()
+	ui.dwriteTextWrapped("Sectors: ", 30, settings.colorHud)
 	ui.newLine()
-	ui.sameLine(WIDTH_DIV._40)
+	ui.sameLine(WIDTH_DIV._100)
 	ui.beginGroup()
 
 	for sectorName, times in pairs(player.sectorsFormated) do
-		ui.dwriteTextWrapped(sectorName .. ": ", settings.fontSizeMSG, rgbm.colors.red)
+		ui.dwriteTextWrapped(sectorName .. ": ", 20, settings.colorHud)
 		ui.beginSubgroup(WIDTH_DIV._50)
 		for i = 1, #times do
-			ui.dwriteTextWrapped(times[i][1] .. ": ", settings.fontSizeMSG, settings.colorHud)
-			ui.sameLine(timeOffset)
-			ui.dwriteTextWrapped(times[i][2], settings.fontSizeMSG, white)
+			ui.dwriteTextWrapped(times[i][1] .. ": ", 20, colorHudInverted)
+			ui.sameLine(WIDTH_DIV._10)
+			ui.dwriteTextWrapped(times[i][2], 20, white)
 		end
 		ui.endSubgroup()
 		ui.newLine()
@@ -1737,10 +1728,18 @@ local function playerTimes()
 	ui.endGroup()
 end
 
+local playerStatsSubWindow = const(vec2(WIDTH_DIV._4, HEIGHT_DIV._2 - HEIGHT_DIV._20))
+
 local function playerStats()
-	ui.pushDWriteFont("Orbitron;Weight=Regular")
-	playerScores()
-	playerTimes()
+	ui.separator()
+	ui.pushDWriteFont("Orbitron;Weight=Black")
+	ui.childWindow('playerTimes', playerStatsSubWindow, true, function()
+		playerTimes()
+	end)
+	ui.sameLine()
+	ui.childWindow('playerScores', playerStatsSubWindow, true, function()
+		playerScores()
+	end)
 	ui.popDWriteFont()
 end
 
@@ -1758,10 +1757,8 @@ local function showLeaderboard()
 			end
 		end
 	end)
-	
-	ui.sameLine(WIDTH_DIV._2 - 110)
-	if ui.button('Close') then menuStates.leaderboard = false end
-	-- ui.newLine()
+	ui.sameLine(WIDTH_DIV._2 - 64)
+	if ui.modernButton('', vec2(48, 32), ui.ButtonFlags.Error, 'EXIT', 24, nil) then menuStates.leaderboard = false end
 	if not currentLeaderboard then return end
 	if currentLeaderboard.name == player.name then
 		playerStats()
@@ -1896,8 +1893,8 @@ local function settingsWindow()
 		settings.unit = 'km/h'
 		settings.unitMult = 1
 	end
-	ui.sameLine(WIDTH_DIV._6 - WIDTH_DIV._20)
-	if ui.button('Close') then
+	ui.sameLine(menuSize[currentTab].x - 64)
+	if ui.modernButton('', vec2(48, 32), ui.ButtonFlags.Error, 'EXIT', 24, nil) then
 		menuStates.main = false
 		settings:save()
 	end
@@ -1907,6 +1904,7 @@ local function settingsWindow()
 	settings.fontSize = settings.essentialSize * FONT_MULT
 	ui.setNextItemWidth(300)
 	local colorHud = settings.colorHud
+	colorHudInverted = rgbm(1 - colorHud.r, 1 - colorHud.g, 1 - colorHud.b, 1)
 	ui.colorPicker('Theme Color', colorHud, ui.ColorPickerFlags.AlphaBar)
 	ui.newLine()
 	uiTab()
@@ -1992,8 +1990,8 @@ local function sectorSelect()
 			end
 		end
 	end)
-	ui.sameLine(WIDTH_DIV._5 - 120)
-	if ui.button('Close') then
+	ui.sameLine(menuSize[currentTab].x - 64)
+	if ui.modernButton('', vec2(48, 32), ui.ButtonFlags.Error, 'EXIT', 24, nil) then
 		menuStates.main = false
 	end
 end
@@ -2761,9 +2759,6 @@ end
 
 -------------------------------------------------------------------------------------------- Menu --------------------------------------------------------------------------------------------
 
-local menuSize = { vec2(WIDTH_DIV._5, HEIGHT_DIV._4), vec2(WIDTH_DIV._6, WINDOW_HEIGHT * 2 / 3), vec2(WIDTH_DIV._3, HEIGHT_DIV._3) }
-local currentTab = 1
-
 local function menu()
 	ui.tabBar('MainTabBar', ui.TabBarFlags.Reorderable, function()
 		ui.tabItem('Sectors', function() currentTab = sectorUI() end)
@@ -3113,10 +3108,6 @@ end
 function script.drawUI()
 	if not shouldRun() then return end
 	-- boostBar()
-	if scoreOffset == 0 then
-		scoreOffset = ui.measureDWriteText("Racing Elo: --1200", settings.fontSizeMSG).x
-		timeOffset = ui.measureDWriteText(longestCarName .. ": --", settings.fontSizeMSG).x + WIDTH_DIV._40
-	end
 	if sectorManager.sector and sectorManager.finished and sectorManager.sector.name ~= "H1" then
 		missionFinishedWindow()
 	end
@@ -3212,6 +3203,7 @@ local function initUI()
 	updateStarsPos()
 	initBoost()
 	timeFontSize = settings.fontSize * 0.9
+	colorHudInverted = rgbm(1 - settings.colorHud.r, 1 - settings.colorHud.g, 1 - settings.colorHud.b, 1)
 	dataLoaded['Settings'] = true
 end
 
@@ -3240,7 +3232,7 @@ local function loadPlayerData()
 		if allocatedPlayer then
 			player = allocatedPlayer
 			dataLoaded['PlayerData'] = true
-			player:formatSectors()
+			player:sortSectors()
 			currentLeaderboard = player
 			updateSharedPlayerData()
 		end
