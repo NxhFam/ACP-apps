@@ -144,7 +144,7 @@ local sharedPlayerData = ac.connect(sharedPlayerLayout, true, ac.SharedNamespace
 
 local playerStatsWindow = {
 	visible = true,
-	pos = vec2(WIDTH_DIV._3, HEIGHT_DIV._2 - HEIGHT_DIV._60),
+	pos = vec2(WIDTH_DIV._2 - WIDTH_DIV._50, HEIGHT_DIV._25),
 	size = vec2(WIDTH_DIV._2, HEIGHT_DIV._2),
 }
 
@@ -163,7 +163,7 @@ local function moveMenu()
 end
 
 local function playerScores()
-	ui.dwriteTextWrapped("Scores: ", 30, rgbm.colors.yellow)
+	ui.dwriteTextWrapped("Scores: ", 30, playerData.hudColor)
 	ui.newLine()
 	ui.sameLine(WIDTH_DIV._100)
 	ui.beginGroup()
