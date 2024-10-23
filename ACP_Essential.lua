@@ -369,9 +369,9 @@ local vUp = const(vec3(0, 1, 0))
 local vDown = const(vec3(0, -1, 0))
 
 local menuStates = {
-	welcome = false,
+	welcome = true,
 	main = false,
-	leaderboard = true,
+	leaderboard = false,
 }
 
 local duo = {
@@ -2811,8 +2811,8 @@ end
 
 local function leaderboardWindow()
 	ui.toolWindow('LeaderboardWindow', settings.menuPos, vec2(WIDTH_DIV._2, HEIGHT_DIV._2), false, true, function()
-		showLeaderboard()
 		moveMenu()
+		showLeaderboard()
 	end)
 end
 
@@ -3121,8 +3121,8 @@ function script.drawUI()
 		raceUI()
 		if menuStates.main then
 			ui.toolWindow('Menu', settings.menuPos, menuSize[currentTab], true, true, function()
-				menu()
 				moveMenu()
+				menu()
 			end)
 		end
 		if menuStates.leaderboard then leaderboardWindow() end
