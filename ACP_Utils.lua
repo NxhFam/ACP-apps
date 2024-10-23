@@ -108,6 +108,7 @@ local function truncate(number, decimal)
 end
 
 local playerData = {
+	hudColorInverted = rgbm(0, 1, 1, 1),
 	hudColor = rgbm.colors.red,
 	name = '',
 	sectors = {},
@@ -146,25 +147,25 @@ local function playerScores()
 	ui.newLine()
 	ui.sameLine(WIDTH_DIV._100)
 	ui.beginGroup()
-	ui.dwriteTextWrapped("Arrests: ", 20, playerData.hudColor)
+	ui.dwriteTextWrapped("Arrests: ", 20, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.arrests, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Getaways: ", 20, playerData.hudColor)
+	ui.dwriteTextWrapped("Getaways: ", 20, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.getaways, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Thefts: ", 20, playerData.hudColor)
+	ui.dwriteTextWrapped("Thefts: ", 20, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.thefts, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Overtake: ", 20, playerData.hudColor)
+	ui.dwriteTextWrapped("Overtake: ", 20, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.overtake, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Wins: ", 20, playerData.hudColor)
+	ui.dwriteTextWrapped("Wins: ", 20, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.wins, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Losses: ", 20, playerData.hudColor)
+	ui.dwriteTextWrapped("Losses: ", 20, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.losses, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Racing Elo: ", 20, playerData.hudColor)
+	ui.dwriteTextWrapped("Racing Elo: ", 20, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.elo, 20, rgbm.colors.white)
 	ui.endGroup()
@@ -172,17 +173,17 @@ end
 
 local function playerTimes()
 	ui.newLine()
-	ui.dwriteTextWrapped("Sectors: ", 30, rgbm.colors.yellow)
+	ui.dwriteTextWrapped("Sectors: ", 30, playerData.hudColor)
 	ui.separator()
 	ui.newLine()
 	ui.sameLine(WIDTH_DIV._100)
 	ui.beginGroup()
 
 	for sectorName, record in pairs(playerData.sectors) do
-		ui.dwriteTextWrapped(sectorName .. ": ", 20, rgbm.colors.yellow)
+		ui.dwriteTextWrapped(sectorName .. ": ", 20, playerData.hudColor)
 		ui.beginSubgroup(WIDTH_DIV._50)
 		for k, v in pairs(record) do
-			ui.dwriteTextWrapped(k .. ": ", 20, playerData.hudColor)
+			ui.dwriteTextWrapped(k .. ": ", 20, playerData.hudColorInverted)
 			ui.sameLine(WIDTH_DIV._10)
 			ui.dwriteTextWrapped(v, 20, rgbm.colors.white)
 		end
@@ -193,23 +194,19 @@ local function playerTimes()
 end
 
 local playerStatsWindow = {
-	visible = false,
 	pos = vec2(WIDTH_DIV._2 - WIDTH_DIV._100, HEIGHT_DIV._25),
 	size = vec2(WIDTH_DIV._2, HEIGHT_DIV._2),
 }
 
-local playerStatsSubWindow = {
-	visible = false,
-	size = vec2(WIDTH_DIV._4, HEIGHT_DIV._2),
-}
+local playerStatsSubWindow = const(vec2(WIDTH_DIV._4, HEIGHT_DIV._2 - HEIGHT_DIV._2 / 40))
 
 local function playerStats()
 	ui.pushDWriteFont("Orbitron;Weight=Black")
-	ui.childWindow('playerTimes', playerStatsSubWindow.size, true, function()
+	ui.childWindow('playerTimes', playerStatsSubWindow, true, function()
 		playerTimes()
 	end)
 	ui.sameLine()
-	ui.childWindow('playerScores', playerStatsSubWindow.size, true, function()
+	ui.childWindow('playerScores', playerStatsSubWindow, true, function()
 		playerScores()
 	end)
 	ui.popDWriteFont()
@@ -226,6 +223,7 @@ end)
 local function resetPlayerData()
 	playerData = {
 		hudColor = rgbm.colors.red,
+		hudColorInverted = rgbm(0, 1, 1, 1),
 		name = '',
 		sectors = {},
 		arrests = '0',
@@ -242,6 +240,7 @@ local function updatedSharedData()
 	resetPlayerData()
 	if sharedPlayerData.name ~= '' then
 		playerData.hudColor = sharedPlayerData.hudColor
+		playerData.hudColorInverted = rgbm(1 - sharedPlayerData.hudColor.r, 1 - sharedPlayerData.hudColor.g, 1 - sharedPlayerData.hudColor.b, 1)
 		playerData.name = sharedPlayerData.name
 		playerData.arrests = tostring(sharedPlayerData.arrests)
 		playerData.getaways = tostring(sharedPlayerData.getaways)
