@@ -44,6 +44,7 @@ local WIDTH_DIV = const({
 	_15 = WINDOW_WIDTH / 15,
 	_20 = WINDOW_WIDTH / 20,
 	_25 = WINDOW_WIDTH / 25,
+	_30 = WINDOW_WIDTH / 30,
 	_32 = WINDOW_WIDTH / 32,
 	_40 = WINDOW_WIDTH / 40,
 	_50 = WINDOW_WIDTH / 50,
@@ -59,6 +60,7 @@ local HEIGHT_DIV = const({
 	_20 = WINDOW_HEIGHT / 20,
 	_24 = WINDOW_HEIGHT / 24,
 	_25 = WINDOW_HEIGHT / 25,
+	_30 = WINDOW_HEIGHT / 30,
 	_40 = WINDOW_HEIGHT / 40,
 	_50 = WINDOW_HEIGHT / 50,
 	_60 = WINDOW_HEIGHT / 60,
@@ -140,10 +142,28 @@ local sharedPlayerLayout = {
 
 local sharedPlayerData = ac.connect(sharedPlayerLayout, true, ac.SharedNamespace.ServerScript)
 
+local playerStatsWindow = {
+	visible = true,
+	pos = vec2(WIDTH_DIV._3, HEIGHT_DIV._2 - HEIGHT_DIV._60),
+	size = vec2(WIDTH_DIV._2, HEIGHT_DIV._2),
+}
+
+local leftClickDown = false
+
+local function moveMenu()
+	if ui.windowHovered(ui.HoveredFlags.ChildWindows) then
+		if not leftClickDown and ui.mouseDown() then leftClickDown = true end
+	end
+	if ui.mouseReleased() then leftClickDown = false end
+	if leftClickDown then
+		playerStatsWindow.pos = playerStatsWindow.pos + ui.mouseDelta()
+		playerStatsWindow.pos.x = math.clamp(playerStatsWindow.pos.x, 0, WINDOW_WIDTH - playerStatsWindow.size.x)
+		playerStatsWindow.pos.y = math.clamp(playerStatsWindow.pos.y, 0, WINDOW_HEIGHT - playerStatsWindow.size.y)
+	end
+end
+
 local function playerScores()
-	ui.newLine()
 	ui.dwriteTextWrapped("Scores: ", 30, rgbm.colors.yellow)
-	ui.separator()
 	ui.newLine()
 	ui.sameLine(WIDTH_DIV._100)
 	ui.beginGroup()
@@ -172,13 +192,10 @@ local function playerScores()
 end
 
 local function playerTimes()
-	ui.newLine()
 	ui.dwriteTextWrapped("Sectors: ", 30, playerData.hudColor)
-	ui.separator()
 	ui.newLine()
 	ui.sameLine(WIDTH_DIV._100)
 	ui.beginGroup()
-
 	for sectorName, record in pairs(playerData.sectors) do
 		ui.dwriteTextWrapped(sectorName .. ": ", 20, playerData.hudColor)
 		ui.beginSubgroup(WIDTH_DIV._50)
@@ -193,20 +210,28 @@ local function playerTimes()
 	ui.endGroup()
 end
 
-local playerStatsWindow = {
-	pos = vec2(WIDTH_DIV._2 - WIDTH_DIV._100, HEIGHT_DIV._25),
-	size = vec2(WIDTH_DIV._2, HEIGHT_DIV._2),
-}
-
-local playerStatsSubWindow = const(vec2(WIDTH_DIV._4, HEIGHT_DIV._2 - HEIGHT_DIV._2 / 40))
+local playerStatsSubWindow = const(vec2(WIDTH_DIV._4 - WIDTH_DIV._4 / 40, HEIGHT_DIV._2 - HEIGHT_DIV._2 / 40))
 
 local function playerStats()
 	ui.pushDWriteFont("Orbitron;Weight=Black")
-	ui.childWindow('playerTimes', playerStatsSubWindow, true, function()
+	ui.dwriteTextWrapped("Player Stats", 40, rgbm.colors.white)
+	local playerStatSize = ui.measureDWriteText("Player Stats", 45)
+	ui.sameLine(WIDTH_DIV._2 - 64)
+	if ui.modernButton('', vec2(48, 40), ui.ButtonFlags.Error, playerStatsWindow.visible and 'HIDE' or 'EYE', 32, nil) then
+		playerStatsWindow.visible = not playerStatsWindow.visible
+		if playerStatsWindow.visible then
+			playerStatsWindow.size = vec2(WIDTH_DIV._2, HEIGHT_DIV._2)
+		else
+			playerStatsWindow.size = vec2(WIDTH_DIV._2, playerStatSize.y + 10)
+		end
+	end
+	if not playerStatsWindow.visible then return end
+	ui.separator()
+	ui.childWindow('playerTimes', playerStatsSubWindow, false, ui.WindowFlags.ThinScrollbar, function()
 		playerTimes()
 	end)
-	ui.sameLine()
-	ui.childWindow('playerScores', playerStatsSubWindow, true, function()
+	ui.sameLine(HEIGHT_DIV._2 - HEIGHT_DIV._30)
+	ui.childWindow('playerScores', playerStatsSubWindow, false, function()
 		playerScores()
 	end)
 	ui.popDWriteFont()
@@ -215,6 +240,7 @@ end
 ui.onExclusiveHUD(function(mode)
 	if mode == 'menu' then
 		ui.toolWindow('PlayerStats', playerStatsWindow.pos, playerStatsWindow.size, false, true, function()
+			moveMenu()
 			playerStats()
 		end)
 	end
