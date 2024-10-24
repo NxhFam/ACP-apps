@@ -49,14 +49,17 @@ local WIDTH_DIV = const({
 	_40 = WINDOW_WIDTH / 40,
 	_50 = WINDOW_WIDTH / 50,
 	_100 = WINDOW_WIDTH / 100,
+	_320 = WINDOW_WIDTH / 320,
 })
 
 local HEIGHT_DIV = const({
 	_2 = WINDOW_HEIGHT / 2,
 	_3 = WINDOW_HEIGHT / 3,
 	_4 = WINDOW_HEIGHT / 4,
+	_8 = WINDOW_HEIGHT / 8,
 	_12 = WINDOW_HEIGHT / 12,
 	_14 = WINDOW_HEIGHT / 14,
+	_16 = WINDOW_HEIGHT / 16,
 	_20 = WINDOW_HEIGHT / 20,
 	_24 = WINDOW_HEIGHT / 24,
 	_25 = WINDOW_HEIGHT / 25,
@@ -66,40 +69,16 @@ local HEIGHT_DIV = const({
 	_60 = WINDOW_HEIGHT / 60,
 	_70 = WINDOW_HEIGHT / 70,
 	_80 = WINDOW_HEIGHT / 80,
+	_100 = WINDOW_HEIGHT / 100,
+	_320 = WINDOW_HEIGHT / 320,
 })
 
 
----@param time number
----@return string
-local function formatTime(time)
-	local minutes = math.floor(time / 60)
-	local seconds = math.floor(time % 60)
-	local milliseconds = math.floor((time % 1) * 1000)
-	return ('%02d:%02d.%03d'):format(minutes, seconds, milliseconds)
-end
-
----@param carID string
-local function isPoliceCar(carID)
-	for _, carName in ipairs(POLICE_CAR) do
-		if carID == carName then
-			return true
-		end
-	end
-	return false
-end
-
----@param key string
-local function removeUtf8Char(key)
-	local newKey = ''
-	for i = 1, #key do
-		local c = key:sub(i, i)
-		if c:byte() < 128 then
-			newKey = newKey .. c
-		end
-	end
-	newKey = newKey:match('^%s*(.-)%s*$')
-	return newKey
-end
+local GAS_STATIONS = const({
+	{pos = vec3(762.713, 95.68, 2253.62), up = vec3(0.0211318, 0.998816, 0.0438106)},
+	{pos = vec3(-865, 144, 3496), up = vec3(0.0211318, 0.998816, 0.0438106)},
+	{pos = vec3(-4003, 58, 96), up = vec3(0.0211318, 0.998816, 0.0438106)},
+})
 
 ---@param number number
 ---@param decimal integer
@@ -300,3 +279,98 @@ ac.onSharedEvent(SHARED_EVENT_KEY, function(data)
 		updatedSharedData()
 	end
 end, true)
+
+local fuelWindow = {
+	visible = true,
+	pos = vec2(WIDTH_DIV._2 - WIDTH_DIV._4/2, HEIGHT_DIV._4),
+	size = vec2(WIDTH_DIV._4, HEIGHT_DIV._8),
+	up = {
+		p1 = vec2(WIDTH_DIV._4 / 2 - 96, HEIGHT_DIV._8 / 2 - 24),
+		p2 = vec2(WIDTH_DIV._4 / 2 - 48, HEIGHT_DIV._8 / 2 + 24),
+		color = rgbm.colors.white,
+	},
+	fuel = {
+		p1 = vec2(WIDTH_DIV._4 / 2 - 32, HEIGHT_DIV._8 / 2 - 32),
+		p2 = vec2(WIDTH_DIV._4 / 2 + 32, HEIGHT_DIV._8 / 2 + 32),
+		color = rgbm.colors.white,
+	},
+	down = {
+		p1 = vec2(WIDTH_DIV._4 / 2 + 48, HEIGHT_DIV._8 / 2 - 24),
+		p2 = vec2(WIDTH_DIV._4 / 2 + 96, HEIGHT_DIV._8 / 2 + 24),
+		color = rgbm.colors.white,
+	},
+}
+
+local function isAtGasStation()
+	for _, gasStation in ipairs(GAS_STATIONS) do
+		if car.position:distanceSquared(gasStation.pos) < 500 then
+			return true
+		end
+	end
+	return false
+end
+
+local carFuel = car.fuel
+
+local function textWithBackground(text, sizeMult, yOffset, textColor)
+	local textSize = ui.measureDWriteText(text, 20 * sizeMult)
+	local rectPos1 = vec2(WINDOW_WIDTH / 2, HEIGHT_DIV._100 + yOffset) - vec2(textSize.x / 2, 0)
+	local rectPos2 = textSize + rectPos1
+	local rectOffset = vec2(WIDTH_DIV._320, HEIGHT_DIV._320)
+	if ui.time() % 1 < 0.5 then
+		ui.drawRectFilled(rectPos1 - rectOffset, rectPos2 + rectOffset, rgbm(0, 0, 0, 0.1), 10)
+	else
+		ui.drawRectFilled(rectPos1 - rectOffset, rectPos2 + rectOffset, rgbm(0, 0, 0, 0.6), 10)
+	end
+	ui.dwriteDrawText(text, 20 * sizeMult, rectPos1, textColor)
+end
+
+local function fillCarWithFuel()
+	if car.speedKmh > 1 then
+		textWithBackground('Stop the car to refuel!', 1, HEIGHT_DIV._50, rgbm.colors.red)
+	end
+	ui.transparentWindow('FuelWindow', fuelWindow.pos, fuelWindow.size, true, function()
+		-- if ui.rectHovered(fuelWindow.down.p1, fuelWindow.down.p2) then fuelWindow.down.color = rgbm.colors.red else fuelWindow.down.color = rgbm.colors.white end
+		if ui.rectHovered(fuelWindow.up.p1, fuelWindow.up.p2) then fuelWindow.up.color = rgbm.colors.green else fuelWindow.up.color = rgbm.colors.white end
+		-- if ui.rectHovered(fuelWindow.fuel.p1, fuelWindow.fuel.p2) then fuelWindow.fuel.color = rgbm.colors.blue else fuelWindow.fuel.color = rgbm.colors.white end
+		-- ui.drawIcon(ui.Icons.ArrowDown, fuelWindow.down.p1, fuelWindow.down.p2, fuelWindow.down.color)
+		if ui.time() % 1 < 0.5 then
+			ui.drawIcon(ui.Icons.Fuel, fuelWindow.fuel.p1, fuelWindow.fuel.p2, rgbm.colors.white)
+		else
+			ui.drawIcon(ui.Icons.Fuel, fuelWindow.fuel.p1, fuelWindow.fuel.p2, car.speedKmh > 1 and rgbm.colors.white or rgbm.colors.green)
+		end
+		-- ui.drawIcon(ui.Icons.ArrowUp, fuelWindow.up.p1, fuelWindow.up.p2, fuelWindow.up.color)
+		ui.newLine(HEIGHT_DIV._16)
+		ui.pushDWriteFont("Orbitron;Weight=Black")
+		ui.dwriteTextWrapped('Fuel: ' .. math.floor(car.fuel) .. ' / ' .. car.maxFuel, 20, rgbm.colors.white)
+		ui.popDWriteFont()
+		ui.progressBar(car.fuel / car.maxFuel, vec2(WIDTH_DIV._4, HEIGHT_DIV._40))
+	end)
+	if car.fuel >= car.maxFuel or car.speedKmh > 1 then return end
+	physics.setCarFuel(0, math.min(car.maxFuel, car.fuel + uiState.dt * 2))
+	carFuel = car.fuel
+end
+
+physics.setCarFuel(0, 1)
+
+local function fuelWarning()
+	if car.fuel < 5 then
+		ui.pushDWriteFont("Orbitron;Weight=Black")
+		textWithBackground('Fuel Low! Stop at a gas station to refuel.', 1, 0, rgbm.colors.red)
+		ui.popDWriteFont()
+	end
+end
+
+function script.drawUI()
+	if carFuel > car.fuel then
+		carFuel = car.fuel
+	end
+	fuelWarning()
+	if isAtGasStation() then
+		fillCarWithFuel()
+	end
+end
+
+ac.onCarJumped(0, function()
+	physics.setCarFuel(0, math.max(1, carFuel))
+end)
