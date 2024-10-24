@@ -123,6 +123,7 @@ local WIDTH_DIV = const({
 	_40 = WINDOW_WIDTH / 40,
 	_50 = WINDOW_WIDTH / 50,
 	_80 = WINDOW_WIDTH / 80,
+	_100 = WINDOW_WIDTH / 100,
 	_320 = WINDOW_WIDTH / 320,
 })
 
@@ -140,6 +141,7 @@ local HEIGHT_DIV = const({
 	_60 = WINDOW_HEIGHT / 60,
 	_70 = WINDOW_HEIGHT / 70,
 	_80 = WINDOW_HEIGHT / 80,
+	_100 = WINDOW_HEIGHT / 100,
 	_320 = WINDOW_HEIGHT / 320,
 })
 
@@ -1119,7 +1121,17 @@ function Sector:update()
 		self:updateTimeColor()
 		if self:isFinished() then
 			self.finalTime = os.preciseClock() - self.startTime
-			self.time = ('%02d:%02d.%03d'):format(math.floor(self.finalTime / 60), math.floor(self.finalTime % 60),
+			local time = os.preciseClock() - self.startTime
+			local lvl = 'Time'
+			if self.timeLimit ~= 0 then
+				time = self.timeLimit + self.addTimeLimit[3] - time
+				lvl = 'LVL' .. missionManager.level
+				if time < 0 then
+					time = 0
+					lvl = 'FAIL'
+				end
+			end
+			self.time = lvl .. (' - %02d:%02d.%03d'):format(math.floor(self.finalTime / 60), math.floor(self.finalTime % 60),
 				math.floor((self.finalTime % 1) * 1000))
 		end
 	end
@@ -2021,7 +2033,6 @@ local function sectorUI()
 	discordLinks()
 	ui.newLine()
 	ui.endGroup()
-
 	return 1
 end
 
