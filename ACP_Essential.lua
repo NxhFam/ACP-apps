@@ -32,8 +32,6 @@ if DRIVER_NATION_CODE == "USA" or DRIVER_NATION_CODE == "GBR" then
 	UNIT_MULT = 0.621371
 end
 
-local DIMMER = const(0.7)
-
 SECTORS_DATA = const({
 	[1] = {
 		name = "H1",
@@ -371,7 +369,7 @@ local vUp = const(vec3(0, 1, 0))
 local vDown = const(vec3(0, -1, 0))
 
 local menuStates = {
-	welcome = true,
+	welcome = false,
 	main = false,
 	leaderboard = false,
 }
@@ -2505,6 +2503,7 @@ local acpPolice = ac.OnlineEvent({
 			online.color = white
 		end
 	elseif data.yourIndex == car.sessionID and data.messageType == 2 then
+		physics.teleportCarTo(0, ac.SpawnSet.Pits)
 		online.message = data.message
 		online.messageTimer = settings.timeMsg
 		online.chased = false
@@ -3290,11 +3289,13 @@ local function drawGate()
 	end
 end
 
+-- render.setBlendMode(render.BlendMode.AlphaBlend)
+-- render.setCullMode(render.CullMode.None)
+-- render.setDepthMode(render.BlendMode.AlphaBlend)
+
 function script.draw3D()
 	if not shouldRun() then return end
-	render.setBlendMode(render.BlendMode.AlphaBlend)
-	render.setCullMode(render.CullMode.None)
-	render.setDepthMode(render.DepthMode.Normal)
+	render.setDepthMode(render.BlendMode.AlphaBlend)
 	drawGate()
 end
 
