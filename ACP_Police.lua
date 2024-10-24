@@ -1,9 +1,10 @@
+ac.log('Script: Police')
 local sim = ac.getSim()
 local car = ac.getCar(0) or error()
 if not car then return end
-
 local wheels = car.wheels or error()
 local uiState = ac.getUI()
+
 ui.setAsynchronousImagesLoading(true)
 
 local localTesting = ac.dirname() == 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\assettocorsa\\extension\\lua\\online'
@@ -418,11 +419,12 @@ end
 ---@field overtake integer
 ---@field wins integer
 ---@field losses integer
+---@field elo integer
 local Player = class('Player')
 
 ---@return Player
 function Player.new()
-	local player = {
+	local _player = {
 		name = DRIVER_NAME,
 		arrests = 0,
 		getaways = 0,
@@ -430,9 +432,10 @@ function Player.new()
 		overtake = 0,
 		wins = 0,
 		losses = 0,
+		elo = 1200,
 	}
-	setmetatable(player, { __index = Player })
-	return player
+	setmetatable(_player, { __index = Player })
+	return _player
 end
 
 ---@param data table
@@ -441,7 +444,7 @@ function Player.tryParse(data)
 	if not data then
 		return Player.new()
 	end
-	local player = {
+	local _player = {
 		name = DRIVER_NAME,
 		arrests = data.arrests or 0,
 		getaways = data.getaways or 0,
@@ -449,9 +452,10 @@ function Player.tryParse(data)
 		overtake = data.overtake or 0,
 		wins = data.wins or 0,
 		losses = data.losses or 0,
+		elo = data.elo or 1200,
 	}
-	setmetatable(player, { __index = Player })
-	return player
+	setmetatable(_player, { __index = Player })
+	return _player
 end
 
 ---@param url string
@@ -523,6 +527,7 @@ function Player:export()
 	if self.losses > 0 then
 		data.losses = self.losses
 	end
+	data.elo = self.elo
 	return data
 end
 
@@ -638,7 +643,6 @@ local acpPolice = ac.OnlineEvent({
 }, function (sender, data)
 	if data.yourIndex == car.sessionID and data.messageType == 0 and pursuit.suspect ~= nil and sender == pursuit.suspect then
 		pursuit.hasArrested = true
-		ac.log("ACP Police: Police received")
 	end
 end)
 
