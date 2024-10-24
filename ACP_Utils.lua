@@ -351,7 +351,7 @@ local function fillCarWithFuel()
 	carFuel = car.fuel
 end
 
-physics.setCarFuel(0, 1)
+physics.setCarFuel(0, 30)
 
 local function fuelWarning()
 	if car.fuel < 5 then
