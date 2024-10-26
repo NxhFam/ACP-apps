@@ -597,6 +597,7 @@ function Player:export()
 		data.sectors = sectors
 	end
 	updateSharedPlayerData()
+	ac.broadcastSharedEvent(SHARED_EVENT_KEY, 'update')
 	return data
 end
 
@@ -1097,7 +1098,7 @@ local function radarUpdate()
 	local previousSize = #playersInRange
 	local j = 1
 	for i, c in ac.iterateCars.serverSlots() do
-	  if not c.isHidingLabels and not isPoliceCar(c:id()) then
+	  if not c.isHidingLabels and c.isConnected and not isPoliceCar(c:id()) then
 			if c.position.x > car.position.x - RADAR_RANGE and c.position.z > car.position.z - RADAR_RANGE and c.position.x < car.position.x + RADAR_RANGE and c.position.z < car.position.z + RADAR_RANGE then
 				playersInRange[j] = {}
 				playersInRange[j].player = c
