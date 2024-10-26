@@ -401,6 +401,7 @@ local CAR_NAMES = const({
 ---@param url string
 ---@param carId integer
 local function applySkinToCar(carId, url)
+	ac.log('Loading skin: ' .. url)
 	web.loadRemoteAssets(url, function(error, data)
 		if error then
 			ac.log('Error loading skin: ' .. error)
