@@ -1340,6 +1340,8 @@ local function loadPlayerData()
 		if allocatedPlayer then
 			player = allocatedPlayer
 			dataLoaded['PlayerData'] = true
+			updateSharedPlayerData()
+			ac.log(player.arrests)
 		end
 	end)
 end
