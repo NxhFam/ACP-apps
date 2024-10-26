@@ -14,6 +14,10 @@ local initialisation = true
 local STEAMID = const(ac.getUserSteamID())
 local CSP_VERSION = const(ac.getPatchVersionCode())
 local CSP_MIN_VERSION = const(3116)
+
+local SHARED_PLAYER_DATA = const('__ACP_SHARED_PLAYER_DATA')
+local SHARED_EVENT_KEY = const('__ACP_PLAYER_SHARED_UPDATE')
+
 local CAR_ID = const(ac.getCarID(0))
 local CAR_NAME = const(ac.getCarName(0))
 local POLICE_CAR = { "chargerpolice_acpursuit", "crown_police" }
@@ -411,8 +415,12 @@ function Settings:save()
 	end)
 end
 
+local patchCount = 0
+
 ---@class Player
 ---@field name string
+---@field sectors SectorStats[]
+---@field sectorsFormated table<string, table<string, string>>
 ---@field arrests integer
 ---@field getaways integer
 ---@field thefts integer
@@ -422,10 +430,54 @@ end
 ---@field elo integer
 local Player = class('Player')
 
+---@type Player | nil
+local player = nil
+
+local sharedPlayerLayout = {
+	ac.StructItem.key(SHARED_PLAYER_DATA),
+	hudColor = ac.StructItem.rgbm(),
+	name = ac.StructItem.string(24),
+	sectorsFormated = ac.StructItem.array(ac.StructItem.struct({
+		name = ac.StructItem.string(16),
+		records = ac.StructItem.array(ac.StructItem.string(32), 10)
+	}), 5),
+	arrests = ac.StructItem.int16(),
+	getaways = ac.StructItem.int16(),
+	thefts = ac.StructItem.int16(),
+	overtake = ac.StructItem.int16(),
+	wins = ac.StructItem.int16(),
+	losses = ac.StructItem.int16(),
+	elo = ac.StructItem.int16(),
+}
+
+---@type Settings | nil
+local settings = nil
+
+local sharedPlayerData = ac.connect(sharedPlayerLayout, true, ac.SharedNamespace.ServerScript)
+
+local function updateSharedPlayerData()
+	if not player then return end
+	local hudC = rgbm.colors.red
+	if settings then
+		hudC = settings.colorHud
+	end
+	sharedPlayerData.hudColor = hudC
+	sharedPlayerData.name = player.name
+	sharedPlayerData.arrests = player.arrests
+	sharedPlayerData.getaways = player.getaways
+	sharedPlayerData.thefts = player.thefts
+	sharedPlayerData.overtake = player.overtake
+	sharedPlayerData.wins = player.wins
+	sharedPlayerData.losses = player.losses
+	sharedPlayerData.elo = player.elo
+end
+
 ---@return Player
 function Player.new()
 	local _player = {
 		name = DRIVER_NAME,
+		sectors = {},
+		sectorsFormated = {},
 		arrests = 0,
 		getaways = 0,
 		thefts = 0,
@@ -444,8 +496,11 @@ function Player.tryParse(data)
 	if not data then
 		return Player.new()
 	end
+	local sectors = {}
 	local _player = {
 		name = DRIVER_NAME,
+		sectors = sectors,
+		sectorsFormated = {},
 		arrests = data.arrests or 0,
 		getaways = data.getaways or 0,
 		thefts = data.thefts or 0,
@@ -471,17 +526,16 @@ function Player.fetch(url, callback)
 		end
 		local data = JSON.parse(file:read('*a'))
 		file:close()
-		local player = Player.tryParse(data)
-		callback(player)
-		ac.log('Loaded From File')
+		local _player = Player.tryParse(data)
+		callback(_player)
 	else
 		web.get(url, function(err, response)
 			if canProcessRequest(err, response) then
 				if hasExistingData(response) then
 					local data = JSON.parse(response.body)
 					if data then
-						local player = Player.tryParse(data)
-						callback(player)
+						local _player = Player.tryParse(data)
+						callback(_player)
 					else
 						ac.error('Failed to parse player data.')
 						callback(Player.new())
@@ -500,8 +554,8 @@ end
 ---@param callback function
 function Player.allocate(callback)
 	local url = FIREBASE_URL .. 'Players/' .. STEAMID .. '.json'
-	Player.fetch(url, function(player)
-		callback(player)
+	Player.fetch(url, function(_player)
+		callback(_player)
 	end)
 end
 
@@ -528,12 +582,28 @@ function Player:export()
 		data.losses = self.losses
 	end
 	data.elo = self.elo
+
+	local sectors = {}
+	for _, sector in ipairs(self.sectors) do
+		if not sector then
+			break
+		end
+		local sectorData = sector:export()
+		for k, v in pairs(sectorData) do
+			sectors[k] = v
+		end
+	end
+	if next(sectors) then
+		data.sectors = sectors
+	end
+	updateSharedPlayerData()
 	return data
 end
 
 function Player:save()
-	if localTesting then return end
 	local str = '{"' .. STEAMID .. '": ' .. JSON.stringify(self:export()) .. '}'
+	if localTesting or patchCount > 40 then return end
+	patchCount = patchCount + 1
 	web.request('PATCH', FIREBASE_URL .. "Players.json", str, function(err, response)
 		if err then
 			ac.error(err)
@@ -541,12 +611,6 @@ function Player:save()
 		end
 	end)
 end
-
----@type Player | nil
-local player = nil
-
----@type Settings | nil
-local settings = nil
 
 local canRun = false
 local function shouldRun()
@@ -1280,13 +1344,21 @@ local function loadPlayerData()
 	end)
 end
 
-function script.update()
+local delay = 1
+
+function script.update(dt)
 	if initialisation then
 		initialisation = false
 		loadSettings()
 		loadPlayerData()
 	end
 	if not shouldRun() then return end
+	if delay > 0 then delay = delay - dt end
+	if delay < 0 then
+		delay = 0
+		updateSharedPlayerData()
+		ac.broadcastSharedEvent(SHARED_EVENT_KEY, 'update')
+	end
 	radarUpdate()
 	chaseUpdate()
 end
