@@ -5,8 +5,6 @@ if not car then return end
 local wheels = car.wheels or error()
 local uiState = ac.getUI()
 
-local chat = require('shared/sim/chat')
-local virtualizing = require('shared/ui/virtualizing')
 
 ui.setAsynchronousImagesLoading(true)
 
@@ -56,6 +54,7 @@ local HEIGHT_DIV = const({
 	_2 = WINDOW_HEIGHT / 2,
 	_3 = WINDOW_HEIGHT / 3,
 	_4 = WINDOW_HEIGHT / 4,
+	_6 = WINDOW_HEIGHT / 6,
 	_8 = WINDOW_HEIGHT / 8,
 	_12 = WINDOW_HEIGHT / 12,
 	_14 = WINDOW_HEIGHT / 14,
@@ -282,8 +281,8 @@ end, true)
 
 local fuelWindow = {
 	visible = true,
-	pos = vec2(WIDTH_DIV._2 - WIDTH_DIV._4/2, HEIGHT_DIV._4),
-	size = vec2(WIDTH_DIV._4, HEIGHT_DIV._8),
+	pos = vec2(WIDTH_DIV._2 - WIDTH_DIV._4/2, HEIGHT_DIV._8),
+	size = vec2(WIDTH_DIV._4, HEIGHT_DIV._4),
 	up = {
 		p1 = vec2(WIDTH_DIV._4 / 2 - 96, HEIGHT_DIV._8 / 2 - 24),
 		p2 = vec2(WIDTH_DIV._4 / 2 - 48, HEIGHT_DIV._8 / 2 + 24),
@@ -313,6 +312,7 @@ end
 local carFuel = car.fuel
 
 local function textWithBackground(text, sizeMult, yOffset, textColor)
+	ui.pushDWriteFont("Orbitron;Weight=Black")
 	local textSize = ui.measureDWriteText(text, 20 * sizeMult)
 	local rectPos1 = vec2(WINDOW_WIDTH / 2, HEIGHT_DIV._100 + yOffset) - vec2(textSize.x / 2, 0)
 	local rectPos2 = textSize + rectPos1
@@ -323,6 +323,7 @@ local function textWithBackground(text, sizeMult, yOffset, textColor)
 		ui.drawRectFilled(rectPos1 - rectOffset, rectPos2 + rectOffset, rgbm(0, 0, 0, 0.6), 10)
 	end
 	ui.dwriteDrawText(text, 20 * sizeMult, rectPos1, textColor)
+	ui.popDWriteFont()
 end
 
 local function fillCarWithFuel()
@@ -351,20 +352,13 @@ local function fillCarWithFuel()
 	carFuel = car.fuel
 end
 
-physics.setCarFuel(0, 30)
-
 local function fuelWarning()
 	if car.fuel < 5 then
-		ui.pushDWriteFont("Orbitron;Weight=Black")
 		textWithBackground('Fuel Low! Stop at a gas station to refuel.', 1, 0, rgbm.colors.red)
-		ui.popDWriteFont()
 	end
 end
 
 function script.drawUI()
-	if carFuel > car.fuel then
-		carFuel = car.fuel
-	end
 	fuelWarning()
 	if isAtGasStation() then
 		fillCarWithFuel()
