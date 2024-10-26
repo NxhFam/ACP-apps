@@ -1130,7 +1130,7 @@ local function arrestSuspect()
 		table.insert(arrestations, msgToSend .. os.date("\nDate of the Arrestation: %c"))
 		ac.sendChatMessage(msgToSend .. "\nPlease Get Back Pit, GG!")
 		pursuit.id = pursuit.suspect.sessionID
-		player.arrests = player.arrests + 1
+		player.arrests = player.arrests and player.arrests + 1 or 1
 		pursuit.startedTime = 0
 		pursuit.suspect = nil
 		pursuit.timerArrest = 1
