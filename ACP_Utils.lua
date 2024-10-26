@@ -87,6 +87,35 @@ local function truncate(number, decimal)
 	return math.floor(number * power) / power
 end
 
+
+-- ---Table in which active skins folder names are stored (lowercase). Gets updated when a car skin changes, or when a new car joins or leave the server 
+-- local activeSkins = stringify.parse(tostring(ac.load("ACP_ActiveSkins")))
+-- if not activeSkins then
+--   activeSkins = {}
+--   for i = 0, sim.carsCount-1, 1 do
+--     local skinFolderName = ac.getCar(i):skin()
+--     activeSkins[tostring(i)] = string.lower(skinFolderName)
+--   end
+--   ac.store("ACP_ActiveSkins", stringify(activeSkins))
+-- end
+
+-- ---Table in which the original skins folder names are stored (lowercase). Those names are the name of the original skins as set by the server, or by the user in single played.
+-- ---Note: ac.getCar(index):skin() returns the original skin name in lowercase already, but in case behavior would change this should keep things working properly
+-- local originalSkins = stringify.parse(tostring(ac.load("ACP_OriginalSkins")))
+-- if not originalSkins then
+--   originalSkins = {}
+--   for i = 0, sim.carsCount-1, 1 do
+--     local skinFolderName = ac.getCar(i):skin()
+--     originalSkins[tostring(i)] = string.lower(skinFolderName)
+--   end
+--   ac.store("ACP_OriginalSkins", stringify(originalSkins))
+-- end
+
+-- ac.log("Active skins: "..stringify(activeSkins))
+-- ac.log("Original skins: "..stringify(originalSkins))
+
+
+
 local playerData = {
 	hudColorInverted = rgbm(0, 1, 1, 1),
 	hudColor = rgbm.colors.red,
@@ -358,6 +387,53 @@ local function fuelWarning()
 	end
 end
 
+local EMILE_STEAM_ID = const('76561199125972202')
+
+ac.log(ac.getCarSkinID(0))
+ac.log(car:skin())
+
+local CREW_PREFIX = const({
+	['*SR*'] = 'sr',
+	['_RR_'] = 'rr',
+	['[MM]'] = 'mm',
+})
+
+local CAR_NAMES = const({
+	{ "300zx_acp24" },
+	{ "ae86_acp24" },
+	{ "celicast205_acp24" },
+	{ "civiceg6_acp24" },
+	{ "evo3_acp24" },
+	{ "gt86_acp24" },
+	{ "gto_acp24" },
+	{ "impreza22b_acp24" },
+	{ "nsx_acp24" },
+	{ "r32_acp24" },
+	{ "r34gtr_acp24" },
+	{ "rx7_acp24" },
+	{ "rx7gtx_acp24" },
+	{ "sil180_acp24" },
+	{ "supra_acp24" },
+	{ "supramk3_acp24" },
+})
+
+---@param url string
+---@param carId integer
+local function applySkinToCar(carId, url)
+	web.loadRemoteAssets(url, function(error, data)
+		if error then
+			ac.log('Error loading skin: ' .. error)
+			return
+		end
+		local carNode = ac.findNodes('carRoot:' .. carId)
+		carNode:resetSkin()
+		carNode:applySkin({
+			['ext_body_Mixed_AO.dds'] = data .. "/ext_body_Mixed_AO.dds"
+		})
+		ac.refreshCarColor(carId)
+	end)
+end
+
 function script.drawUI()
 	fuelWarning()
 	if isAtGasStation() then
@@ -367,4 +443,47 @@ end
 
 ac.onCarJumped(0, function()
 	physics.setCarFuel(0, math.max(1, carFuel))
+end)
+
+ac.onClientConnected(function(connectedCarIndex, connectedSessionID)
+	ac.log('Client connected: ' .. connectedCarIndex)
+	ac.log('Session ID: ' .. connectedSessionID)
+end)
+
+ac.onClientDisconnected(function(connectedCarIndex, connectedSessionID)
+	ac.log('Client disconnected: ' .. connectedCarIndex)
+	ac.log('Session ID: ' .. connectedSessionID)
+end)
+
+local function getSkinPrefix(carIndex)
+	local playerName = ac.getDriverName(carIndex)
+	if playerName then
+		for crew, prefix in pairs(CREW_PREFIX) do
+			if string.find(playerName, crew) then
+				return prefix
+			end
+		end
+	end
+	return 'base'
+end
+
+local function applySkinToSelf()
+	local skin = "/" .. getSkinPrefix(0) .. "_ext_body_Mixed_AO.zip"
+	local url = "https://github.com/ele-sage/ACP-apps/raw/refs/heads/master/skins/" .. CAR_ID .. skin
+	applySkinToCar(0, url)
+end
+
+applySkinToSelf()
+
+ac.onClientConnected(function (carIndex, connectedSessionID)
+	local carId = ac.getCarID(carIndex)
+	local skin = "/" .. getSkinPrefix(carIndex) .. "_ext_body_Mixed_AO.zip"
+	local url = "https://github.com/ele-sage/ACP-apps/raw/refs/heads/master/skins/" .. carId .. skin
+	applySkinToCar(carIndex, url)
+end)
+
+ac.onClientDisconnected(function (carIndex, connectedSessionID)
+	local carId = ac.getCarID(carIndex)
+	local url = "https://github.com/ele-sage/ACP-apps/raw/refs/heads/master/skins/" .. carId .. "/base_ext_body_Mixed_AO.zip"
+	applySkinToCar(carIndex, url)
 end)
