@@ -1198,7 +1198,7 @@ local function arrestSuspect()
 		pursuit.startedTime = 0
 		pursuit.suspect = nil
 		pursuit.timerArrest = 1
-		Player:save()
+		player:save()
 	elseif pursuit.hasArrested then
 		if pursuit.timerArrest > 0 then
 			pursuit.timerArrest = pursuit.timerArrest - ui.deltaTime()
