@@ -29,6 +29,11 @@ if CSP_VERSION < CSP_MIN_VERSION then return end
 local WINDOW_WIDTH = const(sim.windowWidth / uiState.uiScale)
 local WINDOW_HEIGHT = const(sim.windowHeight / uiState.uiScale)
 local FONT_MULT = const(WINDOW_HEIGHT / 1440)
+local POLICE_CAR = { "chargerpolice_acpursuit", "crown_police" }
+if localTesting then
+	POLICE_CAR = { "ks_porsche_911_gt3_r_2016" }
+end
+
 
 local WIDTH_DIV = const({
 	_2 = WINDOW_WIDTH / 2,
@@ -87,34 +92,15 @@ local function truncate(number, decimal)
 	return math.floor(number * power) / power
 end
 
-
--- ---Table in which active skins folder names are stored (lowercase). Gets updated when a car skin changes, or when a new car joins or leave the server 
--- local activeSkins = stringify.parse(tostring(ac.load("ACP_ActiveSkins")))
--- if not activeSkins then
---   activeSkins = {}
---   for i = 0, sim.carsCount-1, 1 do
---     local skinFolderName = ac.getCar(i):skin()
---     activeSkins[tostring(i)] = string.lower(skinFolderName)
---   end
---   ac.store("ACP_ActiveSkins", stringify(activeSkins))
--- end
-
--- ---Table in which the original skins folder names are stored (lowercase). Those names are the name of the original skins as set by the server, or by the user in single played.
--- ---Note: ac.getCar(index):skin() returns the original skin name in lowercase already, but in case behavior would change this should keep things working properly
--- local originalSkins = stringify.parse(tostring(ac.load("ACP_OriginalSkins")))
--- if not originalSkins then
---   originalSkins = {}
---   for i = 0, sim.carsCount-1, 1 do
---     local skinFolderName = ac.getCar(i):skin()
---     originalSkins[tostring(i)] = string.lower(skinFolderName)
---   end
---   ac.store("ACP_OriginalSkins", stringify(originalSkins))
--- end
-
--- ac.log("Active skins: "..stringify(activeSkins))
--- ac.log("Original skins: "..stringify(originalSkins))
-
-
+---@param carID string
+local function isPoliceCar(carID)
+	for _, carName in ipairs(POLICE_CAR) do
+		if carID == carName then
+			return true
+		end
+	end
+	return false
+end
 
 local playerData = {
 	hudColorInverted = rgbm(0, 1, 1, 1),
@@ -387,11 +373,6 @@ local function fuelWarning()
 	end
 end
 
-local EMILE_STEAM_ID = const('76561199125972202')
-
-ac.log(ac.getCarSkinID(0))
-ac.log(car:skin())
-
 local CREW_PREFIX = const({
 	['*SR*'] = 'sr',
 	['_RR_'] = 'rr',
@@ -445,16 +426,6 @@ ac.onCarJumped(0, function()
 	physics.setCarFuel(0, math.max(1, carFuel))
 end)
 
-ac.onClientConnected(function(connectedCarIndex, connectedSessionID)
-	ac.log('Client connected: ' .. connectedCarIndex)
-	ac.log('Session ID: ' .. connectedSessionID)
-end)
-
-ac.onClientDisconnected(function(connectedCarIndex, connectedSessionID)
-	ac.log('Client disconnected: ' .. connectedCarIndex)
-	ac.log('Session ID: ' .. connectedSessionID)
-end)
-
 local function getSkinPrefix(carIndex)
 	local playerName = ac.getDriverName(carIndex)
 	if playerName then
@@ -467,19 +438,25 @@ local function getSkinPrefix(carIndex)
 	return 'base'
 end
 
-local function applySkinToSelf()
-	local skin = "/" .. getSkinPrefix(0) .. "_ext_body_Mixed_AO.zip"
-	local url = "https://github.com/ele-sage/ACP-apps/raw/refs/heads/master/skins/" .. CAR_ID .. skin
-	applySkinToCar(0, url)
-end
-
-applySkinToSelf()
-
-ac.onClientConnected(function (carIndex, connectedSessionID)
+local function applySkinToConnectedCar(carIndex)
 	local carId = ac.getCarID(carIndex)
 	local skin = "/" .. getSkinPrefix(carIndex) .. "_ext_body_Mixed_AO.zip"
 	local url = "https://github.com/ele-sage/ACP-apps/raw/refs/heads/master/skins/" .. carId .. skin
 	applySkinToCar(carIndex, url)
+end
+
+local function applySkinToAllConnectedCars()
+	for i, c in ac.iterateCars.serverSlots() do
+		if not c.isHidingLabels and c.isConnected and not isPoliceCar(c:id()) then
+			applySkinToConnectedCar(c.index)
+		end
+	end
+end
+
+applySkinToAllConnectedCars()
+
+ac.onClientConnected(function (carIndex, connectedSessionID)
+	applySkinToConnectedCar(carIndex)
 end)
 
 ac.onClientDisconnected(function (carIndex, connectedSessionID)
