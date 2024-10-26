@@ -29,11 +29,7 @@ if CSP_VERSION < CSP_MIN_VERSION then return end
 local WINDOW_WIDTH = const(sim.windowWidth / uiState.uiScale)
 local WINDOW_HEIGHT = const(sim.windowHeight / uiState.uiScale)
 local FONT_MULT = const(WINDOW_HEIGHT / 1440)
-local POLICE_CAR = { "chargerpolice_acpursuit", "crown_police" }
-if localTesting then
-	POLICE_CAR = { "ks_porsche_911_gt3_r_2016" }
-end
-
+local POLICE_CAR = { "crown_police" }
 
 local WIDTH_DIV = const({
 	_2 = WINDOW_WIDTH / 2,
@@ -374,7 +370,7 @@ local function fuelWarning()
 end
 
 local CREW_PREFIX = const({
-	['*SR*'] = 'sr',
+	['emile lesage *SR*'] = 'sr',
 	['_RR_'] = 'rr',
 	['[MM]'] = 'mm',
 })
@@ -401,12 +397,7 @@ local CAR_NAMES = const({
 ---@param url string
 ---@param carId integer
 local function applySkinToCar(carId, url)
-	ac.log('Loading skin: ' .. url)
 	web.loadRemoteAssets(url, function(error, data)
-		if error then
-			ac.log('Error loading skin: ' .. error)
-			return
-		end
 		local carNode = ac.findNodes('carRoot:' .. carId)
 		carNode:resetSkin()
 		carNode:applySkin({
@@ -415,6 +406,8 @@ local function applySkinToCar(carId, url)
 		ac.refreshCarColor(carId)
 	end)
 end
+
+ac.log(DRIVER_NAME)
 
 function script.drawUI()
 	fuelWarning()
@@ -431,7 +424,7 @@ local function getSkinPrefix(carIndex)
 	local playerName = ac.getDriverName(carIndex)
 	if playerName then
 		for crew, prefix in pairs(CREW_PREFIX) do
-			if string.find(playerName, crew) then
+			if string.find(playerName, crew) or playerName == crew then
 				return prefix
 			end
 		end
@@ -449,6 +442,7 @@ end
 local function applySkinToAllConnectedCars()
 	for i, c in ac.iterateCars.serverSlots() do
 		if not c.isHidingLabels and c.isConnected and not isPoliceCar(c:id()) then
+			ac.log('Applying skin to: ' .. c.index)
 			applySkinToConnectedCar(c.index)
 		end
 	end
