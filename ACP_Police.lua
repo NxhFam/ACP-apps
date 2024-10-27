@@ -20,10 +20,8 @@ local SHARED_EVENT_KEY = const('__ACP_PLAYER_SHARED_UPDATE')
 
 local CAR_ID = const(ac.getCarID(0))
 local CAR_NAME = const(ac.getCarName(0))
-local POLICE_CAR = { "chargerpolice_acpursuit", "crown_police" }
-if localTesting then
-	POLICE_CAR = { "ks_porsche_911_gt3_r_2016" }
-end
+local POLICE_CAR = { "crown_police" }
+
 local DRIVER_NAME = const(ac.getDriverName(0))
 ---@param carID string
 local function isPoliceCar(carID)
@@ -80,15 +78,43 @@ local HEIGHT_DIV = const({
 
 local FONT_MULT = const(WINDOW_HEIGHT / 1440)
 
-local HUD_IMG = const({
-	base = "https://i.postimg.cc/h4sPMmvp/hudBase.png",
-	arrest = "https://i.postimg.cc/DwJv2YgM/icon-Arrest.png",
-	cams = "https://i.postimg.cc/15zRdzNP/iconCams.png",
-	logs = "https://i.postimg.cc/VNXztr29/iconLogs.png",
-	lost = "https://i.postimg.cc/DyYf3KqG/iconLost.png",
-	menu = "https://i.postimg.cc/SxByj71N/iconMenu.png",
-	radar = "https://i.postimg.cc/4dZsQ4TD/icon-Radar.png",
+local HUD_IMG = {}
+
+local IMAGES = const({
+	police = {
+		url = "https://github.com/ele-sage/ACP-apps/raw/refs/heads/master/images/police.zip",
+		hud = {
+			"base.png",
+			"arrest.png",
+			"cams.png",
+			"logs.png",
+			"lost.png",
+			"menu.png",
+			"radar.png",
+		},
+	},
 })
+
+---@param key string
+local function loadImages(key)
+	web.loadRemoteAssets(IMAGES[key].url, function(err, data)
+		if err then
+			ac.error('Failed to load welcome images:', err)
+			return
+		end
+		local path = data .. '/' .. key .. '/'
+		local files = io.scanDir(path, "*")
+
+		for i, file in ipairs(files) do
+			if table.contains(IMAGES.police.hud, file) then
+				local k = file:match('(.+)%..+')
+				HUD_IMG[k] = path .. file
+			end
+		end
+	end)
+end
+
+loadImages("police")
 
 local CAMERAS = const({
 	{
@@ -624,16 +650,6 @@ local function shouldRun()
 	end
 	return canRun
 end
-
--- --return json of playerData with only the data needed for the leaderboard
--- -- data are keys of the playerData table
--- local function dataStringify(data)
--- 	local str = '{"' .. ac.getUserSteamID() .. '": '
--- 	local name = ac.getDriverName(0)
--- 	data['Name'] = name
--- 	str = str .. json.stringify(data) .. '}'
--- 	return str
--- end
 
 local settingsOpen = false
 local arrestLogsOpen = false
