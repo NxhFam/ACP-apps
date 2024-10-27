@@ -86,9 +86,7 @@ SECTORS_DATA = const({
 })
 
 local POLICE_CAR = { "crown_police" }
-if localTesting then
-	POLICE_CAR = { "ks_porsche_911_gt3_r_2016" }
-end
+
 local LEADERBOARDS = const({
 	time = {"H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST" },
 	score = { "arrests", "getaways", "thefts", "overtake" },
@@ -201,7 +199,7 @@ local function loadImages(key)
 			ac.error('Failed to load welcome images:', err)
 			return
 		end
-		local path = data .. '/' .. key .. '/'
+		local path = data .. '\\' .. key .. '\\'
 		local files = io.scanDir(path, "*")
 		if key == "welcome" then
 			for i, file in ipairs(files) do
@@ -213,6 +211,7 @@ local function loadImages(key)
 					WELCOME_NAV_IMG[k] = path .. file
 				end
 			end
+			ac.log(WELCOME_NAV_IMG.base)
 		elseif key == "essential" then
 			for i, file in ipairs(files) do
 				if table.contains(IMAGES.essential.hud, file) then
@@ -1300,12 +1299,15 @@ local function updateSharedPlayerData()
 	sharedPlayerData.wins = player.wins
 	sharedPlayerData.losses = player.losses
 	sharedPlayerData.elo = player.elo
-	for i, sector in ipairs(player.sectors) do
-		sharedPlayerData.sectorsFormated[i].name = sector.name .. '\0'
-		for j, entry in ipairs(player.sectorsFormated[sector.name]) do
+	sharedPlayerData.sectorsFormated = {}
+	local i = 1
+	table.forEach(player.sectorsFormated, function(v, k)
+		sharedPlayerData.sectorsFormated[i].name = k .. '\0'
+		for j, entry in ipairs(v) do
 			sharedPlayerData.sectorsFormated[i].records[j] = entry[1] .. ' - ' .. entry[2] .. '\0'
 		end
-	end
+		i = i + 1
+	end)
 end
 
 ---@return Player
@@ -1456,6 +1458,7 @@ function Player:export()
 	if next(sectors) then
 		data.sectors = sectors
 	end
+	self:sortSectors()
 	updateSharedPlayerData()
 	return data
 end
@@ -3314,6 +3317,7 @@ function script.update(dt)
 	if delay > 0 then delay = delay - dt end
 	if delay < 0 then
 		delay = 0
+		player:sortSectors()
 		updateSharedPlayerData()
 		ac.broadcastSharedEvent(SHARED_EVENT_KEY, 'update')
 	end
