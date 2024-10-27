@@ -204,6 +204,21 @@ local dataLoaded = {}
 dataLoaded['Settings'] = false
 dataLoaded['PlayerData'] = false
 
+---@param key string
+local function removeUtf8Char(key)
+	local newKey = ''
+	for i = 1, #key do
+		local c = key:sub(i, i)
+		if c:byte() < 128 then
+			newKey = newKey .. c
+		end
+	end
+	newKey = newKey:match('^%s*(.-)%s*$')
+	return newKey
+end
+
+local CAR_NAME_NO_UTF8 = removeUtf8Char(CAR_NAME)
+
 --------- Utils ------------
 ---@param keys string[]
 ---@param t table
@@ -266,6 +281,16 @@ local function snapToTrack(v)
 	end
 	return v
 end
+
+---@param time number
+---@return string
+local function formatTime(time)
+	local minutes = math.floor(time / 60)
+	local seconds = math.floor(time % 60)
+	local milliseconds = math.floor((time % 1) * 1000)
+	return ('%02d:%02d.%03d'):format(minutes, seconds, milliseconds)
+end
+
 local DEFAULT_SETTINGS = const({
 	essentialSize = 20,
 	policeSize = 20,
@@ -443,6 +468,76 @@ end
 
 local patchCount = 0
 
+
+---@class SectorStats
+---@field name string
+---@field records table<string, number>
+local SectorStats = class('SectorStats')
+
+---@param name string
+---@param data table
+---@return SectorStats
+function SectorStats.tryParse(name, data)
+	local records = {}
+	for carName, time in pairs(data) do
+		local nameWithoutUtf8 = removeUtf8Char(carName)
+		records[nameWithoutUtf8] = time
+	end
+	local sectorStats = {
+		name = name,
+		records = records,
+	}
+	setmetatable(sectorStats, { __index = SectorStats })
+	return sectorStats
+end
+
+---@param name string
+---@param data table
+---@return SectorStats|nil
+function SectorStats.allocate(name, data)
+	if type(data) == 'table' then
+		local sectorStats = SectorStats.tryParse(name, data)
+		if not sectorStats then
+			ac.error('Failed to allocate sector stat')
+			return nil
+		end
+		return sectorStats
+	end
+	if type(data) == 'number' then
+		local records = {}
+		records[CAR_NAME_NO_UTF8] = data
+		local sectorStats = {
+			name = name,
+			records = records,
+		}
+		setmetatable(sectorStats, { __index = SectorStats })
+		return sectorStats
+	end
+	ac.error('Failed to allocate sector stat')
+	return nil
+end
+
+---@param time number
+---@return boolean
+function SectorStats:addRecord(time)
+	if not self.records[CAR_NAME_NO_UTF8] or self.records[CAR_NAME_NO_UTF8] > time then
+		self.records[CAR_NAME_NO_UTF8] = time
+		return true
+	end
+	return false
+end
+
+---@return table
+function SectorStats:export()
+	local records = {}
+	for carName, time in pairs(self.records) do
+		records[carName] = truncate(time, 3)
+	end
+	return {
+		[self.name] = records
+	}
+end
+
 ---@class Player
 ---@field name string
 ---@field sectors SectorStats[]
@@ -496,6 +591,16 @@ local function updateSharedPlayerData()
 	sharedPlayerData.wins = player.wins
 	sharedPlayerData.losses = player.losses
 	sharedPlayerData.elo = player.elo
+	sharedPlayerData.sectorsFormated = {}
+	local i = 1
+	table.forEach(player.sectorsFormated, function(v, k)
+		sharedPlayerData.sectorsFormated[i].name = k .. '\0'
+		for j, entry in ipairs(v) do
+			ac.log(entry)
+			sharedPlayerData.sectorsFormated[i].records[j] = entry[1] .. ' - ' .. entry[2] .. '\0'
+		end
+		i = i + 1
+	end)
 end
 
 ---@return Player
@@ -523,6 +628,14 @@ function Player.tryParse(data)
 		return Player.new()
 	end
 	local sectors = {}
+	if data.sectors then
+		for sectorName, sectorData in pairs(data.sectors) do
+			local sector = SectorStats.allocate(sectorName, sectorData)
+			if sector then
+				table.insert(sectors, sector)
+			end
+		end
+	end
 	local _player = {
 		name = DRIVER_NAME,
 		sectors = sectors,
@@ -585,6 +698,22 @@ function Player.allocate(callback)
 	end)
 end
 
+function Player:sortSectors()
+	for _, sector in ipairs(self.sectors) do
+		local entries = {}
+		for carName, time in pairs(sector.records) do
+			table.insert(entries, { carName, time })
+		end
+		table.sort(entries, function(a, b)
+			return a[2] < b[2]
+		end)
+		for i, entry in ipairs(entries) do
+			entries[i][2] = formatTime(entry[2])
+		end
+		self.sectorsFormated[sector.name] = entries
+	end
+end
+
 ---@return table
 function Player:export()
 	local data = { name = self.name }
@@ -622,8 +751,8 @@ function Player:export()
 	if next(sectors) then
 		data.sectors = sectors
 	end
+	self:sortSectors()
 	updateSharedPlayerData()
-	ac.broadcastSharedEvent(SHARED_EVENT_KEY, 'update')
 	return data
 end
 
@@ -638,6 +767,7 @@ function Player:save()
 		end
 	end)
 end
+
 
 local canRun = false
 local function shouldRun()
@@ -1356,6 +1486,7 @@ local function loadPlayerData()
 	Player.allocate(function(allocatedPlayer)
 		if allocatedPlayer then
 			player = allocatedPlayer
+			player:sortSectors()
 			dataLoaded['PlayerData'] = true
 			updateSharedPlayerData()
 			ac.log(player.arrests)
