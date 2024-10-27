@@ -147,7 +147,7 @@ local HUD_IMG = {}
 local WELCOME_NAV_IMG = {}
 local WELCOME_CARD_IMG = {}
 
-local welcomeCardsToDisplayed = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }
+local welcomeCardsToDisplayed = { 1, 2, 3, 4, 5, 6, 7 }
 local welcomeNavImgToDraw = {}
 
 local IMAGES = const({
@@ -157,13 +157,13 @@ local IMAGES = const({
 			"cartheft.jpg",
 			"drugdealer.jpg",
 			"bankheist.jpg",
-			"aboutacp.jpg",
+			-- "aboutacp.jpg",
 			"earnmoney.jpg",
-			"leaderboard.jpg",
+			-- "leaderboard.jpg",
 			"bank.jpg",
 			"police.jpg",
 			"buycars.jpg",
-			"tuning.jpg",
+			-- "tuning.jpg",
 		},
 		nav = {
 			"base.png",
@@ -229,16 +229,13 @@ loadImages("welcome")
 loadImages("essential")
 
 local WELCOME_CARD_LINK = const({
-	"https://discord.com/channels/358562025032646659/1062186611091185784", --FAQ
-	"https://discord.com/channels/358562025032646659/1147217487524528138", --earn
-	"https://discord.com/channels/358562025032646659/1127619394328076318", --leaderboard
-	"https://discord.com/channels/358562025032646659/1075578309443858522", --bank
-	"https://discord.com/channels/358562025032646659/1095681142197325975", --police
-	"https://discord.com/channels/358562025032646659/1076123906362056784", --car
-	"https://discord.com/channels/358562025032646659/1079799948306034708", --tuning
-	"https://discord.com/channels/358562025032646659/1096470595392241704", --car theft
-	"",
-	"",
+	"https://www.youtube.com/watch?v=FMUogCkQ1qw", --car thefts
+	"https://www.youtube.com/watch?v=7YKganFmzNA", --drug dealer
+	"https://www.youtube.com/watch?v=U7Kr5E_ImGI", --bank heist
+	"https://discord.com/channels/358562025032646659/1299309514088120370", --earn
+	"https://discord.com/channels/358562025032646659/1299335101187883100", --bank done
+	"https://discord.com/channels/358562025032646659/1299310323253252117", --police done
+	"https://discord.com/channels/358562025032646659/1299310123482611812", --car done
 })
 
 ---@param time number
@@ -3101,6 +3098,7 @@ local function drawWelcomeImg()
 			end
 		end
 	end
+	ac.debug('welcomeCardsToDisplayed', welcomeCardsToDisplayed)
 end
 
 local function drawWelcomeMenu()
@@ -3353,8 +3351,8 @@ end
 
 --------------------------------------------------------------- AC Callbacks --------------------------------------------------------------
 ac.onCarJumped(0, function(carIndex)
-	resetMissionManager()
-	sectorManager:reset()
+	-- resetMissionManager()
+	-- sectorManager:reset()
 	if not isPoliceCar(CAR_ID) then
 		if online.chased and online.officer then
 			acpPolice { message = "TP", messageType = 0, yourIndex = online.officer.sessionID }
