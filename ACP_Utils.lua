@@ -188,10 +188,10 @@ local function playerTimes()
 	for sectorName, record in pairs(playerData.sectors) do
 		ui.dwriteTextWrapped(sectorName .. ": ", 20, playerData.hudColor)
 		ui.beginSubgroup(WIDTH_DIV._50)
-		for k, v in pairs(record) do
-			ui.dwriteTextWrapped(k .. ": ", 20, playerData.hudColorInverted)
+		for i = 1, #record do
+			ui.dwriteTextWrapped(record[i].car .. ": ", 20, playerData.hudColorInverted)
 			ui.sameLine(WIDTH_DIV._10)
-			ui.dwriteTextWrapped(v, 20, rgbm.colors.white)
+			ui.dwriteTextWrapped(record[i].time, 20, rgbm.colors.white)
 		end
 		ui.endSubgroup()
 		ui.newLine()
@@ -275,7 +275,10 @@ local function updatedSharedData()
 							if not playerData.sectors[sectorName] then
 								playerData.sectors[sectorName] = {}
 							end
-							playerData.sectors[sectorName][recordInfo[1]] = recordInfo[2]
+							playerData.sectors[sectorName][j] = {
+								car = recordInfo[1],
+								time = recordInfo[2]
+							}
 						end
 					end
 				end
@@ -407,8 +410,6 @@ local function applySkinToCar(carId, url)
 	end)
 end
 
-ac.log(DRIVER_NAME)
-
 function script.drawUI()
 	fuelWarning()
 	if isAtGasStation() then
@@ -442,7 +443,6 @@ end
 local function applySkinToAllConnectedCars()
 	for i, c in ac.iterateCars.serverSlots() do
 		if not c.isHidingLabels and c.isConnected and not isPoliceCar(c:id()) then
-			ac.log('Applying skin to: ' .. c.index)
 			applySkinToConnectedCar(c.index)
 		end
 	end
