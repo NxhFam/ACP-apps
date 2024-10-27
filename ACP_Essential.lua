@@ -147,6 +147,9 @@ local HUD_IMG = {}
 local WELCOME_NAV_IMG = {}
 local WELCOME_CARD_IMG = {}
 
+local welcomeCardsToDisplayed = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }
+local welcomeNavImgToDraw = {}
+
 local IMAGES = const({
 	welcome = {
 		url = "https://github.com/ele-sage/ACP-apps/raw/refs/heads/master/images/welcome.zip",
@@ -211,7 +214,6 @@ local function loadImages(key)
 					WELCOME_NAV_IMG[k] = path .. file
 				end
 			end
-			ac.log(WELCOME_NAV_IMG.base)
 		elseif key == "essential" then
 			for i, file in ipairs(files) do
 				if table.contains(IMAGES.essential.hud, file) then
@@ -2879,11 +2881,6 @@ end
 
 --------------------------------------------------------------------------------- Welcome Menu ---------------------------------------------------------------------------------
 
-local welcomeCardsToDisplayed = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }
-
-local welcomeNavImgToDraw = { WELCOME_NAV_IMG.leftArrowOff, WELCOME_NAV_IMG.rightArrowOff, WELCOME_NAV_IMG.leftBoxOff, WELCOME_NAV_IMG
-	.centerBoxOff, WELCOME_NAV_IMG.rightBoxOff, WELCOME_NAV_IMG.base, WELCOME_NAV_IMG.logo }
-
 local cardOutline = {
 	white,
 	white,
@@ -3032,6 +3029,8 @@ local function drawWelcomeImg()
 	welcomeNavImgToDraw[3] = WELCOME_NAV_IMG.leftBoxOff
 	welcomeNavImgToDraw[4] = WELCOME_NAV_IMG.centerBoxOff
 	welcomeNavImgToDraw[5] = WELCOME_NAV_IMG.rightBoxOff
+	welcomeNavImgToDraw[6] = WELCOME_NAV_IMG.base
+	welcomeNavImgToDraw[7] = WELCOME_NAV_IMG.logo
 	ui.transparentWindow('WELCOME_NAV_IMG', welcomeWindow.offset, welcomeWindow.size, true, function()
 		ui.childWindow('welcomeNavIMGChild', welcomeWindow.size, true, function()
 			ui.drawRectFilled(WELCOME_CARD_IMG_POS[6][1], WELCOME_CARD_IMG_POS[6][2], rgbm(0, 0, 0, 0.6))
@@ -3080,7 +3079,9 @@ local function drawWelcomeImg()
 				if uiState.isMouseLeftKeyClicked then menuStates.welcome = false end
 			end
 			ui.drawImage(welcomeWindow.closeIMG, WELCOME_CARD_IMG_POS[8][1], WELCOME_CARD_IMG_POS[8][2], iconCloseColor)
-			for i = 1, #welcomeNavImgToDraw do ui.drawImage(welcomeNavImgToDraw[i], vec2(0, 0), welcomeWindow.size, cardOutline[i]) end
+			for i = 1, #welcomeNavImgToDraw do
+				ui.drawImage(welcomeNavImgToDraw[i], vec2(0, 0), welcomeWindow.size, cardOutline[i])
+			end
 			for i = 1, 3 do
 				if welcomeCardsToDisplayed[i] < 4 then
 					ui.drawImage(WELCOME_CARD_IMG[welcomeCardsToDisplayed[i]], WELCOME_CARD_IMG_POS[i + 2][1], WELCOME_CARD_IMG_POS[i + 2][2], white)
