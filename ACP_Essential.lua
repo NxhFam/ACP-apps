@@ -145,44 +145,87 @@ local HEIGHT_DIV = const({
 
 local FONT_MULT = const(WINDOW_HEIGHT / 1440)
 
-local HUD_IMG = const({
-	base = "https://i.postimg.cc/ZKbvKVkP/hudBase.png",
-	center = "https://i.postimg.cc/fyZtdvVN/hud-Center.png",
-	left = "https://i.postimg.cc/y8WJ0x8k/hudLeft.png",
-	right = "https://i.postimg.cc/d0yLSfdF/hudRight.png",
-	countdown = "https://i.postimg.cc/FHqYpvYG/icon-Countdown.png",
-	menu = "https://i.postimg.cc/2ywq7BWB/iconMenu.png",
-	ranks = "https://i.postimg.cc/66LGXFP5/icon-Ranks.png",
-	theft = "https://i.postimg.cc/9FLR4ZV6/icon-Theft.png",
+local HUD_IMG = {}
+local WELCOME_NAV_IMG = {}
+local WELCOME_CARD_IMG = {}
+
+local IMAGES = const({
+	welcome = {
+		url = "https://github.com/ele-sage/ACP-apps/raw/refs/heads/master/images/welcome.zip",
+		card = {
+			"cartheft.jpg",
+			"drugdealer.jpg",
+			"bankheist.jpg",
+			"aboutacp.jpg",
+			"earnmoney.jpg",
+			"leaderboard.jpg",
+			"bank.jpg",
+			"police.jpg",
+			"buycars.jpg",
+			"tuning.jpg",
+		},
+		nav = {
+			"base.png",
+			"logo.png",
+			"leftBoxOff.png",
+			"leftBoxOn.png",
+			"centerBoxOff.png",
+			"centerBoxOn.png",
+			"rightBoxOff.png",
+			"rightBoxOn.png",
+			"leftArrowOff.png",
+			"leftArrowOn.png",
+			"rightArrowOff.png",
+			"rightArrowOn.png",
+		},
+	},
+	essential = {
+		url = "https://github.com/ele-sage/ACP-apps/raw/refs/heads/master/images/essential.zip",
+		hud = {
+			"base.png",
+			"center.png",
+			"left.png",
+			"right.png",
+			"countdown.png",
+			"menu.png",
+			"ranks.png",
+			"theft.png",
+		},
+	},
 })
 
-local WELCOME_NAV_IMG = const({
-	base = "https://i.postimg.cc/pX9rTTVC/baseacp.png",
-	logo = "https://i.postimg.cc/brZysCPr/logoacp.png",
-	leftBoxOff = "https://i.postimg.cc/MTKK8Zry/left-Box-Off.png",
-	leftBoxOn = "https://i.postimg.cc/xdPT7Ngf/left-Box-On.png",
-	centerBoxOff = "https://i.postimg.cc/G2qtBTs7/center-Box-Off.png",
-	centerBoxOn = "https://i.postimg.cc/2j93rvY3/center-Box-On.png",
-	rightBoxOff = "https://i.postimg.cc/kXtMCpwh/right-Box-Off.png",
-	rightBoxOn = "https://i.postimg.cc/13hm3rjR/right-Box-On.png",
-	leftArrowOff = "https://i.postimg.cc/cLwJRbn8/left-Arrow-Off.png",
-	leftArrowOn = "https://i.postimg.cc/B6YZZWdR/left-Arrow-On.png",
-	rightArrowOff = "https://i.postimg.cc/cLRsgtpR/right-Arrow-Off.png",
-	rightArrowOn = "https://i.postimg.cc/BbRqDTZg/right-Arrow-On.png",
-})
+---@param key string
+local function loadImages(key)
+	web.loadRemoteAssets(IMAGES[key].url, function(err, data)
+		if err then
+			ac.error('Failed to load welcome images:', err)
+			return
+		end
+		local path = data .. '/' .. key .. '/'
+		local files = io.scanDir(path, "*")
+		if key == "welcome" then
+			for i, file in ipairs(files) do
+				local cardIndex = table.indexOf(IMAGES.welcome.card, file)
+				if cardIndex ~= nil then
+					WELCOME_CARD_IMG[cardIndex] = path .. file
+				elseif table.contains(IMAGES.welcome.nav, file) then
+					local k = file:match('(.+)%..+')
+					WELCOME_NAV_IMG[k] = path .. file
+				end
+			end
+		elseif key == "essential" then
+			for i, file in ipairs(files) do
+				if table.contains(IMAGES.essential.hud, file) then
+					local k = file:match('(.+)%..+')
+					HUD_IMG[k] = path .. file
+				end
+			end
+		end
+	end)
+end
 
-local WELCOME_CARD_IMG = const({
-	"https://i.postimg.cc/bv0shBYj/cartheft.jpg",
-	"https://i.postimg.cc/Jn1t45tH/drugdealer.jpg",
-	"https://i.postimg.cc/mrm2J2xf/BANK-HEIST.png",
-	"https://i.postimg.cc/5tW6DVV3/aboutacp.jpg",
-	"https://i.postimg.cc/MHLG5k51/earnmoney.jpg",
-	"https://i.postimg.cc/4yydp46J/leaderboard.jpg",
-	"https://i.postimg.cc/T3DKkPZ1/bank.jpg",
-	"https://i.postimg.cc/15LtNQfQ/police.jpg",
-	"https://i.postimg.cc/WbKD6ZYx/buycars.jpg",
-	"https://i.postimg.cc/sfLftrPh/tuning.jpg",
-})
+loadImages("welcome")
+loadImages("essential")
 
 local WELCOME_CARD_LINK = const({
 	"https://discord.com/channels/358562025032646659/1062186611091185784", --FAQ
@@ -369,7 +412,7 @@ local vUp = const(vec3(0, 1, 0))
 local vDown = const(vec3(0, -1, 0))
 
 local menuStates = {
-	welcome = false,
+	welcome = true,
 	main = false,
 	leaderboard = false,
 }
@@ -1380,6 +1423,9 @@ end
 function Player:export()
 	local data = { name = self.name }
 
+	if self.arrests > 0 then
+		data.arrests = self.arrests
+	end
 	if self.getaways > 0 then
 		data.getaways = self.getaways
 	end
@@ -2883,9 +2929,8 @@ local function showMissionInfo(i, id)
 	local leftCorner = vec2(WELCOME_CARD_IMG_POS[i + 2][1].x, WELCOME_CARD_IMG_POS[i + 2][1].y) +
 		vec2(welcomeWindow.size.x / 100, welcomeWindow.size.y / 10)
 	local textPos = leftCorner + welcomeWindow.size / 100
-	ui.drawRectFilled(leftCorner,
-		vec2(WELCOME_CARD_IMG_POS[i + 2][2].x - welcomeWindow.size.x / 100,
-		leftCorner.y + ui.measureDWriteText("\n\n\n\n\n\n\n\n\n", settings.fontSize).y), rgbm(0, 0, 0, 0.8))
+	local margin = welcomeWindow.size.x / 100
+	ui.drawRectFilled(leftCorner, vec2(WELCOME_CARD_IMG_POS[i + 2][2].x - margin, WELCOME_CARD_IMG_POS[i + 2][2].y - margin), rgbm(0, 0, 0, 0.8))
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=BLACK")
 	local textOffsetY = ui.measureDWriteText("TEXT", welcomeWindow.missionInfoFontSize).y * 2
