@@ -7,7 +7,7 @@ local uiState = ac.getUI()
 
 ui.setAsynchronousImagesLoading(true)
 
-local localTesting = ac.dirname() == 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\assettocorsa\\extension\\lua\\online'
+local localTesting =  ac.dirname() == 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\assettocorsa\\extension\\lua\\online'
 local initialisation = true
 
 -- Constants --
@@ -658,6 +658,10 @@ end
 
 ---@param name string
 function Leaderboard.fetch(name)
+	if leaderboards[name] then
+		currentLeaderboard = leaderboards[name]
+		return
+	end
 	if localTesting then
 		local currentPath = ac.getFolder(ac.FolderID.ScriptOrigin)
 		local file = io.open(currentPath .. '/response/leaderboardsResponse.json', 'r')
@@ -681,7 +685,6 @@ function Leaderboard.fetch(name)
 		currentLeaderboard = leaderboard
 		ac.error('Failed to parse leaderboard data.')
 	else
-		if leaderboards[name] then return end
 		local url = FIREBASE_URL .. 'Leaderboards/' .. name .. '.json'
 		web.get(url, function(err, response)
 			if canProcessRequest(err, response) then
@@ -1803,7 +1806,7 @@ local function showLeaderboard()
 					currentLeaderboard = player
 				else
 					Leaderboard.allocate(LEADERBOARD_NAMES[1][i])
-					currentLeaderboard.name = LEADERBOARD_NAMES[2][i]
+					-- currentLeaderboard.name = LEADERBOARD_NAMES[2][i]
 				end
 			end
 		end
