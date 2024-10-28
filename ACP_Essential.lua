@@ -110,6 +110,7 @@ local WIDTH_DIV = const({
 	_4 = WINDOW_WIDTH / 4,
 	_5 = WINDOW_WIDTH / 5,
 	_6 = WINDOW_WIDTH / 6,
+	_8 = WINDOW_WIDTH / 8,
 	_10 = WINDOW_WIDTH / 10,
 	_12 = WINDOW_WIDTH / 12,
 	_15 = WINDOW_WIDTH / 15,
@@ -1267,7 +1268,7 @@ local sharedPlayerLayout = {
 	name = ac.StructItem.string(24),
 	sectorsFormated = ac.StructItem.array(ac.StructItem.struct({
 		name = ac.StructItem.string(16),
-		records = ac.StructItem.array(ac.StructItem.string(32), 10)
+		records = ac.StructItem.array(ac.StructItem.string(50), 20)
 	}), 5),
 	arrests = ac.StructItem.int16(),
 	getaways = ac.StructItem.int16(),
@@ -1303,7 +1304,8 @@ local function updateSharedPlayerData()
 	table.forEach(player.sectorsFormated, function(v, k)
 		sharedPlayerData.sectorsFormated[i].name = k .. '\0'
 		for j, entry in ipairs(v) do
-			sharedPlayerData.sectorsFormated[i].records[j] = entry[1] .. ' - ' .. entry[2] .. '\0'
+			local carName = string.sub(entry[1], 1, 45)
+			sharedPlayerData.sectorsFormated[i].records[j] = carName .. ' - ' .. entry[2] .. '\0'
 		end
 		i = i + 1
 	end)
@@ -1709,16 +1711,7 @@ local function displayInGrid()
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=Regular")
 	for i = 1, #currentLeaderboard.rows do
-		local sufix = "th"
-		if i == 2 then
-			sufix = "st"
-		elseif i == 3 then
-			sufix = "nd"
-		elseif i == 4 then
-			sufix = "rd"
-		end
-		ui.dwriteTextAligned(i .. sufix, settings.fontSize, ui.Alignment.Center, ui.Alignment.Center, box1, false,
-			white)
+		ui.dwriteTextAligned(i, settings.fontSize, ui.Alignment.Center, ui.Alignment.Center, box1, false, white)
 		for j = 1, #currentLeaderboard.rows[1] do
 			local textLenght = ui.measureDWriteText(currentLeaderboard.rows[i][j], leaderboardWrapWidth).x
 			ui.sameLine(box1.x + colWidth / 2 + colWidth * (j - 1) - textLenght / 2)
@@ -1730,8 +1723,7 @@ local function displayInGrid()
 	local lineOffset = box1.x + box1.x * 0.5
 	ui.drawLine(vec2(lineOffset, HEIGHT_DIV._20), vec2(lineOffset, lineHeight), white, 2)
 	for i = 1, currentLeaderboard.nbCols - 1 do
-		ui.drawLine(vec2(box1.x + colWidth * i, HEIGHT_DIV._20), vec2(box1.x + colWidth * i, lineHeight),
-			white, 2)
+		ui.drawLine(vec2(box1.x + colWidth * i, HEIGHT_DIV._20), vec2(box1.x + colWidth * i, lineHeight), white, 2)
 	end
 end
 
@@ -1778,7 +1770,7 @@ local function playerTimes()
 		ui.beginSubgroup(WIDTH_DIV._50)
 		for i = 1, #times do
 			ui.dwriteTextWrapped(times[i][1] .. ": ", 20, colorHudInverted)
-			ui.sameLine(WIDTH_DIV._10)
+			ui.sameLine(WIDTH_DIV._8)
 			ui.dwriteTextWrapped(times[i][2], 20, white)
 		end
 		ui.endSubgroup()
@@ -3098,7 +3090,6 @@ local function drawWelcomeImg()
 			end
 		end
 	end
-	ac.debug('welcomeCardsToDisplayed', welcomeCardsToDisplayed)
 end
 
 local function drawWelcomeMenu()
@@ -3312,7 +3303,6 @@ function script.update(dt)
 	end
 	if not shouldRun() then return end
 	ac.debug('PATCH COUNT', patchCount)
-	ac.debug('Kers', car.kersCharge)
 	if delay > 0 then delay = delay - dt end
 	if delay < 0 then
 		delay = 0
