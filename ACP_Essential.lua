@@ -3171,7 +3171,6 @@ function script.drawUI()
 	if sectorManager.sector and sectorManager.finished and sectorManager.sector.name ~= "H1" then
 		missionFinishedWindow()
 	end
-	if ui.keyboardButtonPressed(ui.KeyIndex.Menu) then menuStates.welcome = not menuStates.welcome end
 	if menuStates.welcome then
 		drawWelcomeMenu()
 	else
