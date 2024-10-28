@@ -454,6 +454,8 @@ dataLoaded['Leaderboard'] = false
 dataLoaded['PlayerData'] = false
 dataLoaded['Sectors'] = false
 
+local openMenuKeyBind = ac.ControlButton('__ACP_OPEN_MENU_KEY_BIND', ui.KeyIndex.Menu)
+
 ---@param carID string
 local function isPoliceCar(carID)
 	for _, carName in ipairs(POLICE_CAR) do
@@ -1952,6 +1954,11 @@ local function settingsWindow()
 		menuStates.main = false
 		settings:save()
 	end
+	ui.text('Map open menu key : ')
+	ui.sameLine()
+	if openMenuKeyBind:control(vec2(120, 0)) then
+		ac.log('openMenuKeyBind', openMenuKeyBind:boundTo())
+	end
 	ui.newLine()
 	settings.hudOffset.x = ui.slider('##' .. 'HUD Offset X', settings.hudOffset.x, 0, WINDOW_WIDTH,'HUD Offset X' .. ': %.0f')
 	settings.hudOffset.y = ui.slider('##' .. 'HUD Offset Y', settings.hudOffset.y, 0, WINDOW_HEIGHT,'HUD Offset Y' .. ': %.0f')
@@ -2776,7 +2783,7 @@ local function drawHudImages()
 	if countDownState.countdownOn then countdown() end
 	if toolTipOn then
 		ui.tooltip(function()
-			ui.text("Click ALT to Bring up\nThe Welcome Menu")
+			ui.text("Click " .. openMenuKeyBind:boundTo() .. "\nto Bring up The Welcome Menu")
 		end)
 	end
 end
@@ -3339,6 +3346,11 @@ end
 -- ui.registerOnlineExtra(ui.Icons.Menu, "Menu", nil, menu, nil, ui.OnlineExtraFlags.Tool, 'ui.WindowFlags.AlwaysAutoResize')
 
 --------------------------------------------------------------- AC Callbacks --------------------------------------------------------------
+
+openMenuKeyBind:onPressed(function ()
+	menuStates.welcome = not menuStates.welcome
+end)
+
 ac.onCarJumped(0, function(carIndex)
 	resetMissionManager()
 	sectorManager:reset()
