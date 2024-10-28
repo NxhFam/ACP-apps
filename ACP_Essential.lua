@@ -1,7 +1,6 @@
 ac.log('Script: Essential')
 local sim = ac.getSim()
 local car = ac.getCar(0) or error()
-if true then return end
 if not car then return end
 local wheels = car.wheels or error()
 local uiState = ac.getUI()
