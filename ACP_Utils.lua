@@ -37,6 +37,7 @@ local WIDTH_DIV = const({
 	_4 = WINDOW_WIDTH / 4,
 	_5 = WINDOW_WIDTH / 5,
 	_6 = WINDOW_WIDTH / 6,
+	_8 = WINDOW_WIDTH / 8,
 	_9 = WINDOW_WIDTH / 9,
 	_10 = WINDOW_WIDTH / 10,
 	_12 = WINDOW_WIDTH / 12,
@@ -118,7 +119,7 @@ local sharedPlayerLayout = {
 	name = ac.StructItem.string(24),
 	sectorsFormated = ac.StructItem.array(ac.StructItem.struct({
 		name = ac.StructItem.string(16),
-		records = ac.StructItem.array(ac.StructItem.string(32), 10)
+		records = ac.StructItem.array(ac.StructItem.string(50), 20)
 	}), 5),
 	arrests = ac.StructItem.int16(),
 	getaways = ac.StructItem.int16(),
@@ -189,14 +190,14 @@ local function playerTimes()
 		ui.dwriteTextWrapped(sectorName .. ": ", 20, playerData.hudColor)
 		ui.beginSubgroup(WIDTH_DIV._50)
 		for i = 1, #record do
-			ac.debug('record[i]', record[i])
 			ui.dwriteTextWrapped(record[i].car .. ": ", 20, playerData.hudColorInverted)
-			ui.sameLine(WIDTH_DIV._10)
+			ui.sameLine(WIDTH_DIV._8)
 			ui.dwriteTextWrapped(record[i].time, 20, rgbm.colors.white)
 		end
 		ui.endSubgroup()
 		ui.newLine()
 	end
+	ui.dummy(vec2(WIDTH_DIV._50, HEIGHT_DIV._50))
 	ui.endGroup()
 end
 
@@ -280,14 +281,6 @@ local function updatedSharedData()
 				end
 			end
 		end
-		-- ac.log('sectors', playerData.sectors)
-		-- for sectorName, record in pairs(playerData.sectors) do
-		-- 	ac.log('sectorName', sectorName)
-		-- 	for i = 1, #record do
-		-- 		ac.log('car' .. i, record[i].car)
-		-- 		ac.log('time' .. i, record[i].time)
-		-- 	end
-		-- end
 	end
 end
 
@@ -452,14 +445,14 @@ local function applySkinToAllConnectedCars()
 	end
 end
 
-applySkinToAllConnectedCars()
+-- applySkinToAllConnectedCars()
 
-ac.onClientConnected(function (carIndex, connectedSessionID)
-	applySkinToConnectedCar(carIndex)
-end)
+-- ac.onClientConnected(function (carIndex, connectedSessionID)
+-- 	applySkinToConnectedCar(carIndex)
+-- end)
 
-ac.onClientDisconnected(function (carIndex, connectedSessionID)
-	local carId = ac.getCarID(carIndex)
-	local url = "https://github.com/ele-sage/ACP-apps/raw/refs/heads/master/skins/" .. carId .. "/base_ext_body_Mixed_AO.zip"
-	applySkinToCar(carIndex, url)
-end)
+-- ac.onClientDisconnected(function (carIndex, connectedSessionID)
+-- 	local carId = ac.getCarID(carIndex)
+-- 	local url = "https://github.com/ele-sage/ACP-apps/raw/refs/heads/master/skins/" .. carId .. "/base_ext_body_Mixed_AO.zip"
+-- 	applySkinToCar(carIndex, url)
+-- end)
