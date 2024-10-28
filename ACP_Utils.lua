@@ -189,6 +189,7 @@ local function playerTimes()
 		ui.dwriteTextWrapped(sectorName .. ": ", 20, playerData.hudColor)
 		ui.beginSubgroup(WIDTH_DIV._50)
 		for i = 1, #record do
+			ac.debug('record[i]', record[i])
 			ui.dwriteTextWrapped(record[i].car .. ": ", 20, playerData.hudColorInverted)
 			ui.sameLine(WIDTH_DIV._10)
 			ui.dwriteTextWrapped(record[i].time, 20, rgbm.colors.white)
@@ -272,18 +273,21 @@ local function updatedSharedData()
 					if record ~= '' then
 						local recordInfo = string.split(record, ' - ')
 						if #recordInfo == 2 then
-							if not playerData.sectors[sectorName] then
-								playerData.sectors[sectorName] = {}
-							end
-							playerData.sectors[sectorName][j] = {
-								car = recordInfo[1],
-								time = recordInfo[2]
-							}
+							if not playerData.sectors[sectorName] then playerData.sectors[sectorName] = {} end
+							table.insert(playerData.sectors[sectorName], {car = recordInfo[1], time = recordInfo[2]})
 						end
 					end
 				end
 			end
 		end
+		-- ac.log('sectors', playerData.sectors)
+		-- for sectorName, record in pairs(playerData.sectors) do
+		-- 	ac.log('sectorName', sectorName)
+		-- 	for i = 1, #record do
+		-- 		ac.log('car' .. i, record[i].car)
+		-- 		ac.log('time' .. i, record[i].time)
+		-- 	end
+		-- end
 	end
 end
 
