@@ -45,7 +45,7 @@ SECTORS_DATA = const({
 	},
 	[2] = {
 		name = "DOUBLE TROUBLE",
-		timeLimit = 210,
+		timeLimit = 200,
 		addTimeLimit = { 0, 10, 25 },
 		length = 5,
 		gates = {
@@ -3337,10 +3337,6 @@ local function drawGate()
 	end
 end
 
--- render.setBlendMode(render.BlendMode.AlphaBlend)
--- render.setCullMode(render.CullMode.None)
--- render.setDepthMode(render.BlendMode.AlphaBlend)
-
 function script.draw3D()
 	if not shouldRun() then return end
 	render.setDepthMode(render.BlendMode.AlphaBlend)
@@ -3351,8 +3347,8 @@ end
 
 --------------------------------------------------------------- AC Callbacks --------------------------------------------------------------
 ac.onCarJumped(0, function(carIndex)
-	-- resetMissionManager()
-	-- sectorManager:reset()
+	resetMissionManager()
+	sectorManager:reset()
 	if not isPoliceCar(CAR_ID) then
 		if online.chased and online.officer then
 			acpPolice { message = "TP", messageType = 0, yourIndex = online.officer.sessionID }
