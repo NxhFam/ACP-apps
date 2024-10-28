@@ -560,7 +560,7 @@ local sharedPlayerLayout = {
 	name = ac.StructItem.string(24),
 	sectorsFormated = ac.StructItem.array(ac.StructItem.struct({
 		name = ac.StructItem.string(16),
-		records = ac.StructItem.array(ac.StructItem.string(32), 10)
+		records = ac.StructItem.array(ac.StructItem.string(50), 20)
 	}), 5),
 	arrests = ac.StructItem.int16(),
 	getaways = ac.StructItem.int16(),
@@ -596,8 +596,8 @@ local function updateSharedPlayerData()
 	table.forEach(player.sectorsFormated, function(v, k)
 		sharedPlayerData.sectorsFormated[i].name = k .. '\0'
 		for j, entry in ipairs(v) do
-			ac.log(entry)
-			sharedPlayerData.sectorsFormated[i].records[j] = entry[1] .. ' - ' .. entry[2] .. '\0'
+			local carName = string.sub(entry[1], 1, 45)
+			sharedPlayerData.sectorsFormated[i].records[j] = carName .. ' - ' .. entry[2] .. '\0'
 		end
 		i = i + 1
 	end)
