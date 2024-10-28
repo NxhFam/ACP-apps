@@ -1954,11 +1954,9 @@ local function settingsWindow()
 		menuStates.main = false
 		settings:save()
 	end
-	ui.text('Map open menu key : ')
+	ui.text('Welcome Menu Keybind : ')
 	ui.sameLine()
-	if openMenuKeyBind:control(vec2(120, 0)) then
-		ac.log('openMenuKeyBind', openMenuKeyBind:boundTo())
-	end
+	openMenuKeyBind:control(vec2(120, 0))
 	ui.newLine()
 	settings.hudOffset.x = ui.slider('##' .. 'HUD Offset X', settings.hudOffset.x, 0, WINDOW_WIDTH,'HUD Offset X' .. ': %.0f')
 	settings.hudOffset.y = ui.slider('##' .. 'HUD Offset Y', settings.hudOffset.y, 0, WINDOW_HEIGHT,'HUD Offset Y' .. ': %.0f')
