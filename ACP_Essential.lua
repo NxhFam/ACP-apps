@@ -453,7 +453,7 @@ dataLoaded['Leaderboard'] = false
 dataLoaded['PlayerData'] = false
 dataLoaded['Sectors'] = false
 
-local openMenuKeyBind = ac.ControlButton('__ACP_OPEN_MENU_KEY_BIND')
+local openMenuKeyBind = ac.ControlButton('__ACP_OPEN_MENU_KEY_BIND', ui.KeyIndex.M)
 
 ---@param carID string
 local function isPoliceCar(carID)
