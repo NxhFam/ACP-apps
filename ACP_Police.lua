@@ -20,7 +20,7 @@ local SHARED_EVENT_KEY = const('__ACP_PLAYER_SHARED_UPDATE')
 
 local CAR_ID = const(ac.getCarID(0))
 local CAR_NAME = const(ac.getCarName(0))
-local POLICE_CAR = { "crown_police" }
+local POLICE_CAR = { "crown_police", "r34police_acp24" }
 
 local DRIVER_NAME = const(ac.getDriverName(0))
 ---@param carID string
