@@ -28,8 +28,13 @@ if CSP_VERSION < CSP_MIN_VERSION then return end
 
 local WINDOW_WIDTH = const(sim.windowWidth / uiState.uiScale)
 local WINDOW_HEIGHT = const(sim.windowHeight / uiState.uiScale)
-local FONT_MULT = const(WINDOW_HEIGHT / 1440)
 local POLICE_CAR = { "crown_police" }
+
+local STATS_FONT_SIZE = const({
+	title = 40 / uiState.uiScale,
+	header = 30 / uiState.uiScale,
+	stats = 20 / uiState.uiScale,
+})
 
 local WIDTH_DIV = const({
 	_2 = WINDOW_WIDTH / 2,
@@ -182,58 +187,58 @@ local function moveMenu()
 end
 
 local function playerScores()
-	ui.dwriteTextWrapped("Scores: ", 30, playerData.hudColor)
+	ui.dwriteTextWrapped("Scores: ", STATS_FONT_SIZE.header, playerData.hudColor)
 	ui.newLine()
 	ui.sameLine(WIDTH_DIV._100)
 	ui.beginGroup()
-	ui.dwriteTextWrapped("Arrests: ", 20, playerData.hudColorInverted)
+	ui.dwriteTextWrapped("Arrests: ", STATS_FONT_SIZE.stats, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
-	ui.dwriteTextWrapped(playerData.arrests, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Getaways: ", 20, playerData.hudColorInverted)
+	ui.dwriteTextWrapped(playerData.arrests, STATS_FONT_SIZE.stats, rgbm.colors.white)
+	ui.dwriteTextWrapped("Getaways: ", STATS_FONT_SIZE.stats, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
-	ui.dwriteTextWrapped(playerData.getaways, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Car Thefts: ", 20, playerData.hudColorInverted)
+	ui.dwriteTextWrapped(playerData.getaways, STATS_FONT_SIZE.stats, rgbm.colors.white)
+	ui.dwriteTextWrapped("Car Thefts: ", STATS_FONT_SIZE.stats, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
-	ui.dwriteTextWrapped(playerData.thefts, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Bank Heists: ", 20, playerData.hudColorInverted)
+	ui.dwriteTextWrapped(playerData.thefts, STATS_FONT_SIZE.stats, rgbm.colors.white)
+	ui.dwriteTextWrapped("Bank Heists: ", STATS_FONT_SIZE.stats, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
-	ui.dwriteTextWrapped(playerData.heists, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Drug Deliveries: ", 20, playerData.hudColorInverted)
+	ui.dwriteTextWrapped(playerData.heists, STATS_FONT_SIZE.stats, rgbm.colors.white)
+	ui.dwriteTextWrapped("Drug Deliveries: ", STATS_FONT_SIZE.stats, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
-	ui.dwriteTextWrapped(playerData.deliveries, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Overtake: ", 20, playerData.hudColorInverted)
+	ui.dwriteTextWrapped(playerData.deliveries, STATS_FONT_SIZE.stats, rgbm.colors.white)
+	ui.dwriteTextWrapped("Overtake: ", STATS_FONT_SIZE.stats, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
-	ui.dwriteTextWrapped(playerData.overtake, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Race Wins: ", 20, playerData.hudColorInverted)
+	ui.dwriteTextWrapped(playerData.overtake, STATS_FONT_SIZE.stats, rgbm.colors.white)
+	ui.dwriteTextWrapped("Race Wins: ", STATS_FONT_SIZE.stats, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
-	ui.dwriteTextWrapped(playerData.wins, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Race Losses: ", 20, playerData.hudColorInverted)
+	ui.dwriteTextWrapped(playerData.wins, STATS_FONT_SIZE.stats, rgbm.colors.white)
+	ui.dwriteTextWrapped("Race Losses: ", STATS_FONT_SIZE.stats, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
-	ui.dwriteTextWrapped(playerData.losses, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Racing Elo: ", 20, playerData.hudColorInverted)
+	ui.dwriteTextWrapped(playerData.losses, STATS_FONT_SIZE.stats, rgbm.colors.white)
+	ui.dwriteTextWrapped("Racing Elo: ", STATS_FONT_SIZE.stats, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
-	ui.dwriteTextWrapped(playerData.elo, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Kms Driven: ", 20, playerData.hudColorInverted)
+	ui.dwriteTextWrapped(playerData.elo, STATS_FONT_SIZE.stats, rgbm.colors.white)
+	ui.dwriteTextWrapped("Distance Driven: ", STATS_FONT_SIZE.stats, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
-	ui.dwriteTextWrapped(playerData.kms, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Time Played: ", 20, playerData.hudColorInverted)
+	ui.dwriteTextWrapped(playerData.kms, STATS_FONT_SIZE.stats, rgbm.colors.white)
+	ui.dwriteTextWrapped("Time Played: ", STATS_FONT_SIZE.stats, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
-	ui.dwriteTextWrapped(playerData.time, 20, rgbm.colors.white)
+	ui.dwriteTextWrapped(playerData.time, STATS_FONT_SIZE.stats, rgbm.colors.white)
 	ui.endGroup()
 end
 
 local function playerTimes()
-	ui.dwriteTextWrapped("Sectors: ", 30, playerData.hudColor)
+	ui.dwriteTextWrapped("Sectors: ", STATS_FONT_SIZE.header, playerData.hudColor)
 	ui.newLine()
 	ui.sameLine(WIDTH_DIV._100)
 	ui.beginGroup()
 	for sectorName, record in pairs(playerData.sectors) do
-		ui.dwriteTextWrapped(sectorName .. ": ", 20, playerData.hudColor)
+		ui.dwriteTextWrapped(sectorName .. ": ", STATS_FONT_SIZE.stats, playerData.hudColor)
 		ui.beginSubgroup(WIDTH_DIV._50)
 		for i = 1, #record do
-			ui.dwriteTextWrapped(record[i].car .. ": ", 20, playerData.hudColorInverted)
+			ui.dwriteTextWrapped(record[i].car .. ": ", STATS_FONT_SIZE.stats, playerData.hudColorInverted)
 			ui.sameLine(WIDTH_DIV._8)
-			ui.dwriteTextWrapped(record[i].time, 20, rgbm.colors.white)
+			ui.dwriteTextWrapped(record[i].time, STATS_FONT_SIZE.stats, rgbm.colors.white)
 		end
 		ui.endSubgroup()
 		ui.newLine()
@@ -242,11 +247,11 @@ local function playerTimes()
 	ui.endGroup()
 end
 
-local playerStatsSubWindow = const(vec2(WIDTH_DIV._4 - WIDTH_DIV._4 / 40, HEIGHT_DIV._2 - HEIGHT_DIV._2 / 40))
+local playerStatsSubWindow = const(vec2(WIDTH_DIV._4 - WIDTH_DIV._4 / 40, HEIGHT_DIV._2 - HEIGHT_DIV._20 - 10))
 
 local function playerStats()
 	ui.pushDWriteFont("Orbitron;Weight=Black")
-	ui.dwriteTextWrapped("Player Stats", 40, rgbm.colors.white)
+	ui.dwriteTextWrapped("Player Stats", STATS_FONT_SIZE.title, rgbm.colors.white)
 	local playerStatSize = ui.measureDWriteText("Player Stats", 45)
 	ui.sameLine(WIDTH_DIV._2 - 64)
 	if ui.modernButton('', vec2(48, 40), ui.ButtonFlags.Error, playerStatsWindow.visible and 'HIDE' or 'EYE', 32, nil) then
@@ -259,10 +264,12 @@ local function playerStats()
 	end
 	if not playerStatsWindow.visible then return end
 	ui.separator()
+	local topPosY = ui.getCursorY() - 5
 	ui.childWindow('playerTimes', playerStatsSubWindow, false, ui.WindowFlags.ThinScrollbar, function()
 		playerTimes()
 	end)
-	ui.sameLine(HEIGHT_DIV._2 - HEIGHT_DIV._30)
+	ui.drawSimpleLine(vec2(playerStatsSubWindow.x + WIDTH_DIV._100, topPosY), vec2(playerStatsSubWindow.x + WIDTH_DIV._100, ui.getCursorY()), rgbm(0.1, 0.1, 0.1, 0.3), 2)
+	ui.sameLine(playerStatsSubWindow.x + WIDTH_DIV._50)
 	ui.childWindow('playerScores', playerStatsSubWindow, false, function()
 		playerScores()
 	end)
@@ -309,7 +316,7 @@ local function updatedSharedData()
 		playerData.wins = tostring(sharedPlayerData.wins)
 		playerData.losses = tostring(sharedPlayerData.losses)
 		playerData.elo = tostring(sharedPlayerData.elo) .. ' pts'
-		playerData.kms = tostring(sharedPlayerData.kms) .. ' km'
+		playerData.kms = tostring(truncate(sharedPlayerData.kms, 3)) .. ' km'
 		playerData.time = formatTime(sharedPlayerData.time, 'time played')
 		for i = 1, 5 do
 			local sectorName = ffi.string(sharedPlayerData.sectorsFormated[i].name)
@@ -369,7 +376,7 @@ local carFuel = car.fuel
 
 local function textWithBackground(text, sizeMult, yOffset, textColor)
 	ui.pushDWriteFont("Orbitron;Weight=Black")
-	local textSize = ui.measureDWriteText(text, 20 * sizeMult)
+	local textSize = ui.measureDWriteText(text, STATS_FONT_SIZE.stats * sizeMult)
 	local rectPos1 = vec2(WINDOW_WIDTH / 2, HEIGHT_DIV._100 + yOffset) - vec2(textSize.x / 2, 0)
 	local rectPos2 = textSize + rectPos1
 	local rectOffset = vec2(WIDTH_DIV._320, HEIGHT_DIV._320)
@@ -378,7 +385,7 @@ local function textWithBackground(text, sizeMult, yOffset, textColor)
 	else
 		ui.drawRectFilled(rectPos1 - rectOffset, rectPos2 + rectOffset, rgbm(0, 0, 0, 0.6), 10)
 	end
-	ui.dwriteDrawText(text, 20 * sizeMult, rectPos1, textColor)
+	ui.dwriteDrawText(text, STATS_FONT_SIZE.stats * sizeMult, rectPos1, textColor)
 	ui.popDWriteFont()
 end
 
@@ -399,7 +406,7 @@ local function fillCarWithFuel()
 		-- ui.drawIcon(ui.Icons.ArrowUp, fuelWindow.up.p1, fuelWindow.up.p2, fuelWindow.up.color)
 		ui.newLine(HEIGHT_DIV._16)
 		ui.pushDWriteFont("Orbitron;Weight=Black")
-		ui.dwriteTextWrapped('Fuel: ' .. math.floor(car.fuel) .. ' / ' .. car.maxFuel, 20, rgbm.colors.white)
+		ui.dwriteTextWrapped('Fuel: ' .. math.floor(car.fuel) .. ' / ' .. car.maxFuel, STATS_FONT_SIZE.stats, rgbm.colors.white)
 		ui.popDWriteFont()
 		ui.progressBar(car.fuel / car.maxFuel, vec2(WIDTH_DIV._4, HEIGHT_DIV._40))
 	end)
