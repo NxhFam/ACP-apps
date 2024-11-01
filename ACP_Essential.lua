@@ -30,6 +30,11 @@ if DRIVER_NATION_CODE == "USA" or DRIVER_NATION_CODE == "GBR" then
 	UNIT_MULT = 0.621371
 end
 
+local STATS_FONT_SIZE = const({
+	header = 30 / uiState.uiScale,
+	stats = 20 / uiState.uiScale,
+})
+
 SECTORS_DATA = const({
 	[1] = {
 		name = "H1",
@@ -237,13 +242,25 @@ local WELCOME_CARD_LINK = const({
 	"https://discord.com/channels/358562025032646659/1299310123482611812", --car done
 })
 
+---@param format string
 ---@param time number
 ---@return string
-local function formatTime(time)
-	local minutes = math.floor(time / 60)
-	local seconds = math.floor(time % 60)
-	local milliseconds = math.floor((time % 1) * 1000)
-	return ('%02d:%02d.%03d'):format(minutes, seconds, milliseconds)
+local function formatTime(time, format)
+	if format == 'time played' then
+		local hours = math.floor(time / 3600)
+		local minutes = math.floor(time % 3600 / 60)
+		local seconds = math.floor(time % 60)
+		local formattedTime = ''
+		if hours > 0 then formattedTime = hours .. 'h ' end
+		if minutes > 0 then formattedTime = formattedTime .. minutes .. 'm ' end
+		formattedTime = formattedTime .. seconds .. 's'
+		return formattedTime
+	else
+		local minutes = math.floor(time / 60)
+		local seconds = math.floor(time % 60)
+		local milliseconds = math.floor((time % 1) * 1000)
+		return ('%02d:%02d.%03d'):format(minutes, seconds, milliseconds)
+	end
 end
 
 local MISSIONS = const({
@@ -252,9 +269,9 @@ local MISSIONS = const({
 		start = { "Steal :", "Gas Station 1 TP" },
 		finish = { "Deliver :", "Red Car (Map)" },
 		levels = {
-			formatTime(SECTORS_DATA[3].timeLimit + SECTORS_DATA[3].addTimeLimit[3]),
-			formatTime(SECTORS_DATA[3].timeLimit + SECTORS_DATA[3].addTimeLimit[2]),
-			formatTime(SECTORS_DATA[3].timeLimit + SECTORS_DATA[3].addTimeLimit[1]),
+			formatTime(SECTORS_DATA[3].timeLimit + SECTORS_DATA[3].addTimeLimit[3], ''),
+			formatTime(SECTORS_DATA[3].timeLimit + SECTORS_DATA[3].addTimeLimit[2], ''),
+			formatTime(SECTORS_DATA[3].timeLimit + SECTORS_DATA[3].addTimeLimit[1], ''),
 		},
 		tp= {
 			[1] = { pos = vec3(785.519, 95.8002, 2235.53), dir = vec3(0.51, -0.03, -0.86) },
@@ -267,9 +284,9 @@ local MISSIONS = const({
 		start = { "Pick Up :", "Drug Delivery TP" },
 		finish = { "Drop Off :", "Pink House (Map)" },
 		levels = {
-			formatTime(SECTORS_DATA[5].timeLimit + SECTORS_DATA[5].addTimeLimit[3]),
-			formatTime(SECTORS_DATA[5].timeLimit + SECTORS_DATA[5].addTimeLimit[2]),
-			formatTime(SECTORS_DATA[5].timeLimit + SECTORS_DATA[5].addTimeLimit[1]),
+			formatTime(SECTORS_DATA[5].timeLimit + SECTORS_DATA[5].addTimeLimit[3], ''),
+			formatTime(SECTORS_DATA[5].timeLimit + SECTORS_DATA[5].addTimeLimit[2], ''),
+			formatTime(SECTORS_DATA[5].timeLimit + SECTORS_DATA[5].addTimeLimit[1], ''),
 		},
 		tp = {
 			[1] = { pos = vec3(-369.367, 127.557, 3405.47), dir = vec3(0.8, -0.01, 0.61) },
@@ -282,9 +299,9 @@ local MISSIONS = const({
 		start = { "Rob :", "Bank TP" },
 		finish = { "Deliver :", "Yellow BHL (Map)" },
 		levels = {
-			formatTime(SECTORS_DATA[4].timeLimit + SECTORS_DATA[4].addTimeLimit[3]),
-			formatTime(SECTORS_DATA[4].timeLimit + SECTORS_DATA[4].addTimeLimit[2]),
-			formatTime(SECTORS_DATA[4].timeLimit + SECTORS_DATA[4].addTimeLimit[1]),
+			formatTime(SECTORS_DATA[4].timeLimit + SECTORS_DATA[4].addTimeLimit[3], ''),
+			formatTime(SECTORS_DATA[4].timeLimit + SECTORS_DATA[4].addTimeLimit[2], ''),
+			formatTime(SECTORS_DATA[4].timeLimit + SECTORS_DATA[4].addTimeLimit[1], ''),
 		},
 		tp = {
 			[1] = { pos = vec3(-626.316, 135.37, 3509.81), dir = vec3(0.91, 0.03, -0.4) },
@@ -443,7 +460,9 @@ local function resetMissionManager()
 	missionManager.level = 3
 end
 
-local menuSize = { vec2(WIDTH_DIV._5, HEIGHT_DIV._4), vec2(WIDTH_DIV._6, WINDOW_HEIGHT * 2 / 3), vec2(WIDTH_DIV._3, HEIGHT_DIV._3) }
+local menuSize = { vec2(WIDTH_DIV._5, HEIGHT_DIV._4), vec2(WIDTH_DIV._6, WINDOW_HEIGHT * 2 / 3), vec2(WIDTH_DIV._2, HEIGHT_DIV._2) }
+local playerStatsSubWindow = vec2(WIDTH_DIV._4 - 10, HEIGHT_DIV._2 - HEIGHT_DIV._20 - 10)
+
 local currentTab = 1
 
 local dataLoaded = {}
@@ -553,7 +572,7 @@ local function sortLeaderboard(category, rows)
 			return a[2] < b[2]
 		end)
 		for i, row in ipairs(rows) do
-			row[2] = formatTime(row[2])
+			row[2] = formatTime(row[2], '')
 		end
 	else
 		table.sort(rows, function(a, b)
@@ -718,6 +737,7 @@ local DEFAULT_SETTINGS = const({
 	fontSize = 20 / uiState.uiScale,
 	current = 1,
 	colorHud = rgbm(1, 0, 0, 1),
+	colorHudInverted = rgbm(0, 1, 1, 1),
 	timeMsg = 10,
 	msgOffset = vec2(WIDTH_DIV._2, 10),
 	fontSizeMSG = 30 / uiState.uiScale,
@@ -726,11 +746,8 @@ local DEFAULT_SETTINGS = const({
 	unitMult = UNIT_MULT,
 	starsSize = 20,
 	starsPos = vec2(WIDTH_DIV._2, 0),
+	leaderboardWrapWidth = 20 / 1.5,
 })
-
-local colorHudInverted = rgbm(1, 0, 0, 0.8)
-
-local leaderboardWrapWidth = DEFAULT_SETTINGS.fontSize / 1.5
 
 ---@class Settings
 ---@field essentialSize number
@@ -739,6 +756,7 @@ local leaderboardWrapWidth = DEFAULT_SETTINGS.fontSize / 1.5
 ---@field fontSize number
 ---@field current number
 ---@field colorHud rgbm
+---@field colorHudInverted rgbm
 ---@field timeMsg number
 ---@field msgOffset vec2
 ---@field fontSizeMSG number
@@ -771,6 +789,7 @@ function Settings.tryParse(data)
 		fontSize = data.fontSize or (20 / uiState.uiScale),
 		current = data.current or 1,
 		colorHud = colorHud,
+		colorHudInverted = rgbm(1 - colorHud.r, 1 - colorHud.g, 1 - colorHud.b, 1),
 		timeMsg = data.timeMsg or 10,
 		msgOffset = msgOffset,
 		fontSizeMSG = data.fontSizeMSG or (30 / uiState.uiScale),
@@ -779,6 +798,7 @@ function Settings.tryParse(data)
 		unitMult = data.unitMult or UNIT_MULT,
 		starsSize = data.starsSize or 20,
 		starsPos = starsPos,
+		leaderboardWrapWidth = (data.fontSize or DEFAULT_SETTINGS.fontSize) / 1.5,
 	}
 	setmetatable(settings, { __index = Settings })
 	return settings
@@ -1065,7 +1085,7 @@ function Sector:reset()
 	self.startTime = 0
 	self.time = 'Time - 00:00.000'
 	if self.timeLimit > 0 then
-		self.time = 'LVL 3 - ' .. formatTime(self.timeLimit + self.addTimeLimit[3])
+		self.time = 'lvl 3 - ' .. formatTime(self.timeLimit + self.addTimeLimit[3], '')
 	end
 	self.timeColor = white
 	self.startDistance = 0
@@ -1076,7 +1096,7 @@ function Sector:starting()
 	if self.gateIndex == 2 then
 		self.time = 'Time - 00:00.000'
 		if self.timeLimit > 0 then
-			self.time = 'LVL 3 - ' .. formatTime(self.timeLimit + self.addTimeLimit[3])
+			self.time = 'lvl 3 - ' .. formatTime(self.timeLimit + self.addTimeLimit[3], '')
 		end
 		self.startTime = os.preciseClock()
 		self.startDistance = car.distanceDrivenTotalKm
@@ -1099,7 +1119,7 @@ function Sector:updateTime()
 		local lvl = 'Time'
 		if self.timeLimit ~= 0 then
 			time = self.timeLimit + self.addTimeLimit[3] - time
-			lvl = 'LVL' .. missionManager.level
+			lvl = 'lvl' .. missionManager.level
 			if time < 0 then
 				time = 0
 				lvl = 'FAIL'
@@ -1168,7 +1188,7 @@ function Sector:update()
 			local lvl = 'Time'
 			if self.timeLimit ~= 0 then
 				time = self.timeLimit + self.addTimeLimit[3] - time
-				lvl = 'LVL' .. missionManager.level
+				lvl = 'lvl' .. missionManager.level
 				if time < 0 then
 					time = 0
 					lvl = 'FAIL'
@@ -1269,6 +1289,7 @@ local lastRegister = {
 ---@field elo integer
 ---@field kms number
 ---@field time number
+---@field timePlayed string
 local Player = class('Player')
 
 ---@type Player | nil
@@ -1348,6 +1369,7 @@ function Player.new()
 		elo = 1200,
 		kms = 0,
 		time = 0,
+		timePlayed = formatTime(0, 'time played'),
 	}
 	setmetatable(_player, { __index = Player })
 	return _player
@@ -1383,6 +1405,7 @@ function Player.tryParse(data)
 		elo = data.elo or 1200,
 		kms = data.kms or 0,
 		time = data.time or 0,
+		timePlayed = formatTime(data.time or 0, 'time played'),
 	}
 	setmetatable(_player, { __index = Player })
 	return _player
@@ -1444,7 +1467,7 @@ function Player:sortSectors()
 			return a[2] < b[2]
 		end)
 		for i, entry in ipairs(entries) do
-			entries[i][2] = formatTime(entry[2])
+			entries[i][2] = formatTime(entry[2], '')
 		end
 		self.sectorsFormated[sector.name] = entries
 	end
@@ -1740,102 +1763,111 @@ local function textWithBackground(text, sizeMult, height)
 	ui.popDWriteFont()
 end
 
-local boxHeight = HEIGHT_DIV._70
-
 local function displayInGrid()
-	local box1 = vec2(WIDTH_DIV._32, boxHeight)
+	local box1 = vec2(WIDTH_DIV._32, HEIGHT_DIV._70)
 	local colWidth = (WIDTH_DIV._2 - WIDTH_DIV._32) / currentLeaderboard.nbCols
 	ui.pushDWriteFont("Orbitron;Weight=Black")
 	ui.newLine()
-	ui.dwriteTextAligned("Pos", leaderboardWrapWidth, ui.Alignment.Center, ui.Alignment.Center, box1, false, settings.colorHud)
+	ui.dwriteTextWrapped("Pos", settings.leaderboardWrapWidth, settings.colorHud)
 	for i = 1, #currentLeaderboard.header do
-		local textLenght = ui.measureDWriteText(currentLeaderboard.header[i], leaderboardWrapWidth).x
+		local textLenght = ui.measureDWriteText(currentLeaderboard.header[i], settings.leaderboardWrapWidth).x
 		ui.sameLine(box1.x + colWidth / 2 + colWidth * (i - 1) - textLenght / 2)
-		ui.dwriteTextWrapped(currentLeaderboard.header[i], leaderboardWrapWidth, settings.colorHud)
+		ui.dwriteTextWrapped(currentLeaderboard.header[i], settings.leaderboardWrapWidth, settings.colorHud)
 	end
-	ui.drawLine(vec2(0, HEIGHT_DIV._14), vec2(WIDTH_DIV._2, HEIGHT_DIV._14), white, 2)
+	local linePos = ui.getMaxCursorY() + HEIGHT_DIV._100
+	ui.drawSimpleLine(vec2(0, linePos), vec2(WIDTH_DIV._2, linePos), white, 2)
 	ui.newLine()
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=Regular")
 	for i = 1, #currentLeaderboard.rows do
-		ui.dwriteTextAligned(i, settings.fontSize, ui.Alignment.Center, ui.Alignment.Center, box1, false, white)
+		ui.dwriteTextWrapped(i, settings.leaderboardWrapWidth, white)
 		for j = 1, #currentLeaderboard.rows[1] do
-			local textLenght = ui.measureDWriteText(currentLeaderboard.rows[i][j], leaderboardWrapWidth).x
+			local textLenght = ui.measureDWriteText(currentLeaderboard.rows[i][j], settings.leaderboardWrapWidth).x
 			ui.sameLine(box1.x + colWidth / 2 + colWidth * (j - 1) - textLenght / 2)
-			ui.dwriteTextWrapped(currentLeaderboard.rows[i][j], leaderboardWrapWidth, white)
+			ui.dwriteTextWrapped(currentLeaderboard.rows[i][j], settings.leaderboardWrapWidth, white)
 		end
 	end
 	ui.popDWriteFont()
 	local lineHeight = math.max(ui.itemRectMax().y + box1.y)
-	local lineOffset = box1.x + box1.x * 0.5
-	ui.drawLine(vec2(lineOffset, HEIGHT_DIV._20), vec2(lineOffset, lineHeight), white, 2)
+	local lineOffset = box1.x * 1.5
+	ui.drawSimpleLine(vec2(lineOffset, HEIGHT_DIV._20), vec2(lineOffset, lineHeight), white, 2)
 	for i = 1, currentLeaderboard.nbCols - 1 do
-		ui.drawLine(vec2(box1.x + colWidth * i, HEIGHT_DIV._20), vec2(box1.x + colWidth * i, lineHeight), white, 2)
+		ui.drawSimpleLine(vec2(box1.x + colWidth * i, HEIGHT_DIV._20), vec2(box1.x + colWidth * i, lineHeight), white, 2)
 	end
 end
 
 local function playerScores()
-	ui.newLine()
-	ui.dwriteTextWrapped("Scores: ", 30, settings.colorHud)
+	ui.dwriteTextWrapped("Scores: ", STATS_FONT_SIZE.header, settings.colorHud)
 	ui.newLine()
 	ui.sameLine(WIDTH_DIV._100)
 	ui.beginGroup()
-	ui.newLine()
-	ui.dwriteTextWrapped("Arrests: ", 20, colorHudInverted)
+	ui.dwriteTextWrapped("Arrests: ", STATS_FONT_SIZE.stats, settings.colorHudInverted)
 	ui.sameLine(WIDTH_DIV._10)
-	ui.dwriteTextWrapped(player.arrests, 20, white)
-	ui.dwriteTextWrapped("Getaways: ", 20, colorHudInverted)
+	ui.dwriteTextWrapped(player.arrests, STATS_FONT_SIZE.stats, rgbm.colors.white)
+	ui.dwriteTextWrapped("Getaways: ", STATS_FONT_SIZE.stats, settings.colorHudInverted)
 	ui.sameLine(WIDTH_DIV._10)
-	ui.dwriteTextWrapped(player.getaways, 20, white)
-	ui.dwriteTextWrapped("Thefts: ", 20, colorHudInverted)
+	ui.dwriteTextWrapped(player.getaways, STATS_FONT_SIZE.stats, rgbm.colors.white)
+	ui.dwriteTextWrapped("Car Thefts: ", STATS_FONT_SIZE.stats, settings.colorHudInverted)
 	ui.sameLine(WIDTH_DIV._10)
-	ui.dwriteTextWrapped(player.thefts, 20, white)
-	ui.dwriteTextWrapped("Overtake: ", 20, colorHudInverted)
+	ui.dwriteTextWrapped(player.thefts, STATS_FONT_SIZE.stats, rgbm.colors.white)
+	ui.dwriteTextWrapped("Bank Heists: ", STATS_FONT_SIZE.stats, settings.colorHudInverted)
 	ui.sameLine(WIDTH_DIV._10)
-	ui.dwriteTextWrapped(player.overtake, 20, white)
-	ui.dwriteTextWrapped("Wins: ", 20, colorHudInverted)
+	ui.dwriteTextWrapped(player.heists, STATS_FONT_SIZE.stats, rgbm.colors.white)
+	ui.dwriteTextWrapped("Drug Deliveries: ", STATS_FONT_SIZE.stats, settings.colorHudInverted)
 	ui.sameLine(WIDTH_DIV._10)
-	ui.dwriteTextWrapped(player.wins, 20, white)
-	ui.dwriteTextWrapped("Losses: ", 20, colorHudInverted)
+	ui.dwriteTextWrapped(player.deliveries, STATS_FONT_SIZE.stats, rgbm.colors.white)
+	ui.dwriteTextWrapped("Overtake: ", STATS_FONT_SIZE.stats, settings.colorHudInverted)
 	ui.sameLine(WIDTH_DIV._10)
-	ui.dwriteTextWrapped(player.losses, 20, white)
-	ui.dwriteTextWrapped("Racing Elo: ", 20, colorHudInverted)
+	ui.dwriteTextWrapped(player.overtake, STATS_FONT_SIZE.stats, rgbm.colors.white)
+	ui.dwriteTextWrapped("Race Wins: ", STATS_FONT_SIZE.stats, settings.colorHudInverted)
 	ui.sameLine(WIDTH_DIV._10)
-	ui.dwriteTextWrapped(player.elo, 20, white)
+	ui.dwriteTextWrapped(player.wins, STATS_FONT_SIZE.stats, rgbm.colors.white)
+	ui.dwriteTextWrapped("Race Losses: ", STATS_FONT_SIZE.stats, settings.colorHudInverted)
+	ui.sameLine(WIDTH_DIV._10)
+	ui.dwriteTextWrapped(player.losses, STATS_FONT_SIZE.stats, rgbm.colors.white)
+	ui.dwriteTextWrapped("Racing Elo: ", STATS_FONT_SIZE.stats, settings.colorHudInverted)
+	ui.sameLine(WIDTH_DIV._10)
+	ui.dwriteTextWrapped(player.elo .. ' pts', STATS_FONT_SIZE.stats, rgbm.colors.white)
+	ui.dwriteTextWrapped("Distance Driven: ", STATS_FONT_SIZE.stats, settings.colorHudInverted)
+	ui.sameLine(WIDTH_DIV._10)
+	ui.dwriteTextWrapped(player.kms .. ' kms', STATS_FONT_SIZE.stats, rgbm.colors.white)
+	ui.dwriteTextWrapped("Time Played: ", STATS_FONT_SIZE.stats, settings.colorHudInverted)
+	ui.sameLine(WIDTH_DIV._10)
+	ui.dwriteTextWrapped(player.timePlayed, STATS_FONT_SIZE.stats, rgbm.colors.white)
 	ui.endGroup()
 end
 
 local function playerTimes()
-	ui.newLine()
-	ui.dwriteTextWrapped("Sectors: ", 30, settings.colorHud)
+	-- ui.newLine()
+	ui.dwriteTextWrapped("Sectors: ", STATS_FONT_SIZE.header, settings.colorHud)
 	ui.newLine()
 	ui.sameLine(WIDTH_DIV._100)
 	ui.beginGroup()
-
 	for sectorName, times in pairs(player.sectorsFormated) do
-		ui.dwriteTextWrapped(sectorName .. ": ", 20, settings.colorHud)
+		ui.dwriteTextWrapped(sectorName .. ": ", STATS_FONT_SIZE.stats, settings.colorHud)
 		ui.beginSubgroup(WIDTH_DIV._50)
 		for i = 1, #times do
-			ui.dwriteTextWrapped(times[i][1] .. ": ", 20, colorHudInverted)
+			ui.dwriteTextWrapped(times[i][1] .. ": ", STATS_FONT_SIZE.stats, settings.colorHudInverted)
 			ui.sameLine(WIDTH_DIV._8)
-			ui.dwriteTextWrapped(times[i][2], 20, white)
+			ui.dwriteTextWrapped(times[i][2], STATS_FONT_SIZE.stats, white)
 		end
 		ui.endSubgroup()
 		ui.newLine()
 	end
+	ui.dummy(vec2(WIDTH_DIV._50, HEIGHT_DIV._50))
 	ui.endGroup()
 end
-
-local playerStatsSubWindow = const(vec2(WIDTH_DIV._4, HEIGHT_DIV._2 - HEIGHT_DIV._20))
 
 local function playerStats()
 	ui.separator()
 	ui.pushDWriteFont("Orbitron;Weight=Black")
-	ui.childWindow('playerTimes', playerStatsSubWindow, true, function()
+	local topPosY = ui.getCursorY() - 5
+	ui.childWindow('playerTimes', playerStatsSubWindow, true, ui.WindowFlags.ThinScrollbar, function()
 		playerTimes()
 	end)
-	ui.sameLine()
-	ui.childWindow('playerScores', playerStatsSubWindow, true, function()
+	ui.drawSimpleLine(vec2(playerStatsSubWindow.x + WIDTH_DIV._100, topPosY), vec2(playerStatsSubWindow.x + WIDTH_DIV._100, ui.getCursorY()), rgbm(0.1, 0.1, 0.1, 0.3), 2)
+	ui.sameLine(playerStatsSubWindow.x + WIDTH_DIV._50)
+	ui.childWindow('playerScores', playerStatsSubWindow, true, ui.WindowFlags.ThinScrollbar, function()
 		playerScores()
 	end)
 	ui.popDWriteFont()
@@ -1850,19 +1882,19 @@ local function showLeaderboard()
 					currentLeaderboard = player
 				else
 					Leaderboard.allocate(LEADERBOARD_NAMES[1][i])
-					-- currentLeaderboard.name = LEADERBOARD_NAMES[2][i]
 				end
 			end
 		end
 	end)
-	ui.sameLine(WIDTH_DIV._2 - 64)
+	ui.sameLine(menuSize[currentTab].x - 64)
 	if ui.modernButton('', vec2(48, 32), ui.ButtonFlags.PressedOnRelease, 'EXIT', 24, nil) then menuStates.leaderboard = false end
-	if not currentLeaderboard then return end
+	if not currentLeaderboard then return 3 end
 	if currentLeaderboard.name == player.name then
 		playerStats()
 	else
 		displayInGrid()
 	end
+	return 3
 end
 
 ----------------------------------------------------------------------------------------------- settings -----------------------------------------------------------------------------------------------
@@ -1992,7 +2024,7 @@ local function settingsWindow()
 		settings.unitMult = 1
 	end
 	ui.sameLine(menuSize[currentTab].x - 64)
-	if ui.modernButton(nil, vec2(48, 32), ui.ButtonFlags.PressedOnRelease, 'EXIT', 24, nil) then
+	if ui.modernButton('', vec2(48, 32), ui.ButtonFlags.PressedOnRelease, 'EXIT', 24, nil) then
 		menuStates.main = false
 		settings:save()
 	end
@@ -2006,7 +2038,7 @@ local function settingsWindow()
 	settings.fontSize = settings.essentialSize * FONT_MULT
 	ui.setNextItemWidth(300)
 	local colorHud = settings.colorHud
-	colorHudInverted = rgbm(1 - colorHud.r, 1 - colorHud.g, 1 - colorHud.b, 1)
+	settings.colorHudInverted = rgbm(1 - colorHud.r, 1 - colorHud.g, 1 - colorHud.b, 1)
 	ui.colorPicker('Theme Color', colorHud, ui.ColorPickerFlags.AlphaBar)
 	ui.newLine()
 	uiTab()
@@ -2837,7 +2869,7 @@ local function missionMsgOnScreen()
 		missionManager.msgTime = 0
 	elseif missionManager.msgTime > 0 then
 		if missionManager.showIntro then
-			textWithBackground(MISSION_TEXT[sectorManager.sector.name].intro[1] .. formatTime(sectorManager.sector.timeLimit + sectorManager.sector.addTimeLimit[3]) .. MISSION_TEXT[sectorManager.sector.name].intro[2], 1, 1)
+			textWithBackground(MISSION_TEXT[sectorManager.sector.name].intro[1] .. formatTime(sectorManager.sector.timeLimit + sectorManager.sector.addTimeLimit[3], '') .. MISSION_TEXT[sectorManager.sector.name].intro[2], 1, 1)
 		else
 			if not sectorManager.finished then
 				textWithBackground(lvlMSG,1,2)
@@ -2876,7 +2908,7 @@ local function moveMenu()
 		if not leftClickDown and ui.mouseDown() then
 			leftClickDown = true
 			windowAction = 3
-			if not menuStates.leaderboard and mousePos.y > menuSize[currentTab].y - 50 then
+			if mousePos.y > menuSize[currentTab].y - 50 then
 				if mousePos.x < 50 then
 					windowAction = 1
 				elseif mousePos.x > menuSize[currentTab].x - 50 then
@@ -2884,7 +2916,7 @@ local function moveMenu()
 				end
 			end
 		end
-		if not menuStates.leaderboard and mousePos.y > menuSize[currentTab].y - 50 then
+		if mousePos.y > menuSize[currentTab].y - 50 then
 			if mousePos.x < 50 then
 				ui.setMouseCursor(ui.MouseCursor.ResizeNESW)
 			elseif mousePos.x > menuSize[currentTab].x - 50 then
@@ -2904,6 +2936,10 @@ local function moveMenu()
 			settings.menuPos.x = settings.menuPos.x + ui.mouseDelta().x
 		elseif windowAction == 2 then
 			menuSize[currentTab] = menuSize[currentTab] + ui.mouseDelta()
+			if currentTab == 3 then
+				playerStatsSubWindow.x = menuSize[currentTab].x / 2
+				playerStatsSubWindow.y = menuSize[currentTab].y - HEIGHT_DIV._20 - 10
+			end
 		elseif windowAction == 3 then
 			settings.menuPos = settings.menuPos + ui.mouseDelta()
 		end
@@ -2912,9 +2948,9 @@ end
 
 
 local function leaderboardWindow()
-	ui.toolWindow('LeaderboardWindow', settings.menuPos, vec2(WIDTH_DIV._2, HEIGHT_DIV._2), false, true, function()
+	ui.toolWindow('LeaderboardWindow', settings.menuPos, menuSize[currentTab], false, true, function()
+		currentTab = showLeaderboard()
 		moveMenu()
-		showLeaderboard()
 	end)
 end
 
@@ -3222,7 +3258,6 @@ function script.drawUI()
 			ui.toolWindow('Menu', settings.menuPos, menuSize[currentTab], true, true, function()
 				menu()
 				moveMenu()
-
 			end)
 		end
 		if menuStates.leaderboard then leaderboardWindow() end
@@ -3306,14 +3341,12 @@ local function initUI()
 	scaleWelcomeMenu()
 	updateStarsPos()
 	initBoost()
-	colorHudInverted = rgbm(1 - settings.colorHud.r, 1 - settings.colorHud.g, 1 - settings.colorHud.b, 1)
 	dataLoaded['Settings'] = true
 end
 
 local function loadSettings()
 	Settings.allocate(function(allocatedSetting)
 		settings = allocatedSetting
-		leaderboardWrapWidth = settings.fontSize / 1.5
 		initUI()
 	end)
 end
@@ -3355,9 +3388,7 @@ function script.update(dt)
 	end
 	if not shouldRun() then return end
 	ac.debug('PATCH COUNT', patchCount)
-	ac.debug('Session kms', car.distanceDrivenSessionKm)
-	ac.debug('Total kms', car.distanceDrivenTotalKm)
-	ac.debug('Session time', os.clock())
+	ac.debug('Tab', currentTab)
 	if delay > 0 then delay = delay - dt end
 	if delay < 0 then
 		delay = 0
