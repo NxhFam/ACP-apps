@@ -92,11 +92,11 @@ local POLICE_CAR = {"none"} --const({ "crown_police", "r34police_acp24" })
 
 local LEADERBOARDS = const({
 	time = {"H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST" },
-	score = { "arrests", "getaways", "thefts", "overtake" },
+	score = { "arrests", "getaways", "overtake", "thefts", "heists", "deliveries", "sectors", "elo", "kms", "time" },
 })
 local LEADERBOARD_NAMES = const({
-	{ "Your Stats", "H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST", "arrests", "getaways", "thefts", "overtake", "elo" },
-	{ "Your Stats", "H1", "Bobs Scrapyard", "Double Trouble", "Drug Delivery", "Bank Heist", "Arrestations", "Getaways", "Car thefts", "Overtake", "Racing" }
+	{ "Your Stats", "H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST", "arrests", "getaways", "overtake", "thefts", "heists", "deliveries", "sectors", "elo", "kms", "time" },
+	{ "Your Stats", "H1", "Bobs Scrapyard", "Double Trouble", "Drug Delivery", "Bank Heist", "Arrestations", "Getaways", "Car thefts", "Bank Heists", "Drug Deliveries", "Overtake", "Racing", "Distance Driven", "Time Played" },
 })
 local patchCount = 0
 
