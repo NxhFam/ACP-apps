@@ -1765,7 +1765,7 @@ end
 
 local function displayInGrid()
 	local box1 = vec2(WIDTH_DIV._32, HEIGHT_DIV._70)
-	local colWidth = (WIDTH_DIV._2 - WIDTH_DIV._32) / currentLeaderboard.nbCols
+	local colWidth = (menuSize[currentTab].x - WIDTH_DIV._32) / currentLeaderboard.nbCols
 	ui.pushDWriteFont("Orbitron;Weight=Black")
 	ui.newLine()
 	ui.dwriteTextWrapped("Pos", settings.leaderboardWrapWidth, settings.colorHud)
@@ -1775,7 +1775,7 @@ local function displayInGrid()
 		ui.dwriteTextWrapped(currentLeaderboard.header[i], settings.leaderboardWrapWidth, settings.colorHud)
 	end
 	local linePos = ui.getMaxCursorY() + HEIGHT_DIV._100
-	ui.drawSimpleLine(vec2(0, linePos), vec2(WIDTH_DIV._2, linePos), white, 2)
+	ui.drawSimpleLine(vec2(0, linePos), vec2(menuSize[currentTab].x, linePos), white, 2)
 	ui.newLine()
 	ui.popDWriteFont()
 	ui.pushDWriteFont("Orbitron;Weight=Regular")
