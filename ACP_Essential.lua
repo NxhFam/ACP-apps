@@ -22,8 +22,6 @@ if CSP_VERSION < CSP_MIN_VERSION then return end
 local SHARED_PLAYER_DATA = const('__ACP_SHARED_PLAYER_DATA')
 local SHARED_EVENT_KEY = const('__ACP_PLAYER_SHARED_UPDATE')
 
-local longestCarName = ''
-
 local DRIVER_NATION_CODE = const(ac.getDriverNationCode(0))
 local UNIT = "km/h"
 local UNIT_MULT = 1
@@ -85,7 +83,8 @@ SECTORS_DATA = const({
 	},
 })
 
-local POLICE_CAR = { "crown_police", "r34police_acp24" }
+local POLICE_CAR = {"none"} --const({ "crown_police", "r34police_acp24" })
+
 
 local LEADERBOARDS = const({
 	time = {"H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST" },
@@ -454,7 +453,7 @@ dataLoaded['Leaderboard'] = false
 dataLoaded['PlayerData'] = false
 dataLoaded['Sectors'] = false
 
-local openMenuKeyBind = ac.ControlButton('__ACP_OPEN_MENU_KEY_BIND', ui.KeyIndex.Menu)
+local openMenuKeyBind = ac.ControlButton('__ACP_OPEN_MENU_KEY_BIND')
 
 ---@param carID string
 local function isPoliceCar(carID)
