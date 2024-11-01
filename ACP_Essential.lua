@@ -85,7 +85,6 @@ SECTORS_DATA = const({
 
 local POLICE_CAR = {"none"} --const({ "crown_police", "r34police_acp24" })
 
-
 local LEADERBOARDS = const({
 	time = {"H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST" },
 	score = { "arrests", "getaways", "thefts", "overtake" },
@@ -95,7 +94,7 @@ local LEADERBOARD_NAMES = const({
 	{ "Your Stats", "H1", "Bobs Scrapyard", "Double Trouble", "Drug Delivery", "Bank Heist", "Arrestations", "Getaways", "Car thefts", "Overtake", "Racing" }
 })
 local patchCount = 0
-local timeFontSize = 30
+
 -- URL --
 local GOOGLE_APP_SCRIPT_URL = const(
 	'https://script.google.com/macros/s/AKfycbwenxjCAbfJA-S90VlV0y7mEH75qt3TuqAmVvlGkx-Y1TX8z5gHtvf5Vb8bOVNOA_9j/exec')
@@ -1250,6 +1249,11 @@ function SectorStats:export()
 	}
 end
 
+local lastRegister = {
+	kms = 0,
+	time = os.clock(),
+}
+
 ---@class Player
 ---@field name string
 ---@field sectors SectorStats[]
@@ -1257,10 +1261,14 @@ end
 ---@field arrests integer
 ---@field getaways integer
 ---@field thefts integer
+---@field heists integer
+---@field deliveries integer
 ---@field overtake integer
 ---@field wins integer
 ---@field losses integer
 ---@field elo integer
+---@field kms number
+---@field time number
 local Player = class('Player')
 
 ---@type Player | nil
@@ -1274,13 +1282,17 @@ local sharedPlayerLayout = {
 		name = ac.StructItem.string(16),
 		records = ac.StructItem.array(ac.StructItem.string(50), 20)
 	}), 5),
-	arrests = ac.StructItem.int16(),
-	getaways = ac.StructItem.int16(),
-	thefts = ac.StructItem.int16(),
-	overtake = ac.StructItem.int16(),
-	wins = ac.StructItem.int16(),
-	losses = ac.StructItem.int16(),
-	elo = ac.StructItem.int16(),
+	arrests = ac.StructItem.uint16(),
+	getaways = ac.StructItem.uint16(),
+	thefts = ac.StructItem.uint16(),
+	heists = ac.StructItem.uint16(),
+	deliveries = ac.StructItem.uint16(),
+	overtake = ac.StructItem.uint32(),
+	wins = ac.StructItem.uint16(),
+	losses = ac.StructItem.uint16(),
+	elo = ac.StructItem.uint16(),
+	kms = ac.StructItem.float(),
+	time = ac.StructItem.float(),
 }
 
 ---@type Settings | nil
@@ -1299,10 +1311,14 @@ local function updateSharedPlayerData()
 	sharedPlayerData.arrests = player.arrests
 	sharedPlayerData.getaways = player.getaways
 	sharedPlayerData.thefts = player.thefts
+	sharedPlayerData.heists = player.heists
+	sharedPlayerData.deliveries = player.deliveries
 	sharedPlayerData.overtake = player.overtake
 	sharedPlayerData.wins = player.wins
 	sharedPlayerData.losses = player.losses
 	sharedPlayerData.elo = player.elo
+	sharedPlayerData.kms = player.kms
+	sharedPlayerData.time = player.time
 	sharedPlayerData.sectorsFormated = {}
 	local i = 1
 	table.forEach(player.sectorsFormated, function(v, k)
@@ -1324,10 +1340,14 @@ function Player.new()
 		arrests = 0,
 		getaways = 0,
 		thefts = 0,
+		heists = 0,
+		deliveries = 0,
 		overtake = 0,
 		wins = 0,
 		losses = 0,
 		elo = 1200,
+		kms = 0,
+		time = 0,
 	}
 	setmetatable(_player, { __index = Player })
 	return _player
@@ -1355,10 +1375,14 @@ function Player.tryParse(data)
 		arrests = data.arrests or 0,
 		getaways = data.getaways or 0,
 		thefts = data.thefts or 0,
+		heists = data.heists or 0,
+		deliveries = data.deliveries or 0,
 		overtake = data.overtake or 0,
 		wins = data.wins or 0,
 		losses = data.losses or 0,
 		elo = data.elo or 1200,
+		kms = data.kms or 0,
+		time = data.time or 0,
 	}
 	setmetatable(_player, { __index = Player })
 	return _player
@@ -1428,6 +1452,8 @@ end
 
 ---@return table
 function Player:export()
+	local kms = truncate(car.distanceDrivenSessionKm - lastRegister.kms + self.kms, 3)
+	local time = math.round(os.clock() - lastRegister.time + self.time, 0)
 	local data = { name = self.name }
 
 	if self.arrests > 0 then
@@ -1439,6 +1465,12 @@ function Player:export()
 	if self.thefts > 0 then
 		data.thefts = self.thefts
 	end
+	if self.heists > 0 then
+		data.heists = self.heists
+	end
+	if self.deliveries > 0 then
+		data.deliveries = self.deliveries
+	end
 	if self.overtake > 0 then
 		data.overtake = self.overtake
 	end
@@ -1448,7 +1480,18 @@ function Player:export()
 	if self.losses > 0 then
 		data.losses = self.losses
 	end
-	data.elo = self.elo
+	if self.elo ~= 1200 then
+		data.elo = self.elo
+	end
+	if kms > 0 then
+		data.kms = kms
+	end
+	if time > 0 then
+		data.time = time
+	end
+
+	lastRegister.kms = car.distanceDrivenSessionKm
+	lastRegister.time = os.clock()
 
 	local sectors = {}
 	for _, sector in ipairs(self.sectors) do
@@ -2678,8 +2721,8 @@ local function drawHudText()
 	elseif settings.current == 4 then
 		textSize = ui.measureDWriteText(sectorManager.sector.name, settings.fontSize)
 		ui.dwriteDrawText(sectorManager.sector.name, settings.fontSize, textOffset - vec2(textSize.x / 2, 0), settings.colorHud)
-		textSize = ui.measureDWriteText('Time - 00:00.000', timeFontSize)
-		ui.dwriteDrawText(sectorManager.sector.time, timeFontSize, textOffset - vec2(textSize.x / 2, -hud.size.y / 12.5), sectorManager.sector.timeColor)
+		textSize = ui.measureDWriteText('Time - 00:00.000', settings.fontSize)
+		ui.dwriteDrawText(sectorManager.sector.time, settings.fontSize, textOffset - vec2(textSize.x / 2, -hud.size.y / 12.5), sectorManager.sector.timeColor)
 	end
 	ui.popDWriteFont()
 end
@@ -3214,10 +3257,15 @@ local function hidePolice()
 end
 
 local function updateThefts()
+	if sectorManager.sector:isUnderTimeLimit() == 0 then
+		return
+	end
 	if sectorManager.sector.name == "BOBs SCRAPYARD" or sectorManager.sector.name == "DOUBLE TROUBLE" then
-		if sectorManager.sector:isUnderTimeLimit() ~= 0 then
-			player.thefts = player.thefts + 1
-		end
+		player.thefts = player.thefts + 1
+	elseif sectorManager.sector.name == "BANK HEIST" then
+		player.heists = player.heists + 1
+	elseif sectorManager.sector.name == "DRUG DELIVERY" then
+		player.deliveries = player.deliveries + 1
 	end
 end
 
@@ -3229,7 +3277,6 @@ local function sectorUpdate()
 	if not sectorManager.finished and sectorManager.sector:isFinished() then
 		if sectorManager.sector.name ~= 'DOUBLE TROUBLE' or sectorManager:hasTeammateFinished() then
 			updateThefts()
-			missionManager.level = sectorManager.sector:isUnderTimeLimit()
 			sectorManager.finished = true
 			sectorManager.started = false
 			local shouldSave = player:addSectorRecord(sectorManager.sector.name, sectorManager.sector.finalTime)
@@ -3259,7 +3306,6 @@ local function initUI()
 	scaleWelcomeMenu()
 	updateStarsPos()
 	initBoost()
-	timeFontSize = settings.fontSize * 0.9
 	colorHudInverted = rgbm(1 - settings.colorHud.r, 1 - settings.colorHud.g, 1 - settings.colorHud.b, 1)
 	dataLoaded['Settings'] = true
 end
@@ -3309,6 +3355,9 @@ function script.update(dt)
 	end
 	if not shouldRun() then return end
 	ac.debug('PATCH COUNT', patchCount)
+	ac.debug('Session kms', car.distanceDrivenSessionKm)
+	ac.debug('Total kms', car.distanceDrivenTotalKm)
+	ac.debug('Session time', os.clock())
 	if delay > 0 then delay = delay - dt end
 	if delay < 0 then
 		delay = 0
