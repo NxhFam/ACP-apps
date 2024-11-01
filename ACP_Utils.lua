@@ -81,6 +81,27 @@ local GAS_STATIONS = const({
 	{pos = vec3(-4003, 58, 96), up = vec3(0.0211318, 0.998816, 0.0438106)},
 })
 
+---@param format string
+---@param time number
+---@return string
+local function formatTime(time, format)
+	if format == 'time played' then
+		local hours = math.floor(time / 3600)
+		local minutes = math.floor(time % 3600 / 60)
+		local seconds = math.floor(time % 60)
+		local formattedTime = ''
+		if hours > 0 then formattedTime = hours .. 'h ' end
+		if minutes > 0 then formattedTime = formattedTime .. minutes .. 'm ' end
+		formattedTime = formattedTime .. seconds .. 's'
+		return formattedTime
+	else
+		local minutes = math.floor(time / 60)
+		local seconds = math.floor(time % 60)
+		local milliseconds = math.floor((time % 1) * 1000)
+		return ('%02d:%02d.%03d'):format(minutes, seconds, milliseconds)
+	end
+end
+
 ---@param number number
 ---@param decimal integer
 ---@return number
@@ -107,10 +128,14 @@ local playerData = {
 	arrests = '0',
 	getaways = '0',
 	thefts = '0',
+	heists = '0',
+	deliveries = '0',
 	overtake = '0',
 	wins = '0',
 	losses = '0',
 	elo = '0',
+	kms = '0',
+	time = '0',
 }
 
 local sharedPlayerLayout = {
@@ -121,13 +146,17 @@ local sharedPlayerLayout = {
 		name = ac.StructItem.string(16),
 		records = ac.StructItem.array(ac.StructItem.string(50), 20)
 	}), 5),
-	arrests = ac.StructItem.int16(),
-	getaways = ac.StructItem.int16(),
-	thefts = ac.StructItem.int16(),
-	overtake = ac.StructItem.int16(),
-	wins = ac.StructItem.int16(),
-	losses = ac.StructItem.int16(),
-	elo = ac.StructItem.int16(),
+	arrests = ac.StructItem.uint16(),
+	getaways = ac.StructItem.uint16(),
+	thefts = ac.StructItem.uint16(),
+	heists = ac.StructItem.uint16(),
+	deliveries = ac.StructItem.uint16(),
+	overtake = ac.StructItem.uint32(),
+	wins = ac.StructItem.uint16(),
+	losses = ac.StructItem.uint16(),
+	elo = ac.StructItem.uint16(),
+	kms = ac.StructItem.float(),
+	time = ac.StructItem.float(),
 }
 
 local sharedPlayerData = ac.connect(sharedPlayerLayout, true, ac.SharedNamespace.ServerScript)
@@ -163,21 +192,33 @@ local function playerScores()
 	ui.dwriteTextWrapped("Getaways: ", 20, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.getaways, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Thefts: ", 20, playerData.hudColorInverted)
+	ui.dwriteTextWrapped("Car Thefts: ", 20, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.thefts, 20, rgbm.colors.white)
+	ui.dwriteTextWrapped("Bank Heists: ", 20, playerData.hudColorInverted)
+	ui.sameLine(WIDTH_DIV._10)
+	ui.dwriteTextWrapped(playerData.heists, 20, rgbm.colors.white)
+	ui.dwriteTextWrapped("Drug Deliveries: ", 20, playerData.hudColorInverted)
+	ui.sameLine(WIDTH_DIV._10)
+	ui.dwriteTextWrapped(playerData.deliveries, 20, rgbm.colors.white)
 	ui.dwriteTextWrapped("Overtake: ", 20, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.overtake, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Wins: ", 20, playerData.hudColorInverted)
+	ui.dwriteTextWrapped("Race Wins: ", 20, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.wins, 20, rgbm.colors.white)
-	ui.dwriteTextWrapped("Losses: ", 20, playerData.hudColorInverted)
+	ui.dwriteTextWrapped("Race Losses: ", 20, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.losses, 20, rgbm.colors.white)
 	ui.dwriteTextWrapped("Racing Elo: ", 20, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.elo, 20, rgbm.colors.white)
+	ui.dwriteTextWrapped("Kms Driven: ", 20, playerData.hudColorInverted)
+	ui.sameLine(WIDTH_DIV._10)
+	ui.dwriteTextWrapped(playerData.kms, 20, rgbm.colors.white)
+	ui.dwriteTextWrapped("Time Played: ", 20, playerData.hudColorInverted)
+	ui.sameLine(WIDTH_DIV._10)
+	ui.dwriteTextWrapped(playerData.time, 20, rgbm.colors.white)
 	ui.endGroup()
 end
 
@@ -262,10 +303,14 @@ local function updatedSharedData()
 		playerData.arrests = tostring(sharedPlayerData.arrests)
 		playerData.getaways = tostring(sharedPlayerData.getaways)
 		playerData.thefts = tostring(sharedPlayerData.thefts)
+		playerData.heists = tostring(sharedPlayerData.heists)
+		playerData.deliveries = tostring(sharedPlayerData.deliveries)
 		playerData.overtake = tostring(sharedPlayerData.overtake)
 		playerData.wins = tostring(sharedPlayerData.wins)
 		playerData.losses = tostring(sharedPlayerData.losses)
-		playerData.elo = tostring(sharedPlayerData.elo)
+		playerData.elo = tostring(sharedPlayerData.elo) .. ' pts'
+		playerData.kms = tostring(sharedPlayerData.kms) .. ' km'
+		playerData.time = formatTime(sharedPlayerData.time, 'time played')
 		for i = 1, 5 do
 			local sectorName = ffi.string(sharedPlayerData.sectorsFormated[i].name)
 			if sectorName ~= '' then
@@ -430,20 +475,20 @@ local function getSkinPrefix(carIndex)
 	return 'base'
 end
 
-local function applySkinToConnectedCar(carIndex)
-	local carId = ac.getCarID(carIndex)
-	local skin = "/" .. getSkinPrefix(carIndex) .. "_ext_body_Mixed_AO.zip"
-	local url = "https://github.com/ele-sage/ACP-apps/raw/refs/heads/master/skins/" .. carId .. skin
-	applySkinToCar(carIndex, url)
-end
+-- local function applySkinToConnectedCar(carIndex)
+-- 	local carId = ac.getCarID(carIndex)
+-- 	local skin = "/" .. getSkinPrefix(carIndex) .. "_ext_body_Mixed_AO.zip"
+-- 	local url = "https://github.com/ele-sage/ACP-apps/raw/refs/heads/master/skins/" .. carId .. skin
+-- 	applySkinToCar(carIndex, url)
+-- end
 
-local function applySkinToAllConnectedCars()
-	for i, c in ac.iterateCars.serverSlots() do
-		if not c.isHidingLabels and c.isConnected and not isPoliceCar(c:id()) then
-			applySkinToConnectedCar(c.index)
-		end
-	end
-end
+-- local function applySkinToAllConnectedCars()
+-- 	for i, c in ac.iterateCars.serverSlots() do
+-- 		if not c.isHidingLabels and not isPoliceCar(c:id()) then
+-- 			applySkinToConnectedCar(c.index)
+-- 		end
+-- 	end
+-- end
 
 -- applySkinToAllConnectedCars()
 
