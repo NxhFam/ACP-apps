@@ -92,11 +92,11 @@ local POLICE_CAR = {"none"} --const({ "crown_police", "r34police_acp24" })
 
 local LEADERBOARDS = const({
 	time = {"H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST" },
-	score = { "arrests", "getaways", "overtake", "thefts", "heists", "deliveries", "sectors", "elo", "kms", "time" },
+	score = { "arrests", "getaways", "overtake", "thefts", "heists", "deliveries", "elo", "kms", "time" },
 })
 local LEADERBOARD_NAMES = const({
-	{ "Your Stats", "H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST", "arrests", "getaways", "overtake", "thefts", "heists", "deliveries", "sectors", "elo", "kms", "time" },
-	{ "Your Stats", "H1", "Bobs Scrapyard", "Double Trouble", "Drug Delivery", "Bank Heist", "Arrestations", "Getaways", "Car thefts", "Bank Heists", "Drug Deliveries", "Overtake", "Racing", "Distance Driven", "Time Played" },
+	{ "Your Stats", "H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST", "arrests", "getaways", "overtake", "thefts", "heists", "deliveries", "elo", "kms", "time" },
+	{ "Your Stats", "H1", "Bobs Scrapyard", "Double Trouble", "Drug Delivery", "Bank Heist", "Arrestations", "Getaways", "Overtake", "Car thefts", "Bank Heists", "Drug Deliveries", "Racing", "Distance Driven", "Time Played" },
 })
 local patchCount = 0
 
@@ -3377,6 +3377,17 @@ end
 
 local delay = 1
 
+local lastTimeUpdate = os.clock()
+local function updateDistanceDriven()
+	if os.clock() - lastTimeUpdate > 10 then
+		player.kms = truncate(car.distanceDrivenSessionKm - lastRegister.kms + player.kms, 3)
+		player.time = math.round(os.clock() - lastRegister.time + player.time, 0)
+		lastRegister.kms = car.distanceDrivenSessionKm
+		lastRegister.time = os.clock()
+		lastTimeUpdate = os.clock()
+	end
+end
+
 function script.update(dt)
 	if initialisation then
 		initialisation = false
@@ -3388,7 +3399,8 @@ function script.update(dt)
 	end
 	if not shouldRun() then return end
 	ac.debug('PATCH COUNT', patchCount)
-	ac.debug('Tab', currentTab)
+	ac.debug('Kms', player.kms)
+	ac.debug('Time', player.time)
 	if delay > 0 then delay = delay - dt end
 	if delay < 0 then
 		delay = 0
@@ -3400,6 +3412,7 @@ function script.update(dt)
 	raceUpdate(dt)
 	overtakeUpdate(dt)
 	hidePolice()
+	updateDistanceDriven()
 end
 
 --------------------------------------------------------------- 3D Update ---------------------------------------------------------------
@@ -3462,3 +3475,13 @@ ac.onChatMessage(function(message, senderCarIndex, senderSessionID)
 	end
 	return false
 end)
+
+
+-- ---Adds a callback which might be called when script is unloading. Use it for some state reversion, but
+-- ---don’t rely on it too much. For example, if Assetto Corsa would crash or just close rapidly, it would not
+-- ---be called. It should be called when scripts reload though.
+-- ---@generic T
+-- ---@param callback fun(item: T)
+-- ---@param item T? @Optional parameter. If provided, will be passed to callback on release, but stored with a weak reference, so it could still be GCed before that (in that case, callback won’t be called at all).
+-- ---@return fun() @Call to disable callback.
+-- function ac.onRelease(callback, item) end
