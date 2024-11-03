@@ -2131,8 +2131,8 @@ local function sectorSelect()
 	ui.sameLine(menuSize[currentTab].x - 64)
 	if ui.modernButton('', vec2(48, 32), ui.ButtonFlags.PressedOnRelease, 'EXIT', 24, nil) then
 		menuStates.main = false
+		settings:save()
 	end
-	settings:save()
 end
 
 local function sectorUI()
