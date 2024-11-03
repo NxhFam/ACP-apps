@@ -35,6 +35,10 @@ local STATS_FONT_SIZE = const({
 	stats = 20 / uiState.uiScale,
 })
 
+-- "https://www.youtube.com/watch?v=FMUogCkQ1qw", --car thefts
+-- "https://www.youtube.com/watch?v=7YKganFmzNA", --drug dealer
+-- "https://www.youtube.com/watch?v=U7Kr5E_ImGI", --bank heist
+
 SECTORS_DATA = const({
 	[1] = {
 		name = "H1",
@@ -51,6 +55,8 @@ SECTORS_DATA = const({
 		timeLimit = 200,
 		addTimeLimit = { 0, 5, 15 },
 		length = 5,
+		discordLink = "https://discord.com/channels/358562025032646659/1300231481095880725",
+		video = "https://www.youtube.com/watch?v=FMUogCkQ1qw",
 		gates = {
 			{ pos = { 767.34, 95.8, 2262.69 }, dir = { -0.82, 0, 0.56 }, width = 14.7, id = 1 },
 			{ pos = { -3541.52, 23.48, -206.67 }, dir = { -0.87, 0, 0.49 }, width = 10.27, id = 2 },
@@ -61,6 +67,8 @@ SECTORS_DATA = const({
 		timeLimit = 200,
 		addTimeLimit = { 0, 5, 15 },
 		length = 5,
+		discordLink = "https://discord.com/channels/358562025032646659/1300207647873695755",
+		video = "https://www.youtube.com/watch?v=FMUogCkQ1qw",
 		gates = {
 			{ pos = { 767.34, 95.8, 2262.69 }, dir = { -0.82, 0, 0.56 }, width = 14.7, id = 1 },
 			{ pos = { -3541.52, 23.48, -206.67 }, dir = { -0.87, 0, 0.49 }, width = 10.27, id = 2 },
@@ -71,6 +79,8 @@ SECTORS_DATA = const({
 		timeLimit = 475,
 		addTimeLimit = { 0, 40, 70 },
 		length = 5,
+		discordLink = "https://discord.com/channels/358562025032646659/1300207698280841266",
+		video = "https://www.youtube.com/watch?v=U7Kr5E_ImGI",
 		gates = {
 			{ pos = { -700.04, 137.72, 3540.75 }, dir = { -1.67, 0, 1.02 }, width = 12.1, id = 1 },
 			{ pos = { 5188.14, 58.22, -1640.53 }, dir = { -0.07, 0, -1 }, width = 5.56, id = 2 },
@@ -81,6 +91,8 @@ SECTORS_DATA = const({
 		timeLimit = 315,
 		addTimeLimit = { 0, 25, 45 },
 		length = 5,
+		discordLink = "https://discord.com/channels/358562025032646659/1300207870515744869",
+		video = "https://www.youtube.com/watch?v=7YKganFmzNA",
 		gates = {
 			{ pos = { -395.08, 127.66, 3392.71 }, dir = { -0.7, 0, -0.72 }, width = 35.95, id = 1 },
 			{ pos = { 585.71, -115.77, -3439.67 }, dir = { 0.99, 0, 0.03 }, width = 6.78, id = 2 },
@@ -2049,22 +2061,14 @@ end
 
 local function discordLinks()
 	ui.newLine(50)
-	ui.dwriteTextWrapped("For more info about the challenge click on the Discord link :", 15, white)
-	if sectorManager.sector.name == 'H1' then
-		if ui.textHyperlink("H1 Races Discord") then
-			os.openURL("https://discord.com/channels/358562025032646659/1073622643145703434")
-		end
-		ui.sameLine(150)
-		if ui.textHyperlink("H1 Vertex Discord") then
-			os.openURL("https://discord.com/channels/358562025032646659/1088832930698231959")
-		end
-	elseif sectorManager.sector.name == 'BOBs SCRAPYARD' then
-		if ui.textHyperlink("BOB's Scrapyard Discord") then
-			os.openURL("https://discord.com/channels/358562025032646659/1096776154217709629")
-		end
-	elseif sectorManager.sector.name == 'DOUBLE TROUBLE' then
-		if ui.textHyperlink("Double Trouble Discord") then
-			os.openURL("https://discord.com/channels/358562025032646659/1097229381308530728")
+	if sectorManager.sector.name ~= 'H1' then
+		ui.dwriteTextWrapped("For more info about the challenge click on the Discord link :", 15, white)
+		if ui.textHyperlink(sectorManager.sector.name .. " Discord") then
+			for i = 1, #SECTORS_DATA do
+				if SECTORS_DATA[i].name == sectorManager.sector.name then
+					os.openURL(SECTORS_DATA[i].discordLink)
+				end
+			end
 		end
 	end
 	ui.newLine(10)
@@ -2128,6 +2132,7 @@ local function sectorSelect()
 	if ui.modernButton('', vec2(48, 32), ui.ButtonFlags.PressedOnRelease, 'EXIT', 24, nil) then
 		menuStates.main = false
 	end
+	settings:save()
 end
 
 local function sectorUI()
@@ -2150,7 +2155,7 @@ local function sectorUI()
 			duo.request = false
 		end
 	end
-	-- discordLinks()
+	discordLinks()
 	ui.newLine()
 	ui.endGroup()
 	return 1
@@ -3475,3 +3480,13 @@ ac.onChatMessage(function(message, senderCarIndex, senderSessionID)
 	end
 	return false
 end)
+
+
+-- ---Adds a callback which might be called when script is unloading. Use it for some state reversion, but
+-- ---don’t rely on it too much. For example, if Assetto Corsa would crash or just close rapidly, it would not
+-- ---be called. It should be called when scripts reload though.
+-- ---@generic T
+-- ---@param callback fun(item: T)
+-- ---@param item T? @Optional parameter. If provided, will be passed to callback on release, but stored with a weak reference, so it could still be GCed before that (in that case, callback won’t be called at all).
+-- ---@return fun() @Call to disable callback.
+-- function ac.onRelease(callback, item) end
