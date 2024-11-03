@@ -88,7 +88,7 @@ SECTORS_DATA = const({
 	},
 })
 
-local POLICE_CAR = {"none"} --const({ "crown_police", "r34police_acp24" })
+local POLICE_CAR = const({ "crown_police", "r34police_acp24" })
 
 local LEADERBOARDS = const({
 	time = {"H1", "BOBs SCRAPYARD", "DOUBLE TROUBLE", "DRUG DELIVERY", "BANK HEIST" },
