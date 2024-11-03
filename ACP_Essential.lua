@@ -49,7 +49,7 @@ SECTORS_DATA = const({
 	[2] = {
 		name = "DOUBLE TROUBLE",
 		timeLimit = 200,
-		addTimeLimit = { 0, 10, 25 },
+		addTimeLimit = { 0, 5, 15 },
 		length = 5,
 		gates = {
 			{ pos = { 767.34, 95.8, 2262.69 }, dir = { -0.82, 0, 0.56 }, width = 14.7, id = 1 },
@@ -59,7 +59,7 @@ SECTORS_DATA = const({
 	[3] = {
 		name = "BOBs SCRAPYARD",
 		timeLimit = 200,
-		addTimeLimit = { 0, 10, 25 },
+		addTimeLimit = { 0, 5, 15 },
 		length = 5,
 		gates = {
 			{ pos = { 767.34, 95.8, 2262.69 }, dir = { -0.82, 0, 0.56 }, width = 14.7, id = 1 },
@@ -69,7 +69,7 @@ SECTORS_DATA = const({
 	[4] = {
 		name = "BANK HEIST",
 		timeLimit = 475,
-		addTimeLimit = { 0, 45, 90 },
+		addTimeLimit = { 0, 40, 70 },
 		length = 5,
 		gates = {
 			{ pos = { -700.04, 137.72, 3540.75 }, dir = { -1.67, 0, 1.02 }, width = 12.1, id = 1 },
@@ -79,7 +79,7 @@ SECTORS_DATA = const({
 	[5] = {
 		name = "DRUG DELIVERY",
 		timeLimit = 315,
-		addTimeLimit = { 0, 40, 80 },
+		addTimeLimit = { 0, 25, 45 },
 		length = 5,
 		gates = {
 			{ pos = { -395.08, 127.66, 3392.71 }, dir = { -0.7, 0, -0.72 }, width = 35.95, id = 1 },
