@@ -2860,7 +2860,7 @@ local function drawHudImages()
 	if countDownState.countdownOn then countdown() end
 	if toolTipOn then
 		ui.tooltip(function()
-			ui.text("Click " .. openMenuKeyBind:boundTo() .. "\nto Bring up The Welcome Menu")
+			ui.text("Click " .. openMenuKeyBind:boundTo() .. " to Bring up\nThe Welcome Menu")
 		end)
 	end
 end
