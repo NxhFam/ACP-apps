@@ -2150,7 +2150,7 @@ local function sectorUI()
 			duo.request = false
 		end
 	end
-	discordLinks()
+	-- discordLinks()
 	ui.newLine()
 	ui.endGroup()
 	return 1
@@ -3475,13 +3475,3 @@ ac.onChatMessage(function(message, senderCarIndex, senderSessionID)
 	end
 	return false
 end)
-
-
--- ---Adds a callback which might be called when script is unloading. Use it for some state reversion, but
--- ---don’t rely on it too much. For example, if Assetto Corsa would crash or just close rapidly, it would not
--- ---be called. It should be called when scripts reload though.
--- ---@generic T
--- ---@param callback fun(item: T)
--- ---@param item T? @Optional parameter. If provided, will be passed to callback on release, but stored with a weak reference, so it could still be GCed before that (in that case, callback won’t be called at all).
--- ---@return fun() @Call to disable callback.
--- function ac.onRelease(callback, item) end
