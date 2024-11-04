@@ -3489,6 +3489,7 @@ end)
 
 ac.onClientConnected(function(carIndex)
 	local newCar = ac.getCarID(carIndex)
+	ac.log('New Car', newCar)
 	if newCar and isPoliceCar(newCar) then
 		ac.hideCarLabels(carIndex)
 	end
