@@ -2804,7 +2804,12 @@ local function drawHudImages()
 		if uiState.isMouseLeftKeyClicked then
 			if missionManager.msgTime == 0 then
 				local closestMission = getClosestMission()
-				if not closestMission then return end
+				if not closestMission then
+					menuStates.welcome = true
+					menuStates.main = false
+					menuStates.leaderboard = false
+					return
+				end
 				ac.sendChatMessage(MISSION_TEXT[closestMission.name].chat)
 				missionManager.msgTime = 10
 				missionManager.showIntro = true
