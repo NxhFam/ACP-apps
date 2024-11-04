@@ -2063,10 +2063,19 @@ local function discordLinks()
 	ui.newLine(50)
 	if sectorManager.sector.name ~= 'H1' then
 		ui.dwriteTextWrapped("For more info about the challenge click on the Discord link :", 15, white)
-		if ui.textHyperlink(sectorManager.sector.name .. " Discord") then
+		if ui.textHyperlink("Discord Channel") then
 			for i = 1, #SECTORS_DATA do
 				if SECTORS_DATA[i].name == sectorManager.sector.name then
 					os.openURL(SECTORS_DATA[i].discordLink)
+				end
+			end
+		end
+		ui.newLine()
+		ui.dwriteTextWrapped("Here's a video of the challenge :", 15, white)
+		if ui.textHyperlink("Demo Video") then
+			for i = 1, #SECTORS_DATA do
+				if SECTORS_DATA[i].name == sectorManager.sector.name then
+					os.openURL(SECTORS_DATA[i].video)
 				end
 			end
 		end
