@@ -3157,17 +3157,35 @@ local function drawWelcomeImg()
 				toolTipOn = true
 				cardOutline[3] = settings.colorHud
 				welcomeNavImgToDraw[3] = WELCOME_NAV_IMG.leftBoxOn
-				if uiState.isMouseLeftKeyClicked then tpToMission(welcomeCardsToDisplayed[1]) end
+				if uiState.isMouseLeftKeyClicked then
+					if uiState.ctrlDown then
+						os.openURL(SECTORS_DATA[welcomeCardsToDisplayed[1] + 1].video)
+					else
+						tpToMission(welcomeCardsToDisplayed[1])
+					end
+				end
 			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[4][1], WELCOME_CARD_IMG_POS[4][2]) then
 				toolTipOn = true
 				cardOutline[4] = settings.colorHud
 				welcomeNavImgToDraw[4] = WELCOME_NAV_IMG.centerBoxOn
-				if uiState.isMouseLeftKeyClicked then tpToMission(welcomeCardsToDisplayed[2]) end
+				if uiState.isMouseLeftKeyClicked then
+					if uiState.ctrlDown then
+						os.openURL(SECTORS_DATA[welcomeCardsToDisplayed[2] + 1].video)
+					else
+						tpToMission(welcomeCardsToDisplayed[2])
+					end
+				end
 			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[5][1], WELCOME_CARD_IMG_POS[5][2]) then
 				toolTipOn = true
 				cardOutline[5] = settings.colorHud
 				welcomeNavImgToDraw[5] = WELCOME_NAV_IMG.rightBoxOn
-				if uiState.isMouseLeftKeyClicked then tpToMission(welcomeCardsToDisplayed[3]) end
+				if uiState.isMouseLeftKeyClicked then
+					if uiState.ctrlDown then
+						os.openURL(SECTORS_DATA[welcomeCardsToDisplayed[3] + 1].video)
+					else
+						tpToMission(welcomeCardsToDisplayed[3])
+					end
+				end
 			elseif ui.rectHovered(WELCOME_CARD_IMG_POS[7][1], WELCOME_CARD_IMG_POS[7][2]) then
 				iconCloseColor = settings.colorHud
 				if uiState.isMouseLeftKeyClicked then menuStates.welcome = false end
@@ -3190,7 +3208,7 @@ local function drawWelcomeImg()
 		for i = 1, 3 do
 			if welcomeCardsToDisplayed[i] < 4 then
 				ui.tooltip(function()
-					ui.text("Left Click to teleport to the mission")
+					ui.text("Left Click to teleport to the mission\nCTRL + Left Click to watch the DEMO")
 				end)
 			end
 		end
