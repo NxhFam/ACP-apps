@@ -1543,6 +1543,7 @@ function Player:export()
 	end
 	self:sortSectors()
 	updateSharedPlayerData()
+	ac.broadcastSharedEvent(SHARED_EVENT_KEY, 'update')
 	return data
 end
 
