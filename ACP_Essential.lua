@@ -3329,9 +3329,10 @@ local function hidePolice()
 	end
 end
 
+---@return boolean
 local function updateThefts()
 	if sectorManager.sector:isUnderTimeLimit() == 0 then
-		return
+		return false
 	end
 	if sectorManager.sector.name == "BOBs SCRAPYARD" or sectorManager.sector.name == "DOUBLE TROUBLE" then
 		player.thefts = player.thefts + 1
@@ -3340,6 +3341,7 @@ local function updateThefts()
 	elseif sectorManager.sector.name == "DRUG DELIVERY" then
 		player.deliveries = player.deliveries + 1
 	end
+	return true
 end
 
 local function sectorUpdate()
@@ -3349,11 +3351,11 @@ local function sectorUpdate()
 	end
 	if not sectorManager.finished and sectorManager.sector:isFinished() then
 		if sectorManager.sector.name ~= 'DOUBLE TROUBLE' or sectorManager:hasTeammateFinished() then
-			updateThefts()
+			local validTheft = updateThefts()
 			sectorManager.finished = true
 			sectorManager.started = false
 			local shouldSave = player:addSectorRecord(sectorManager.sector.name, sectorManager.sector.finalTime)
-			if shouldSave then player:save() end
+			if validTheft or shouldSave then player:save() end
 		else
 			if duo.teammate and not duo.sentFinish then
 				acpEvent{message = "Finished", messageType = 5, yourIndex = ac.getCar(duo.teammate.index).sessionID}
