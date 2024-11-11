@@ -35,16 +35,12 @@ local STATS_FONT_SIZE = const({
 	stats = 20 / uiState.uiScale,
 })
 
--- "https://www.youtube.com/watch?v=FMUogCkQ1qw", --car thefts
--- "https://www.youtube.com/watch?v=7YKganFmzNA", --drug dealer
--- "https://www.youtube.com/watch?v=U7Kr5E_ImGI", --bank heist
-
 SECTORS_DATA = const({
 	[1] = {
 		name = "H1",
 		timeLimit = 0,
 		addTimeLimit = { 0, 0, 0 },
-		length = 8,
+		length = 26.5,
 		gates = {
 			{ pos = { -753.56, 138.82, 3541.54 }, dir = { -0.9, 0, -0.43 }, width = 14.75, id = 1 },
 			{ pos = { 3001.98, 72.4, 1027.23 }, dir = { -0.85, 0, 0.52 }, width = 15.65, id = 2 },
@@ -54,7 +50,7 @@ SECTORS_DATA = const({
 		name = "DOUBLE TROUBLE",
 		timeLimit = 200,
 		addTimeLimit = { 0, 5, 15 },
-		length = 5,
+		length = 8.25,
 		discordLink = "https://discord.com/channels/358562025032646659/1300231481095880725",
 		video = "https://www.youtube.com/watch?v=FMUogCkQ1qw",
 		gates = {
@@ -66,7 +62,7 @@ SECTORS_DATA = const({
 		name = "BOBs SCRAPYARD",
 		timeLimit = 200,
 		addTimeLimit = { 0, 5, 15 },
-		length = 5,
+		length = 8.25,
 		discordLink = "https://discord.com/channels/358562025032646659/1300207647873695755",
 		video = "https://www.youtube.com/watch?v=FMUogCkQ1qw",
 		gates = {
@@ -78,7 +74,7 @@ SECTORS_DATA = const({
 		name = "BANK HEIST",
 		timeLimit = 475,
 		addTimeLimit = { 0, 40, 70 },
-		length = 5,
+		length = 21.5,
 		discordLink = "https://discord.com/channels/358562025032646659/1300207698280841266",
 		video = "https://www.youtube.com/watch?v=U7Kr5E_ImGI",
 		gates = {
@@ -90,7 +86,7 @@ SECTORS_DATA = const({
 		name = "DRUG DELIVERY",
 		timeLimit = 315,
 		addTimeLimit = { 0, 25, 45 },
-		length = 5,
+		length = 14,
 		discordLink = "https://discord.com/channels/358562025032646659/1300207870515744869",
 		video = "https://www.youtube.com/watch?v=7YKganFmzNA",
 		gates = {
