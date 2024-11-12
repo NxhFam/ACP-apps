@@ -218,12 +218,12 @@ local function playerScores()
 	ui.dwriteTextWrapped("Racing Elo: ", STATS_FONT_SIZE.stats, playerData.hudColorInverted)
 	ui.sameLine(WIDTH_DIV._10)
 	ui.dwriteTextWrapped(playerData.elo, STATS_FONT_SIZE.stats, rgbm.colors.white)
-	ui.dwriteTextWrapped("Distance Driven: ", STATS_FONT_SIZE.stats, playerData.hudColorInverted)
-	ui.sameLine(WIDTH_DIV._10)
-	ui.dwriteTextWrapped(playerData.kms, STATS_FONT_SIZE.stats, rgbm.colors.white)
-	ui.dwriteTextWrapped("Time Played: ", STATS_FONT_SIZE.stats, playerData.hudColorInverted)
-	ui.sameLine(WIDTH_DIV._10)
-	ui.dwriteTextWrapped(playerData.time, STATS_FONT_SIZE.stats, rgbm.colors.white)
+	-- ui.dwriteTextWrapped("Distance Driven: ", STATS_FONT_SIZE.stats, playerData.hudColorInverted)
+	-- ui.sameLine(WIDTH_DIV._10)
+	-- ui.dwriteTextWrapped(playerData.kms, STATS_FONT_SIZE.stats, rgbm.colors.white)
+	-- ui.dwriteTextWrapped("Time Played: ", STATS_FONT_SIZE.stats, playerData.hudColorInverted)
+	-- ui.sameLine(WIDTH_DIV._10)
+	-- ui.dwriteTextWrapped(playerData.time, STATS_FONT_SIZE.stats, rgbm.colors.white)
 	ui.endGroup()
 end
 
@@ -459,16 +459,11 @@ local function applySkinToCar(carId, url)
 	end)
 end
 
-function script.drawUI()
-	fuelWarning()
-	if isAtGasStation() then
-		fillCarWithFuel()
-	end
-end
-
-ac.onCarJumped(0, function()
-	physics.setCarFuel(0, math.max(1, carFuel))
-end)
+local skinWindowParams = {
+	visible = true,
+	pos = vec2(WIDTH_DIV._2, HEIGHT_DIV._12),
+	size = vec2(WIDTH_DIV._4, HEIGHT_DIV._4),
+}
 
 local function getSkinPrefix(carIndex)
 	local playerName = ac.getDriverName(carIndex)
@@ -482,10 +477,12 @@ local function getSkinPrefix(carIndex)
 	return 'base'
 end
 
--- local function applySkinToConnectedCar(carIndex)
+-- local function applySkinToConnectedCar(carIndex, default)
 -- 	local carId = ac.getCarID(carIndex)
 -- 	local skin = "/" .. getSkinPrefix(carIndex) .. "_ext_body_Mixed_AO.zip"
+-- 	if default then skin = "/base_ext_body_Mixed_AO.zip" end
 -- 	local url = "https://github.com/ele-sage/ACP-apps/raw/refs/heads/master/skins/" .. carId .. skin
+
 -- 	applySkinToCar(carIndex, url)
 -- end
 
@@ -508,3 +505,28 @@ end
 -- 	local url = "https://github.com/ele-sage/ACP-apps/raw/refs/heads/master/skins/" .. carId .. "/base_ext_body_Mixed_AO.zip"
 -- 	applySkinToCar(carIndex, url)
 -- end)
+
+-- local function skinWindow()
+-- 	ui.toolWindow('skinWindow', skinWindowParams.pos, skinWindowParams.size, false, true, function()
+-- 		if ui.button('Default Skin') then
+-- 			applySkinToConnectedCar(0, true)
+-- 		end
+-- 		ui.sameLine()
+-- 		if ui.button('Crew Skin') then
+-- 			applySkinToConnectedCar(0, false)
+-- 		end
+-- 	end)
+-- end
+
+
+function script.drawUI()
+	fuelWarning()
+	if isAtGasStation() then
+		fillCarWithFuel()
+	end
+end
+
+ac.onCarJumped(0, function()
+	physics.setCarFuel(0, math.max(1, carFuel))
+end)
+
