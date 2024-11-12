@@ -61,7 +61,7 @@ SECTORS_DATA = const({
 	[3] = {
 		name = "BOBs SCRAPYARD",
 		timeLimit = 200,
-		addTimeLimit = { 0, 5, 15 },
+		addTimeLimit = { 0, 5, 130 },
 		length = 8.25,
 		discordLink = "https://discord.com/channels/358562025032646659/1300207647873695755",
 		video = "https://www.youtube.com/watch?v=FMUogCkQ1qw",
@@ -73,7 +73,7 @@ SECTORS_DATA = const({
 	[4] = {
 		name = "BANK HEIST",
 		timeLimit = 475,
-		addTimeLimit = { 0, 40, 70 },
+		addTimeLimit = { 0, 40, 245 },
 		length = 21.5,
 		discordLink = "https://discord.com/channels/358562025032646659/1300207698280841266",
 		video = "https://www.youtube.com/watch?v=U7Kr5E_ImGI",
@@ -85,7 +85,7 @@ SECTORS_DATA = const({
 	[5] = {
 		name = "DRUG DELIVERY",
 		timeLimit = 315,
-		addTimeLimit = { 0, 25, 45 },
+		addTimeLimit = { 0, 25, 195 },
 		length = 14,
 		discordLink = "https://discord.com/channels/358562025032646659/1300207870515744869",
 		video = "https://www.youtube.com/watch?v=7YKganFmzNA",
