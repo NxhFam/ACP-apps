@@ -7,7 +7,7 @@ local uiState = ac.getUI()
 
 ui.setAsynchronousImagesLoading(true)
 
-local localTesting = false -- ac.dirname() == 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\assettocorsa\\extension\\lua\\online'
+local localTesting = ac.dirname() == 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\assettocorsa\\extension\\lua\\online'
 local initialisation = true
 
 -- Constants --
@@ -1191,8 +1191,10 @@ function Sector:update()
 		self:starting()
 		self:updateTimeColor()
 		if self:isFinished() then
-			self.finalTime = os.preciseClock() - self.startTime
-			local time = os.preciseClock() - self.startTime
+			local finalTime = os.preciseClock() - self.startTime
+			if finalTime < 1 then return end
+			self.finalTime = finalTime
+			local time = finalTime
 			local lvl = 'Time'
 			if self.timeLimit ~= 0 then
 				time = self.timeLimit + self.addTimeLimit[3] - time
