@@ -209,6 +209,7 @@ local IMAGES = const({
 
 ---@param key string
 local function loadImages(key)
+	ac.log(IMAGES[key].url)
 	web.loadRemoteAssets(IMAGES[key].url, function(err, data)
 		if err then
 			ac.error('Failed to load welcome images:', err)
